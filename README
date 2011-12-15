@@ -1,0 +1,7 @@
+hiReadsProcessor R package
+
+Objective: Given a sampleInformation file (xls/txt) with sample and metadata information, automate the processing of a sequencing run of LM-PCR samples. 
+
+The sampleInformation file has few required columns like: barcode, samplename, sample description, species, freeze, gender, primer sequence, linker sequence, and restriction enzyme. Additional columns are considered as metadata and saved in an object. 
+
+To fine tune sample specific processing, add any settings/parameters to the file apriori. For example, quality thresholds of primer or linker alignment, or integration site clustering thresholds, etc.
