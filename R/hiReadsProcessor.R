@@ -244,7 +244,7 @@ replicateReads <- function(dnaSet,counts=NULL) {
         if(is.null(names(dnaSet))) {
             stop("No names attribute found in dnaSet object")
         }
-        counts <- as.numeric(sub(".+counts=(.+)","\\1",names(dnaSet)))
+        counts <- as.numeric(sub(".+counts=(\\d+)","\\1",names(dnaSet)))
         if(all(is.na(counts))) {
             stop("No counts=X marker found at the end of definition line or names attribute in dnaSet object")
         }
@@ -2186,7 +2186,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         posIDs <- paste(space(psl.rd),psl.rd$strand,sep="")
         values <- psl.rd$Position
         if(is.null(weight)) { ## see if sequences were dereplicated before in the pipeline which adds counts=x identifier to the deflines
-            weight <- suppressWarnings(as.numeric(sub(".+counts=(.+)","\\1",psl.rd$qName)))
+            weight <- suppressWarnings(as.numeric(sub(".+counts=(\\d+)","\\1",psl.rd$qName)))
             if(all(is.na(weight))) { weight <- NULL } else { weight[is.na(weight)] <- 1 }
         }
         grouping <- if(is.null(grouping)) { "" } else { grouping }
