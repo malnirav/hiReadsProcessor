@@ -1898,7 +1898,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #' @param host name of the machine running gfServer. Default is 'localhost' and only used when standaloneBlat=FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param gzipResults gzip the output files? Default is TRUE.
-#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for output file format (psl) and nohead. Default: c(minIdentity=70, minScore=5, stepSize=8, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them!
+#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for output file format (psl) and nohead. Default: c(minIdentity=0, minScore=0, stepSize=8, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them!
 #'
 #' @return a character vector of psl filenames.
 #'
@@ -1907,7 +1907,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #' @examples
 #' #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna"))
 #' #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
-blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=70, minScore=5, stepSize=8, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna")) {
+blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=0, minScore=0, stepSize=8, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna")) {
 
     ## get all BLAT options from the system for comparison to blatParameters later
     suppressWarnings(blatOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", "\\1", grep("\\s+-.+=", system("blat",intern=TRUE), value=TRUE))))
