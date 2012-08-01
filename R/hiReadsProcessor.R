@@ -188,9 +188,9 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive
     if(splitBySector) {            
         sampleInfo <- SimpleList(split(sampleInfo,sampleInfo$sector))
         for(sector in 1:length(sampleInfo)) { 
-            sampleData <- do.call(SimpleList,split(sampleInfo[[sector]],sampleInfo[[sector]]$samplename))
+            sampleData <- SimpleList(split(sampleInfo[[sector]],sampleInfo[[sector]]$samplename))
             for(sample.i in 1:length(sampleData)) { 
-                sampleData[[sample.i]] <- do.call(SimpleList,as.list(sampleData[[sample.i]])) 
+                sampleData[[sample.i]] <- SimpleList(as.list(sampleData[[sample.i]])) 
             }
             sampleInfo[[sector]] <- SimpleList("samples"=sampleData) 
         }
