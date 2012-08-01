@@ -1427,7 +1427,7 @@ extractSeqs <- function(sampleInfo,sector=NULL,samplename=NULL,feature="genomic"
                     linkered <- sampleInfo$sectors[[y]]$samples[[x]]$linkered
                     
                     if(is.null(LTRed)) {
-                        warning("LTRed information not found...using primer end as starting boundary.",immediate.=TRUE)                                
+                        warning("LTRed information not found for",x,"...using primer end as starting boundary.",immediate.=TRUE)                                
                     }
 
                     if(any(is.null(primed),is.null(linkered))) { 
@@ -1750,7 +1750,7 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 #' @param port a port number to host the gfServer with. Default is 5560.
 #' @param seqDir the path of nib/2bit files relative to the current working dir. Default is "/"
 #' @param gfServerOpts a character vector of options to be passed to gfServer command on top of server defaults. Default: c(repMatch=112312, stepSize=5, tileSize=10)
-#' @param waitTime number of seconds to wait for gfServer to load. Default if 120. Increase this number for larger genomes, but for humans it should be suffice!
+#' @param waitTime number of seconds to wait for gfServer to load. Default is 150. Increase this number for larger genomes, but for humans it should be suffice!
 #'
 #' @return system command status for executing gfServer command.
 #'
@@ -1759,7 +1759,7 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 #' @example 
 #' #startgfServer(port=5560,seqDir="/usr/local/blatSuite34/hg18.2bit")
 #' #stopgfServer(port=5560)
-startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts=c(repMatch=112312, stepSize=5, tileSize=10), waitTime=120) {
+startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts=c(repMatch=112312, stepSize=5, tileSize=10), waitTime=150) {
     if(is.null(seqDir)) {
         stop("Please define the path of nib/2bit files containing the indexed reference sequence(s)")
     }
@@ -1771,6 +1771,11 @@ startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts
     ## wait for server to load & be ready
     message("Loading BLAT server...")
     system(paste("sleep",waitTime))
+    
+    ## if the server hasn't been started despite the wait time...wait additional waitTime/2 secs.  
+    if(!any(grepl(paste("gfServer start", host, port), system("ps",intern=TRUE)))) {
+		system(paste("sleep",ceiling(waitTime/2)))
+    }
 }
 
 #' Stop a gfServer instance
@@ -1795,7 +1800,7 @@ stopgfServer <- function(host="localhost", port=NULL) {
 }
 
 #' Align a listed DNAStringSet to a reference using gfClient or standalone BLAT.
-#' Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and get a psl file as RangedData object. 
+#' Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and get a psl file as RangedData object. This function heavily relies on defaults of \code{\link{blatSeqs}}.
 #'
 #' @param dnaSetList DNAStringSet object containing sequences to be aligned against the reference.
 #' @param ... parameters to be passed to \code{\link{blatSeqs}}.
@@ -1813,8 +1818,8 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
        do.call(RangedDataList,sapply(names(dnaSetList[[x]]), function(y) {
             if(length(dnaSetList[[x]][[y]])>0) {
                 message("BLATing ",y)
-                filenames<-blatSeqs(query=dnaSetList[[x]][[y]], ...)
-                read.psl(filenames)
+                pslFiles <- blatSeqs(query=dnaSetList[[x]][[y]], ...)
+                read.psl(pslFiles, bestScoring=TRUE, asRangedData=TRUE, removeFile=TRUE, parallel=FALSE)
             }
         }))
     })
@@ -1889,7 +1894,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 }
 
 #' Align sequences using BLAT.
-#' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for alignment against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. 
+#' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for alignment against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution. 
 #'
 #' @param query an object of DNAStringSet, a character vector, or a path/pattern of fasta files to BLAT. Default is NULL.
 #' @param subject an object of DNAStringSet, a character vector, or a path to an indexed genome (nibs,2bits) to serve as a reference or target to the query. Default is NULL. If the subject is a path to a nib or 2bit file, then standaloneBlat will not work!
@@ -2005,6 +2010,14 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, h
         }
         if(grepl("\\.tempyS$",subjectFile)) { system(paste("rm",subjectFile)) }
     } else {
+		# start the gfServer if not started already! #
+		killFlag <- FALSE
+        if(!any(grepl(paste("gfServer start", host, port), system("ps",intern=TRUE)))) {
+        	message("Starting gfServer.")        
+            startgfServer(host=host,port=port,seqDir=subjectFile,waitTime=150)
+            killFlag <- TRUE
+        }         
+
         gfClientOpts <- blatParameters[names(blatParameters) %in% gfClientOpts]
         stopifnot(length(subjectFile)>0)
         filenames <- foreach(x=iter(queryFiles), .inorder=FALSE, .export=c("gfClientOpts","host","port","indexFileDir","gzipResults")) %dopar% {
@@ -2015,7 +2028,14 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, h
             if(grepl("\\.tempyQ$",x)) { system(paste("rm",x)) } ## no need to save splitted files!
             if(gzipResults) { system(paste("gzip",filename.psl)); filename.psl <- paste(filename.psl,"gz",sep=".") }
             filename.psl
-        }        
+        }  
+        
+        ## only kill if the gfServer was started from within this function ## 
+        if(killFlag) {
+			# stop to conserve memory #
+			message("Kill gfServer.")        
+			stopgfServer(port=port)      
+        }
     }
     return(unlist(filenames))
 }
@@ -2424,7 +2444,7 @@ otuSites <- function(posID=NULL,readID=NULL,grouping=NULL,psl.rd=NULL) {
 }
 
 #' Find the integration sites and add results to SampleInfo object. 
-#' Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which BLATs, parses PSL files, finds best hit per read per sample, cluster sites, and assign OTU IDs. It calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function!
+#' Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which BLATs, parses PSL files, finds best hit per read per sample, cluster sites, and assign OTU IDs. It calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered sequences for samples per sector/quadrant along with metadata.
 #' @param seqType which type of sequence to blat and find integration sites for: genomic, or genomicLinkered. Default is NULL and determined automatically based on type of restriction enzyme or isolation method used.
@@ -2447,27 +2467,33 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     
     if(!parallel) { registerDoSEQ() }
     
-    message("Checking for linkered reads.")
-    ## test if there are linkered sequences in the sampleinfo object ##   
-    linkered <- extractFeature(sampleInfo,feature="linkered")
+    ## test if there are linkered sequences in the sampleinfo object if specific feature/seqType is not defined ##   
+    feature <- ifelse(is.null(seqType),"linkered",seqType)
+    
+    message("Checking for ",feature," reads.")		
+	linkered <- extractFeature(sampleInfo,feature=feature)
     sampleslinkered <- sapply(linkered,names,simplify=FALSE)
     sectorslinkered <- names(which(sapply(sapply(linkered,length),">",1)))
     rm(linkered)
     cleanit <- gc()
 
     if(length(sectorslinkered)==0) {
-        stop("No linkered information found in sampleInfo...did you run findLinkers()?")
+        stop("No ",feature," information found in sampleInfo object provided.")
     }
 
-    message("Creating settings hashes for blatting and processing.")
-    ## setup settings hashes for blatting the genomic seqs by species & processing hits later ##
+    ## subset specific samples if defined ##
     samplesToProcess <- unlist(sampleslinkered,use.names=F)
     if(!is.null(samplenames)) {
         samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
     }
 
+	message("Creating hashes of settings for blatting and processing.")
+
+	## setup settings hashes for blatting the genomic seqs by species & processing hits later ##
     for(setting in c("restrictionenzyme", "freeze", "startwithin", "alignratiothreshold", "genomicpercentidentity", "clustersiteswithin", "keepmultihits")) {
-        setter <- extractFeature(sampleInfo,samplename=samplesToProcess,feature=setting); names(setter)<-NULL; setter<-unlist(setter)
+        setter <- extractFeature(sampleInfo,samplename=samplesToProcess,feature=setting)
+        names(setter) <- NULL
+        setter <- unlist(setter)
         assign(setting,setter)
     }
     
@@ -2475,13 +2501,8 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     pslFiles <- c()        
     for (f in unique(freeze)) {
         message("Blatting to: ",f)
-        # start the gfServer #
-        if(is.na(genomeIndices[f])) {
-            stop("No genome index file defined for freeze: ",f)
-        } 
-        startgfServer(host=host,port=port,seqDir=genomeIndices[f],waitTime=120)
-        
-        message("Getting sequences to BLAT")
+                
+        message("Getting sequences to BLAT")        
         # get sequences to blat #
         if (is.null(seqType)) {
             wanted <- names(restrictionenzyme[!grepl("FRAG",restrictionenzyme,ignore.case=TRUE)])
@@ -2504,12 +2525,8 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
             }
         }
         
-        # blat seqs #
-        pslFile <- blatSeqs(query=paste("processed",f,".*.fa$",sep=""), subject=genomeIndices[[f]], standaloneBlat=FALSE, host=host, port=port, parallel=parallel, gzipResults=TRUE)
-        
-        # stop the gfServer to conserve memory #
-        message("Kill gfServer.")        
-        stopgfServer(port=port)
+        # BLAT seqs #
+        pslFile <- blatSeqs(query=paste("processed",f,".*.fa$",sep=""), subject=genomeIndices[[f]], standaloneBlat=FALSE, host=host, port=port, parallel=parallel, gzipResults=TRUE)                
         
         message("Cleaning!")
         # add pslFiles for later use #
@@ -2522,8 +2539,8 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     ## read all hits and split by samples ##
     psl <- read.psl(pslFiles, bestScoring=TRUE, asRangedData=TRUE, removeFile=TRUE, parallel=FALSE)
     cleanit <- gc()
-    psl$setname<-sub("^(.+)-(.+)$","\\1",psl$qName)
-    psl <- split(psl,psl$setname)
+    psl$setname <- sub("^(.+)-(.+)$","\\1",psl$qName)
+    psl <- split(psl, psl$setname)
                 
     ## begin processing hits ##
     psl.hits <- foreach(x=iter(names(psl)),.inorder=TRUE,.export=c("psl", "sampleInfo", "startwithin", "alignratiothreshold", "genomicpercentidentity", "clustersiteswithin", "keepmultihits")) %dopar% {
