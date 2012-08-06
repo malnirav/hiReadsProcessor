@@ -830,7 +830,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 }
 
 #' Find the 5' primers and add results to SampleInfo object. 
-#' Given a SampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object.
+#' Given a sampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo object.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{decodeByBarcode}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
 #' @param alignWay method to utilize for trimming the primers. One of following: "slow" (Default), or "fast". Fast, uses vpatternMatch(), which is less accurate with indels and mismatches but much faster. Slow, uses pairwiseAlignment(), which is accurate with indels and mismatches but slower.
@@ -843,7 +843,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}
 #'
 #' @examples
 #' #findPrimers(sampleInfo,showStats=TRUE)
@@ -937,7 +937,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 }
 
 #' Find the 5' LTRs and add results to SampleInfo object. 
-#' Given a SampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object.
+#' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}}, which holds decoded and primed sequences for samples per sector/quadrant along with information of sample to LTR associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
@@ -949,7 +949,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}
 #'
 #' @examples
 #' #findLTRs(sampleInfo,showStats=TRUE)
@@ -1046,7 +1046,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 }
 
 #' Find the 3' linkers and add results to SampleInfo object. 
-#' Given a SampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object.
+#' Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
@@ -1058,7 +1058,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 #'
 #' @note If no linker matches are found with default options, then try doRC=TRUE. If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}
 #'
 #' @examples
 #' #findLinkers(sampleInfo,showStats=TRUE)
@@ -1328,7 +1328,7 @@ trimSeqs <- function(dnaSet,coords,side="middle",offBy=0) {
 }
 
 #' Get sectors for samples defined in the sampleInfo object.
-#' Given a sampleInfo object, the function gets the sectors for each samplename. This is an accessory function utilized by other functions of this package to aid sector retreival.
+#' Given a sampleInfo object, the function gets the sectors for each samplename. This is an accessory function utilized by other functions of this package to aid sector retrieval.
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
 #' @param sector a specific sector or vector of sectors if known ahead of time. Default is NULL, which extracts all sectors. 
@@ -2071,7 +2071,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
     
     if(!parallel) { registerDoSEQ() }
     
-    ## setup psl colums + classes
+    ## setup psl columns + classes
     cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", "qSize", "qStart", "qEnd", "tName", "tSize", "tStart", "tEnd", "blockCount", "blockSizes", "qStarts", "tStarts")
     cols.class <- c(rep("numeric",8),rep("character",2),rep("numeric",3),"character",rep("numeric",4),rep("character",3))
     
@@ -2316,6 +2316,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         res <- as.data.frame(as.matrix(findOverlaps(sites.rl,ignoreSelf=TRUE,ignoreRedundant=FALSE,select="all",maxgap=windowSize))) 
         
         # add accessory columns to dictate decision making!
+        # q = query, s = subject, val = value, freq = frequency of query/subject
         res$q.val <- start(sites.rl)[res$queryHits]; res$s.val <- start(sites.rl)[res$subjectHits]
         res$q.freq <- sites.rl$freq[res$queryHits]; res$s.freq <- sites.rl$freq[res$subjectHits]
         res$dist <- with(res,abs(q.val-s.val))
@@ -2329,7 +2330,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         res$maxFreq <- with(res,pmax(q.freq,s.freq))    
         maxes <- with(res,tapply(maxFreq,queryHits,max))
         res$ismaxFreq <- with(res,maxFreq==maxes[as.character(queryHits)])        
-        res <- orderBy(~-queryHits,res) ## VIP step...this is what merges high value to low value for ties in the hash stucture below!!!
+        res <- orderBy(~-queryHits,res) ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
         hash.df <- unique(subset(res,ismaxFreq)[,c("queryHits","val")])
         clustered <- structure(as.numeric(hash.df$val),names=as.character(hash.df$queryHits))
         rm(hash.df)
