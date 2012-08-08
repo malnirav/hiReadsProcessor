@@ -2152,6 +2152,14 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
         message(x)
         hits.temp <- read.delim(x, header=FALSE, col.names=cols, stringsAsFactors=FALSE, colClasses=cols.class)
         hits.temp$strand <- with(hits.temp,ifelse(tStart>tEnd,"-","+"))
+        # switch tStart & tEnd for cases where strand=='-' since it's reversed in blast8 format.
+        rows <- hits.temp$strand=='-'
+		tstarts <- hits.temp$tEnd[rows]
+		tends <- hits.temp$tStart[rows]
+		hits.temp$tStart[rows] <- tstarts
+		hits.temp$tEnd[rows] <- tends
+        rm("tstarts","tends","rows")
+        
         if(removeFile) { system(paste("rm", x)) }
         hits.temp
     }
