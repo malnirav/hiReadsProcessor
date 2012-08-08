@@ -2118,7 +2118,6 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
 #' Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
 #'
 #' @param files blast8 filename, or vector of filenames, or a pattern of files to import.
-#' @param bestScoring report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.
 #' @param asRangedData return a RangedData object instead of a dataframe. Default is TRUE. Saves memory!
 #' @param removeFile remove the blast8 file(s) after importing. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
@@ -2132,7 +2131,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
 #' @examples
 #' #read.blast8(files="processed.*.blast8$")
 #' #read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
-read.blast8 <- function(files=NULL, bestScoring=TRUE, asRangedData=FALSE, removeFile=TRUE, parallel=FALSE) {
+read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, parallel=FALSE) {
     if(is.null(files)) {
         stop("files parameter empty. Please supply a filename to be read.")
     }
@@ -2154,14 +2153,6 @@ read.blast8 <- function(files=NULL, bestScoring=TRUE, asRangedData=FALSE, remove
         hits.temp <- read.delim(x, header=FALSE, col.names=cols, stringsAsFactors=FALSE, colClasses=cols.class)
         hits.temp$strand <- with(hits.temp,ifelse(tStart>tEnd,"-","+"))
         if(removeFile) { system(paste("rm", x)) }
-        if(bestScoring) {  ## do round one of bestScore here to reduce file size          
-            hits.temp$score <- with(hits.temp,matches-misMatches-gaps)
-            hits.temp <- hits.temp[with(hits.temp, order(qName, -score)), ]
-            bestScore <- with(hits.temp,tapply(score,qName,max))
-            isBest <- with(hits.temp, score==bestScore[qName])
-            hits.temp <- hits.temp[isBest,]
-            rm("isBest","bestScore")
-        }
         hits.temp
     }
     hits <- unique(do.call(rbind, hits))
@@ -2172,15 +2163,6 @@ read.blast8 <- function(files=NULL, bestScoring=TRUE, asRangedData=FALSE, remove
 
     message("Ordering by qName and cherry picking!")
     hits <- orderBy(~qName,hits)
-    
-    if(bestScoring) { ## do round two of bestScore incase any got missed in round one                
-        hits$score <- with(hits,matches-misMatches-gaps)
-        hits <- hits[with(hits, order(qName, -score)), ]
-        bestScore <- with(hits,tapply(score,qName,max))
-        isBest <- with(hits, score==bestScore[qName])
-        hits <- hits[isBest,]
-        rm("isBest","bestScore")
-    }
     
     if(asRangedData) {
         hits <- pslToRangedData(hits, useTargetAsRef=TRUE)
