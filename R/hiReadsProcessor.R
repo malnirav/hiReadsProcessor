@@ -1818,8 +1818,8 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
        do.call(RangedDataList,sapply(names(dnaSetList[[x]]), function(y) {
             if(length(dnaSetList[[x]][[y]])>0) {
                 message("BLATing ",y)
-                pslFiles <- blatSeqs(query=dnaSetList[[x]][[y]], ...)
-                read.psl(pslFiles, bestScoring=TRUE, asRangedData=TRUE, removeFile=TRUE, parallel=FALSE)
+                outFiles <- blatSeqs(query=dnaSetList[[x]][[y]], ...)
+                read.psl(outFiles, bestScoring=TRUE, asRangedData=TRUE, removeFile=TRUE, parallel=FALSE)
             }
         }))
     })
@@ -1903,16 +1903,16 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #' @param host name of the machine running gfServer. Default is 'localhost' and only used when standaloneBlat=FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param gzipResults gzip the output files? Default is TRUE.
-#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for output file format (psl) and nohead. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70% identity.
+#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70% identity.
 #'
 #' @return a character vector of psl filenames.
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}
 #'
 #' @examples
-#' #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna"))
+#' #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
 #' #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
-blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna")) {
+blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl")) {
 
     ## get all BLAT options from the system for comparison to blatParameters later
     suppressWarnings(blatOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", "\\1", grep("\\s+-.+=", system("blat",intern=TRUE), value=TRUE))))
@@ -2000,13 +2000,13 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, h
         blatOpts <- blatParameters[names(blatParameters) %in% blatOpts]
         stopifnot(length(subjectFile)==1)
         filenames <- foreach(x=iter(queryFiles),.inorder=FALSE,.export=c("blatOpts","subjectFile","gzipResults")) %dopar% {
-            filename.psl <- paste(x,"psl",sep=".")
-            cmd <- paste("blat", paste(paste("-",names(blatOpts),sep=""), blatOpts, collapse=" ", sep="="), "-noHead", subjectFile, x, filename.psl)
+            filename.out <- paste(x,blatOpts["out"],sep=".")
+            cmd <- paste("blat", paste(paste("-",names(blatOpts),sep=""), blatOpts, collapse=" ", sep="="), "-noHead", subjectFile, x, filename.out)
             message(cmd)
             system(cmd)
             if(grepl("\\.tempyQ$",x)) { system(paste("rm",x)) } ## no need to save splitted files!
-            if(gzipResults) { system(paste("gzip",filename.psl)); filename.psl <- paste(filename.psl,"gz",sep=".") }
-            filename.psl
+            if(gzipResults) { system(paste("gzip",filename.out)); filename.out <- paste(filename.out,"gz",sep=".") }
+            filename.out
         }
         if(grepl("\\.tempyS$",subjectFile)) { system(paste("rm",subjectFile)) }
     } else {
@@ -2021,13 +2021,13 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, h
         gfClientOpts <- blatParameters[names(blatParameters) %in% gfClientOpts]
         stopifnot(length(subjectFile)>0)
         filenames <- foreach(x=iter(queryFiles), .inorder=FALSE, .export=c("gfClientOpts","host","port","indexFileDir","gzipResults")) %dopar% {
-            filename.psl <- paste(x,"psl",sep=".")
-            cmd <- paste("gfClient",paste(paste("-",names(gfClientOpts),sep=""), gfClientOpts, collapse=" ", sep="="), "-nohead", host, port, "/", x, filename.psl)
+            filename.out <- paste(x,gfClientOpts["out"],sep=".")
+            cmd <- paste("gfClient",paste(paste("-",names(gfClientOpts),sep=""), gfClientOpts, collapse=" ", sep="="), "-nohead", host, port, "/", x, filename.out)
             message(cmd)
             system(cmd)
             if(grepl("\\.tempyQ$",x)) { system(paste("rm",x)) } ## no need to save splitted files!
-            if(gzipResults) { system(paste("gzip",filename.psl)); filename.psl <- paste(filename.psl,"gz",sep=".") }
-            filename.psl
+            if(gzipResults) { system(paste("gzip",filename.out)); filename.out <- paste(filename.out,"gz",sep=".") }
+            filename.out
         }  
         
         ## only kill if the gfServer was started from within this function ## 
@@ -2041,7 +2041,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, h
 }
 
 #' Read psl file(s) outputted by BLAT
-#' Given filename(s), the function reads the psl file as a data frame and performs basic score filtering if indicated.
+#' Given filename(s), the function reads the psl file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
 #'
 #' @param pslFile psl filename, or vector of filenames, or a pattern of files to import.
 #' @param bestScoring report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.
@@ -2100,6 +2100,81 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
     
     if(bestScoring) { ## do round two of bestScore incase any got missed in round one                
         hits$score <- with(hits,matches-misMatches-qBaseInsert-tBaseInsert)
+        hits <- hits[with(hits, order(qName, -score)), ]
+        bestScore <- with(hits,tapply(score,qName,max))
+        isBest <- with(hits, score==bestScore[qName])
+        hits <- hits[isBest,]
+        rm("isBest","bestScore")
+    }
+    
+    if(asRangedData) {
+        hits <- pslToRangedData(hits, useTargetAsRef=TRUE)
+    }
+    
+    return(hits)
+}
+
+#' Read blast8 file(s) outputted by BLAT
+#' Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
+#'
+#' @param files blast8 filename, or vector of filenames, or a pattern of files to import.
+#' @param bestScoring report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.
+#' @param asRangedData return a RangedData object instead of a dataframe. Default is TRUE. Saves memory!
+#' @param removeFile remove the blast8 file(s) after importing. Default is FALSE.
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#'
+#' @return a dataframe or RangedData object reflecting blast8 file type.
+#'
+#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
+#'
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}
+#'
+#' @examples
+#' #read.blast8(files="processed.*.blast8$")
+#' #read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
+read.blast8 <- function(files=NULL, bestScoring=TRUE, asRangedData=FALSE, removeFile=TRUE, parallel=FALSE) {
+    if(is.null(files)) {
+        stop("files parameter empty. Please supply a filename to be read.")
+    }
+    
+    if (any(grepl("\\*",files))) {
+        files <- list.files(path=dirname(files), pattern=basename(files), full.names=TRUE)  ## vector of filenames          
+    }
+    
+    if(length(files)==0) { stop("No file(s) found with given paramter in files:",files) }
+    
+    if(!parallel) { registerDoSEQ() }
+    
+    ## setup blast8 columns + classes
+    cols <- c("qName", "tName", "identity", "span", "misMatches", "gaps", "qStart", "qEnd", "tStart", "tEnd", "evalue", "bitscore")
+	cols.class<-c(rep("character",2),rep("numeric",10))
+    
+    hits <- foreach(x=iter(files), .inorder=FALSE, .export=c("cols","cols.class","bestScoring","removeFile")) %dopar% {
+        message(x)
+        hits.temp <- read.delim(x, header=FALSE, col.names=cols, stringsAsFactors=FALSE, colClasses=cols.class)
+        hits.temp$strand <- with(hits.temp,ifelse(tStart>tEnd,"-","+"))
+        if(removeFile) { system(paste("rm", x)) }
+        if(bestScoring) {  ## do round one of bestScore here to reduce file size          
+            hits.temp$score <- with(hits.temp,matches-misMatches-gaps)
+            hits.temp <- hits.temp[with(hits.temp, order(qName, -score)), ]
+            bestScore <- with(hits.temp,tapply(score,qName,max))
+            isBest <- with(hits.temp, score==bestScore[qName])
+            hits.temp <- hits.temp[isBest,]
+            rm("isBest","bestScore")
+        }
+        hits.temp
+    }
+    hits <- unique(do.call(rbind, hits))
+               
+    if(nrow(hits)==0) {
+        stop("No hits found")
+    }
+
+    message("Ordering by qName and cherry picking!")
+    hits <- orderBy(~qName,hits)
+    
+    if(bestScoring) { ## do round two of bestScore incase any got missed in round one                
+        hits$score <- with(hits,matches-misMatches-gaps)
         hits <- hits[with(hits, order(qName, -score)), ]
         bestScore <- with(hits,tapply(score,qName,max))
         isBest <- with(hits, score==bestScore[qName])
