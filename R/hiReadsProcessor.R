@@ -464,7 +464,7 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
 #'
 #' @return IRanges object with starts, stops, and names of the aligned sequences. If returnLowScored or returnUnmatched = T, then a CompressedIRangesList where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed to match qualityThreshold hits, and x[["Absent"]] has the hits where the aligned bit is <=10% match to the patternSeq.
 #'
-#' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}
+#' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}
 #'
 #' @examples
 #' #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
@@ -705,7 +705,7 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
 #'
 #' @return IRanges object with starts, stops, and names of the aligned sequences.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}
 #'
 #' @examples
 #' #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
@@ -830,10 +830,10 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 }
 
 #' Find the 5' primers and add results to SampleInfo object. 
-#' Given a sampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo object.
+#' Given a sampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of primer portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{decodeByBarcode}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
-#' @param alignWay method to utilize for trimming the primers. One of following: "slow" (Default), or "fast". Fast, uses vpatternMatch(), which is less accurate with indels and mismatches but much faster. Slow, uses pairwiseAlignment(), which is accurate with indels and mismatches but slower.
+#' @param alignWay method to utilize for detecting the primers. One of following: "slow" (Default), or "fast". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern/primer. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
@@ -843,7 +843,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 #'
 #' @examples
 #' #findPrimers(sampleInfo,showStats=TRUE)
@@ -937,7 +937,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 }
 
 #' Find the 5' LTRs and add results to SampleInfo object. 
-#' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object.
+#' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}}, which holds decoded and primed sequences for samples per sector/quadrant along with information of sample to LTR associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
@@ -949,7 +949,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 #'
 #' @examples
 #' #findLTRs(sampleInfo,showStats=TRUE)
@@ -1046,7 +1046,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 }
 
 #' Find the 3' linkers and add results to SampleInfo object. 
-#' Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object.
+#' Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of linker portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
@@ -1058,7 +1058,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 #'
 #' @note If no linker matches are found with default options, then try doRC=TRUE. If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{findAndTrimSeq}}
 #'
 #' @examples
 #' #findLinkers(sampleInfo,showStats=TRUE)
@@ -1193,7 +1193,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{findAndTrimSeq}}
 #'
 #' @examples
 #' #troubleshootLinkers(sampleInfo,showStats=TRUE)
@@ -1266,6 +1266,45 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThresh
     results$CorrectLinker <- with(results,sampleLinkers[as.character(samplename)]==as.character(linkerSeq))
     results$CorrectSample <- with(results,linkersample[as.character(linkerSeq)])
     return(results)
+}
+
+#' Find and trim the pattern sequence from the subject. 
+#' This function facilitates finding and trimming of the pattern sequence from a collection of subject sequences. The trimming is dictated by side parameter. For more information on the trimming process see the 'side' parameter documentation in \code{\link{trimSeqs}}. For information regarding the pattern alignment see the documentation for \code{\link{pairwiseAlignSeqs}}.
+#'
+#' @param patternSeq DNAString object or a sequence containing the query sequence to search.
+#' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern.
+#' @param side which side of the sequence to perform the search & trimming: left, right or middle. Default is 'left'.
+#' @param offBy integer value dictating if the trimming base should be offset by X number of bases. Default is 0.
+#' @param alignWay method to utilize for detecting the primers. One of following: "slow" (Default), or "fast". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower.
+#' @param ... parameters to be passed to \code{\link{pairwiseAlignment}} or \code{\link{vpairwiseAlignSeqs}} depending on which method is defined in 'alignWay' parameter.
+#'
+#' @return DNAStringSet object with pattern sequence removed from the subject sequences. 
+#'
+#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
+#'
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}
+#'
+#' @examples
+#' findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
+findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, alignWay = "slow", ...) {
+    
+    ## give names to subjectSeqs if not there for matching purpose in trimSeqs()
+    removeNamesAfter <- FALSE
+    if(is.null(names(subjectSeqs))) {
+    	removeNamesAfter <- TRUE
+        names(subjectSeqs) <- paste("read",1:length(subjectSeqs))
+    }
+
+	coords <- switch(alignWay,
+		fast = vpairwiseAlignSeqs(subjectSeqs, patternSeq, side, ...),
+		slow = pairwiseAlignSeqs(subjectSeqs, patternSeq, side, ...)
+	)
+		
+	res <- trimSeqs(subjectSeqs, coords, side, offBy)
+	if(removeNamesAfter) {
+		names(res) <- NULL
+	}
+	res
 }
 
 #' Trim sequences from a specific side.
