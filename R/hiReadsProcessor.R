@@ -460,7 +460,7 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
 #' @param returnLowScored return sequences which had quality score less than the defined qualityThreshold. Default is FALSE.
 #' @param ... extra parameters for \code{\link{pairwiseAlignment}}
 #'
-#' @note For qualityThreshold, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2. Gaps and mismatches are weighed equally with value of -1. If qualityThreshold is 1, then its is a full match, if 0, then any match is accepted which is useful in searching linkers at 3' end.
+#' @note For qualityThreshold, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2. Gaps and mismatches are weighed equally with value of -1. If qualityThreshold is 1, then its is a full match, if 0, then any match is accepted which is useful in searching linker sequences at 3' end. Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST!
 #'
 #' @return IRanges object with starts, stops, and names of the aligned sequences. If returnLowScored or returnUnmatched = T, then a CompressedIRangesList where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed to match qualityThreshold hits, and x[["Absent"]] has the hits where the aligned bit is <=10% match to the patternSeq.
 #'
@@ -562,7 +562,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qu
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param ... extra parameters for \code{\link{pairwiseAlignment}}
 #'
-#' @note For qualityThreshold1 & qualityThreshold2, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2. Gaps and mismatches are weighed equally with value of -1. If qualityThreshold is 1, then its is a full match, if 0, then any match is accepted which is useful in searching linkers at 3' end.
+#' @note For qualityThreshold1 & qualityThreshold2, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2. Gaps and mismatches are weighed equally with value of -1. If qualityThreshold is 1, then its is a full match, if 0, then any match is accepted which is useful in searching linkers at 3' end. Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST!
 #'
 #' @return A CompressedIRangesList of length two, where x[["hits"]] is hits covering the entire patternSeq, and x[["primerIDs"]] is the potential primerID region. If returnUnmatched = T, then x[["Absent"]] is appended which includes reads not matching the first part of patternSeq. If returnRejected=TRUE, then x[["Rejected"]] includes reads that only matched one part of patternSeq or places where no primerID was found in between two part of patternSeq, and x[["RejectedprimerIDs"]] includes primerIDs that didn't match the correct length. If doAnchored=TRUE, then x[["unAnchoredprimerIDs"]] includes reads that didn't match the base before and after primer ID on patternSeq.
 #'
@@ -702,6 +702,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
 #' @param bufferBases use x number of bases in addition to patternSeq length to perform the search. Beneficial in cases where the pattern has homopolymers or indels compared to the subject. Default is 5. Doesn't apply when side='middle'.
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
 #' @param ... extra parameters for \code{\link{vmatchPattern}}
+#'
+#' @note Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST!
 #'
 #' @return IRanges object with starts, stops, and names of the aligned sequences.
 #'
