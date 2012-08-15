@@ -1,7 +1,6 @@
 \name{read.SeqFolder}
 \alias{read.SeqFolder}
-\title{Read contents of a sequencing folder and make a SimpleList object,
-Given a sequencing folder path, sample information file path, and sequence file extension pattern, the function returns a list of variables required to process the data. The function also calls \code{\link{read.sampleInfo}} which reads in sample processing metadata and formats it if needed.}
+\title{Read contents of a sequencing folder and make a SimpleList object}
 \usage{
   read.SeqFolder(SequencingFolderPath = NULL,
     sampleInfoFilePath = NULL,
@@ -34,13 +33,12 @@ Given a sequencing folder path, sample information file path, and sequence file 
   process and decode the data.
 }
 \description{
-  Read contents of a sequencing folder and make a
-  SimpleList object, Given a sequencing folder path, sample
-  information file path, and sequence file extension
-  pattern, the function returns a list of variables
-  required to process the data. The function also calls
-  \code{\link{read.sampleInfo}} which reads in sample
-  processing metadata and formats it if needed.
+  Given a sequencing folder path, sample information file
+  path, and sequence file extension pattern, the function
+  returns a list of variables required to process the data.
+  The function also calls \code{\link{read.sampleInfo}}
+  which reads in sample processing metadata and formats it
+  if needed.
 }
 \note{
   one must make sure that each sequencing file has sector

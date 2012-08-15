@@ -1,4 +1,5 @@
-#' Read contents of a sequencing folder and make a SimpleList object,
+#' Read contents of a sequencing folder and make a SimpleList object
+#'
 #' Given a sequencing folder path, sample information file path, and sequence file extension pattern, the function returns a list of variables required to process the data. The function also calls \code{\link{read.sampleInfo}} which reads in sample processing metadata and formats it if needed.
 #'
 #' @param SequencingFolderPath full or relative path to the sequencing folder
@@ -55,6 +56,7 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, s
 }
 
 #' Read a sample information file and format appropriate metadata.
+#'
 #' Given a sample information file the function checks if it includes required information to process samples present on each quadrant/lane. The function also adds other columns required for processing with default values if not already defined ahead of time.
 #'
 #' @param sampleInfoFilePath full or relative path to the sample information file, which holds samples to quadrant/lane associations along with other metadata required to trim sequences or process it. 
@@ -201,6 +203,7 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive
 }
 
 #' Removes duplicate sequences from DNAStringSet object.
+#'
 #' Given a DNAStringSet object, the function dereplicates reads and adds counts=X to the definition line to indicate replication. 
 #'
 #' @param dnaSet DNAStringSet object to dereplicate. 
@@ -230,6 +233,7 @@ dereplicateReads <- function(dnaSet) {
 }
 
 #' Replicate sequences from DNAStringSet object using counts identifier or vector
+#'
 #' Given a DNAStringSet object, the function replicates reads using counts=X marker at the end of definition line. 
 #'
 #' @param dnaSet DNAStringSet object to replicate. 
@@ -264,7 +268,8 @@ replicateReads <- function(dnaSet,counts=NULL) {
     return(dnaSet)
 }
 
-#' Remove sequences with ambiguious nucleotides.
+#' Remove sequences with ambiguous nucleotides.
+#'
 #' Given a DNAStringSet object, the function removes any reads that has either repeating or total Ns which is greater than to maxNs threshold
 #'
 #' @param dnaSet DNAStringSet object to evaluate. 
@@ -289,6 +294,7 @@ removeReadsWithNs <- function(dnaSet,maxNs=5,consecutive=TRUE) {
 }
 
 #' Split DNAStringSet object using first X number of bases defined by a vector.
+#'
 #' Given barcodes/MID to sample association vector and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{decodeByBarcode}}
 #'
 #' @param barcodesSample a character vector of barcodes to sample name associations. Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)
@@ -365,6 +371,7 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
 }
 
 #' Demultiplex reads by their barcodes
+#'
 #' Given a sample information object, the function reads in the raw fasta/fastq file, demultiplexes reads by their barcodes, and appends it back to the sampleInfo object. Calls \code{\link{splitByBarcode}} to perform the actual splitting. If supplied with a character vector and reads themselves, the function behaves a bit differently. See the examples.
 #'
 #' @param sampleInfo sample information SimpleList object created using \code{\link{read.sampleInfo}}, which holds barcodes and sample names per sector/quadrant or a character vector of barcodes to sample name associations. Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)
@@ -454,6 +461,7 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
 }
 
 #' Align a pattern to variable length target sequences.
+#'
 #' Align a fixed length pattern sequence to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended.
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.
@@ -557,6 +565,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qu
 }
 
 #' Align a pattern with PrimerID to variable length target sequences.
+#'
 #' Align a fixed length pattern sequence containing primerID to variable length subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patterSeq against subjectSeqs. The search is broken up into as many pieces +1 as there are primerID and then compared against subjectSeqs. For example, patternSeq="AGCATCAGCANNNNNNNNNACGATCTACGCC" will launch two search jobs one per either side of Ns. For each search, qualityThreshold is used to filter out candidate alignments and the area in between is chosen to be the primerID. This strategy is benefical because of Indels introduced through homopolymer errors. Most likely the length of primerID(s) wont the same as you expected!
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. 
@@ -701,6 +710,7 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
 }
 
 #' Align a pattern to variable length target sequences.
+#'
 #' Align a fixed length pattern sequence to subject sequences using \code{\link{vmatchPattern}}.
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.
@@ -803,6 +813,7 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", q
 }
 
 #' Test if pattern aligns better in +/- orientation.
+#'
 #' Given a fixed length pattern sequence and variable length subject sequences, the function roughly finds which orientation of pattern yields the most hits. The function doing the heavylifting is \code{\link{vcountPattern}}. This is an accessory function used in function listed under See Also section below. 
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. 
@@ -843,6 +854,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 }
 
 #' Find the 5' primers and add results to SampleInfo object. 
+#'
 #' Given a sampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of primer portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{decodeByBarcode}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
@@ -951,6 +963,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 }
 
 #' Find the 5' LTRs and add results to SampleInfo object. 
+#'
 #' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}}, which holds decoded and primed sequences for samples per sector/quadrant along with information of sample to LTR associations.
@@ -1061,6 +1074,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 }
 
 #' Find the 3' linkers and add results to SampleInfo object. 
+#'
 #' Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of linker portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
@@ -1195,6 +1209,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
 }
 
 #' Compare LTRed sequences to all linkers. 
+#'
 #' Given a SampleInfo object, the function compares LTRed sequences from each sample per sector to all the linker sequences present in the run. The output is a summary table of counts of good matches to all the linkers per sample. 
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
@@ -1286,6 +1301,7 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThresh
 }
 
 #' Find and trim the pattern sequence from the subject. 
+#'
 #' This function facilitates finding and trimming of the pattern sequence from a collection of subject sequences. The trimming is dictated by side parameter. For more information on the trimming process see the 'side' parameter documentation in \code{\link{trimSeqs}}. For information regarding the pattern alignment see the documentation for \code{\link{pairwiseAlignSeqs}}.
 #'
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search.
@@ -1326,6 +1342,7 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, al
 }
 
 #' Trim sequences from a specific side.
+#'
 #' This function trims a DNAStringSet object using the ranges from left, right, or middle of the sequence. This is a helper function utilized in \code{\link{primerIDAlignSeqs}} and \code{\link{extractSeqs}}. If dnaSet and coords are not the same length, then they are required to have a names attribute to perform the matched trimming. 
 #'
 #' @param dnaSet DNAStringSet object containing sequences to be trimmed.
@@ -1386,6 +1403,7 @@ trimSeqs <- function(dnaSet,coords,side="middle",offBy=0) {
 }
 
 #' Get sectors for samples defined in the sampleInfo object.
+#'
 #' Given a sampleInfo object, the function gets the sectors for each samplename. This is an accessory function utilized by other functions of this package to aid sector retrieval.
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
@@ -1431,6 +1449,7 @@ getSectorsForSamples <- function(sampleInfo,sector=NULL,samplename=NULL,returnDf
 }
 
 #' Extract sequences for a feature in the sampleInfo object.
+#'
 #' Given a sampleInfo object, the function extracts sequences for a defined feature.
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
@@ -1570,6 +1589,7 @@ extractSeqs <- function(sampleInfo,sector=NULL,samplename=NULL,feature="genomic"
 }
 
 #' Extract a specific feature/attribute of the sampleInfo object.
+#'
 #' Given a sampleInfo object, the function extracts a defined feature(s) for given sample or sector.
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
@@ -1618,6 +1638,7 @@ extractFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL) 
 }
 
 #' Add a specific feature/attribute to the sampleInfo object.
+#'
 #' Given a sampleInfo object, the function adds a new feature for the given samples & sectors.
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
@@ -1667,6 +1688,7 @@ addFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL,value
 }
 
 #' Read fasta/fastq given the path or sampleInfo object.
+#'
 #' Given a sequence reads file path, the function returns a DNAStringSet object.
 #'
 #' @param seqFilePath a path to fasta/fastq reads file or a sampleInfo object returned by \code{\link{read.SeqFolder}}
@@ -1697,6 +1719,7 @@ read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
 }
 
 #' Write a fasta file per sample in parallel
+#'
 #' Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the function writes a fasta file for each sample as defined in filePath parameter.
 #'
 #' @param dnaSet listed DNAStringSet object containing sequences to be written.
@@ -1736,6 +1759,7 @@ write.listedDNAStringSet <- function(dnaSet,filePath=".",filePrefix="processed",
 }
 
 #' Simple summary of a sampleInfo object.
+#'
 #' Give a simple summary of major attributes in sampleInfo/SimpleList object.
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
@@ -1763,6 +1787,7 @@ summary.simple <- function(sampleInfo) {
 }
 
 #' Elegant summary of a sampleInfo object.
+#'
 #' Give an elegant summary of all the attributes in sampleInfo/SimpleList object.
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
@@ -1809,6 +1834,7 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 }
 
 #' Start a gfServer instance
+#'
 #' Start a gfServer indexed reference genome to align batch of sequences using BLAT gfServer/gfClient protocol.
 #'
 #' @param host name of the machine to run gfServer on. Default: localhost
@@ -1845,6 +1871,7 @@ startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts
 }
 
 #' Stop a gfServer instance
+#'
 #' Take down the gfServer instance.
 #'
 #' @param host name of the machine running gfServer. Default: localhost
@@ -1867,6 +1894,7 @@ stopgfServer <- function(host="localhost", port=NULL) {
 }
 
 #' Align a listed DNAStringSet to a reference using gfClient or standalone BLAT.
+#'
 #' Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and get a psl file as RangedData object. This function heavily relies on defaults of \code{\link{blatSeqs}}.
 #'
 #' @param dnaSetList DNAStringSet object containing sequences to be aligned against the reference.
@@ -1893,6 +1921,7 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
  }
 
 #' Convert psl dataframe to RangedData
+#'
 #' Convert psl dataframe to RangedData object using either the query or target as the reference data column. 
 #'
 #' @param x dataframe reflecting psl format
@@ -1917,6 +1946,7 @@ pslToRangedData <- function(x, useTargetAsRef=TRUE) {
 }
 
 #' Split DNA sequences into smaller files.
+#'
 #' Given a vector of sequences or DNAStringSet or a FASTA filename, the function splits it into smaller pieces as denoted by totalFiles parameter.
 #'
 #' @param x a DNAStringSet object, or a FASTA filename.
@@ -1963,6 +1993,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 }
 
 #' Align sequences using BLAT.
+#'
 #' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for alignment against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution. 
 #'
 #' @param query an object of DNAStringSet, a character vector, or a path/pattern of fasta files to BLAT. Default is NULL.
@@ -2111,6 +2142,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, h
 }
 
 #' Read psl file(s) outputted by BLAT
+#'
 #' Given filename(s), the function reads the psl file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
 #'
 #' @param pslFile psl filename, or vector of filenames, or a pattern of files to import.
@@ -2186,6 +2218,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
 }
 
 #' Read blast8 file(s) outputted by BLAT
+#'
 #' Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
 #'
 #' @param files blast8 filename, or vector of filenames, or a pattern of files to import.
@@ -2251,7 +2284,8 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
     return(hits)
 }
 
-#' Obtain integration sites from BLAT output.
+#' Obtain integration sites from BLAT output
+#'
 #' Given a RangedData object from \code{\link{read.psl}}, the function uses specified filtering parameters to obtain integration sites and maintain sequence attrition. The function will remove any non-best scoring alignments from the object if not already filtered apriori.
 #'
 #' @param psl.rd a RangedData object reflecting psl format where tName is the spaces.
@@ -2311,7 +2345,8 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
     return(psl.rd)
 }
 
-#' Cluster values within a window based on their frequency given discrete factors. 
+#' Cluster values within a window based on their frequency given discrete factors
+#'
 #' Given a group of discrete factors (i.e. position ids) and integer values, the function tries of correct/cluster the integer values based on their frequency in a defined windowsize.
 #'
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined. 
@@ -2498,7 +2533,8 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
     return(sites)
 }
 
-#' Make OTUs of discrete positions grouped by reads. 
+#' Make OTUs of discrete positions grouped by reads
+#'
 #' Given a group of discrete positions per read/clone, the function tries to yield a unique OTU ID for the collection based on overlap of discrete positions to other reads/clones by grouping. This is mainly useful when each readID has many posID which needs to be considered as one single group of sites.
 #'
 #' @param posID a vector of discrete positions, i.e. Chr,strand,Position.
@@ -2585,6 +2621,7 @@ otuSites <- function(posID=NULL,readID=NULL,grouping=NULL,psl.rd=NULL) {
 }
 
 #' Find the integration sites and add results to SampleInfo object. 
+#'
 #' Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which BLATs, parses PSL files, finds best hit per read per sample, cluster sites, and assign OTU IDs. It calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered sequences for samples per sector/quadrant along with metadata.

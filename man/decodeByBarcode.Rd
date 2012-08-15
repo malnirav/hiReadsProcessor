@@ -1,7 +1,6 @@
 \name{decodeByBarcode}
 \alias{decodeByBarcode}
-\title{Demultiplex reads by their barcodes
-Given a sample information object, the function reads in the raw fasta/fastq file, demultiplexes reads by their barcodes, and appends it back to the sampleInfo object. Calls \code{\link{splitByBarcode}} to perform the actual splitting. If supplied with a character vector and reads themselves, the function behaves a bit differently. See the examples.}
+\title{Demultiplex reads by their barcodes}
 \usage{
   decodeByBarcode(sampleInfo, sector = NULL, dnaSet = NULL,
     showStats = FALSE, returnUnmatched = FALSE,
@@ -47,11 +46,10 @@ Given a sample information object, the function reads in the raw fasta/fastq fil
   unmatched sequences.
 }
 \description{
-  Demultiplex reads by their barcodes Given a sample
-  information object, the function reads in the raw
-  fasta/fastq file, demultiplexes reads by their barcodes,
-  and appends it back to the sampleInfo object. Calls
-  \code{\link{splitByBarcode}} to perform the actual
+  Given a sample information object, the function reads in
+  the raw fasta/fastq file, demultiplexes reads by their
+  barcodes, and appends it back to the sampleInfo object.
+  Calls \code{\link{splitByBarcode}} to perform the actual
   splitting. If supplied with a character vector and reads
   themselves, the function behaves a bit differently. See
   the examples.

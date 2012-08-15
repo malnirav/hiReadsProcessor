@@ -1,7 +1,6 @@
 \name{findPrimers}
 \alias{findPrimers}
-\title{Find the 5' primers and add results to SampleInfo object.
-Given a sampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of primer portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.}
+\title{Find the 5' primers and add results to SampleInfo object.}
 \usage{
   findPrimers(sampleInfo, alignWay = "slow",
     showStats = FALSE, doRC = FALSE, parallel = TRUE,
@@ -44,7 +43,6 @@ Given a sampleInfo object, the function finds 5' primers for each sample per sec
   sample. New data attributes include: primed
 }
 \description{
-  Find the 5' primers and add results to SampleInfo object.
   Given a sampleInfo object, the function finds 5' primers
   for each sample per sector and adds the results back to
   the object. This is a specialized function which depends

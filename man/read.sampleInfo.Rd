@@ -1,7 +1,6 @@
 \name{read.sampleInfo}
 \alias{read.sampleInfo}
-\title{Read a sample information file and format appropriate metadata.
-Given a sample information file the function checks if it includes required information to process samples present on each quadrant/lane. The function also adds other columns required for processing with default values if not already defined ahead of time.}
+\title{Read a sample information file and format appropriate metadata.}
 \usage{
   read.sampleInfo(sampleInfoPath = NULL,
     splitBySector = TRUE, interactive = TRUE)
@@ -25,12 +24,11 @@ Given a sample information file the function checks if it includes required info
   else a dataframe.
 }
 \description{
-  Read a sample information file and format appropriate
-  metadata. Given a sample information file the function
-  checks if it includes required information to process
-  samples present on each quadrant/lane. The function also
-  adds other columns required for processing with default
-  values if not already defined ahead of time.
+  Given a sample information file the function checks if it
+  includes required information to process samples present
+  on each quadrant/lane. The function also adds other
+  columns required for processing with default values if
+  not already defined ahead of time.
 }
 \note{
   Required Column Description: sector region/quadrant of

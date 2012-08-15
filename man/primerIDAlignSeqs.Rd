@@ -1,7 +1,6 @@
 \name{primerIDAlignSeqs}
 \alias{primerIDAlignSeqs}
-\title{Align a pattern with PrimerID to variable length target sequences.
-Align a fixed length pattern sequence containing primerID to variable length subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patterSeq against subjectSeqs. The search is broken up into as many pieces +1 as there are primerID and then compared against subjectSeqs. For example, patternSeq="AGCATCAGCANNNNNNNNNACGATCTACGCC" will launch two search jobs one per either side of Ns. For each search, qualityThreshold is used to filter out candidate alignments and the area in between is chosen to be the primerID. This strategy is benefical because of Indels introduced through homopolymer errors. Most likely the length of primerID(s) wont the same as you expected!}
+\title{Align a pattern with PrimerID to variable length target sequences.}
 \usage{
   primerIDAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
     qualityThreshold1 = 0.75, qualityThreshold2 = 0.5,
@@ -60,10 +59,9 @@ Align a fixed length pattern sequence containing primerID to variable length sub
   ID on patternSeq.
 }
 \description{
-  Align a pattern with PrimerID to variable length target
-  sequences. Align a fixed length pattern sequence
-  containing primerID to variable length subject sequences
-  using \code{\link{pairwiseAlignment}}. This function uses
+  Align a fixed length pattern sequence containing primerID
+  to variable length subject sequences using
+  \code{\link{pairwiseAlignment}}. This function uses
   default of type="overlap", gapOpening=-1, and
   gapExtension=-1 to align the patterSeq against
   subjectSeqs. The search is broken up into as many pieces

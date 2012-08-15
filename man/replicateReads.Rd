@@ -1,7 +1,6 @@
 \name{replicateReads}
 \alias{replicateReads}
-\title{Replicate sequences from DNAStringSet object using counts identifier or vector
-Given a DNAStringSet object, the function replicates reads using counts=X marker at the end of definition line.}
+\title{Replicate sequences from DNAStringSet object using counts identifier or vector}
 \usage{
   replicateReads(dnaSet, counts = NULL)
 }
@@ -17,10 +16,9 @@ Given a DNAStringSet object, the function replicates reads using counts=X marker
   DNAStringSet object.
 }
 \description{
-  Replicate sequences from DNAStringSet object using counts
-  identifier or vector Given a DNAStringSet object, the
-  function replicates reads using counts=X marker at the
-  end of definition line.
+  Given a DNAStringSet object, the function replicates
+  reads using counts=X marker at the end of definition
+  line.
 }
 \examples{
 \dontrun{

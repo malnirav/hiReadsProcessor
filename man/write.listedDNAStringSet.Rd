@@ -1,7 +1,6 @@
 \name{write.listedDNAStringSet}
 \alias{write.listedDNAStringSet}
-\title{Write a fasta file per sample in parallel
-Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the function writes a fasta file for each sample as defined in filePath parameter.}
+\title{Write a fasta file per sample in parallel}
 \usage{
   write.listedDNAStringSet(dnaSet, filePath = ".",
     filePrefix = "processed", prependSamplenames = TRUE,
@@ -29,8 +28,7 @@ Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the fu
   \code{\link{registerDoSEQ()}}.}
 }
 \description{
-  Write a fasta file per sample in parallel Given a listed
-  DNAStringSet object return from
+  Given a listed DNAStringSet object return from
   \code{\link{extractSeqs}}, the function writes a fasta
   file for each sample as defined in filePath parameter.
 }

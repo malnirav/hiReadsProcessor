@@ -1,7 +1,6 @@
 \name{extractSeqs}
 \alias{extractSeqs}
-\title{Extract sequences for a feature in the sampleInfo object.
-Given a sampleInfo object, the function extracts sequences for a defined feature.}
+\title{Extract sequences for a feature in the sampleInfo object.}
 \usage{
   extractSeqs(sampleInfo, sector = NULL, samplename = NULL,
     feature = "genomic", trim = TRUE, minReadLength = 1,
@@ -53,7 +52,6 @@ Given a sampleInfo object, the function extracts sequences for a defined feature
   sample.
 }
 \description{
-  Extract sequences for a feature in the sampleInfo object.
   Given a sampleInfo object, the function extracts
   sequences for a defined feature.
 }

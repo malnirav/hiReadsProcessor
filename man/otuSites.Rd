@@ -1,7 +1,6 @@
 \name{otuSites}
 \alias{otuSites}
-\title{Make OTUs of discrete positions grouped by reads.
-Given a group of discrete positions per read/clone, the function tries to yield a unique OTU ID for the collection based on overlap of discrete positions to other reads/clones by grouping. This is mainly useful when each readID has many posID which needs to be considered as one single group of sites.}
+\title{Make OTUs of discrete positions grouped by reads}
 \usage{
   otuSites(posID = NULL, readID = NULL, grouping = NULL,
     psl.rd = NULL)
@@ -26,13 +25,12 @@ Given a group of discrete positions per read/clone, the function tries to yield 
   and the otuID column appended at the end.
 }
 \description{
-  Make OTUs of discrete positions grouped by reads. Given a
-  group of discrete positions per read/clone, the function
-  tries to yield a unique OTU ID for the collection based
-  on overlap of discrete positions to other reads/clones by
-  grouping. This is mainly useful when each readID has many
-  posID which needs to be considered as one single group of
-  sites.
+  Given a group of discrete positions per read/clone, the
+  function tries to yield a unique OTU ID for the
+  collection based on overlap of discrete positions to
+  other reads/clones by grouping. This is mainly useful
+  when each readID has many posID which needs to be
+  considered as one single group of sites.
 }
 \examples{
 \dontrun{

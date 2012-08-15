@@ -1,7 +1,6 @@
 \name{pslToRangedData}
 \alias{pslToRangedData}
-\title{Convert psl dataframe to RangedData
-Convert psl dataframe to RangedData object using either the query or target as the reference data column.}
+\title{Convert psl dataframe to RangedData}
 \usage{
   pslToRangedData(x, useTargetAsRef = TRUE)
 }
@@ -15,9 +14,8 @@ Convert psl dataframe to RangedData object using either the query or target as t
   a RangedData object reflecting psl file type.
 }
 \description{
-  Convert psl dataframe to RangedData Convert psl dataframe
-  to RangedData object using either the query or target as
-  the reference data column.
+  Convert psl dataframe to RangedData object using either
+  the query or target as the reference data column.
 }
 \examples{
 \dontrun{

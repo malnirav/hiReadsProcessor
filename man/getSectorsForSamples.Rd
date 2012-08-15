@@ -1,7 +1,6 @@
 \name{getSectorsForSamples}
 \alias{getSectorsForSamples}
-\title{Get sectors for samples defined in the sampleInfo object.
-Given a sampleInfo object, the function gets the sectors for each samplename. This is an accessory function utilized by other functions of this package to aid sector retrieval.}
+\title{Get sectors for samples defined in the sampleInfo object.}
 \usage{
   getSectorsForSamples(sampleInfo, sector = NULL,
     samplename = NULL, returnDf = FALSE)
@@ -28,7 +27,6 @@ Given a sampleInfo object, the function gets the sectors for each samplename. Th
   x[["sectors"]] and x[["samplenames"]]
 }
 \description{
-  Get sectors for samples defined in the sampleInfo object.
   Given a sampleInfo object, the function gets the sectors
   for each samplename. This is an accessory function
   utilized by other functions of this package to aid sector

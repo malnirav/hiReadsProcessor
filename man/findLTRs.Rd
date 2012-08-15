@@ -1,7 +1,6 @@
 \name{findLTRs}
 \alias{findLTRs}
-\title{Find the 5' LTRs and add results to SampleInfo object.
-Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.}
+\title{Find the 5' LTRs and add results to SampleInfo object.}
 \usage{
   findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE,
     parallel = TRUE, samplenames = NULL)
@@ -35,7 +34,6 @@ Given a sampleInfo object, the function finds 5' LTR following the primer for ea
   sample. New data attributes include: LTRed
 }
 \description{
-  Find the 5' LTRs and add results to SampleInfo object.
   Given a sampleInfo object, the function finds 5' LTR
   following the primer for each sample per sector and adds
   the results back to the object. This is a specialized

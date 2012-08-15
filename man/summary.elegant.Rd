@@ -1,7 +1,6 @@
 \name{summary.elegant}
 \alias{summary.elegant}
-\title{Elegant summary of a sampleInfo object.
-Give an elegant summary of all the attributes in sampleInfo/SimpleList object.}
+\title{Elegant summary of a sampleInfo object.}
 \usage{
   summary.elegant(sampleInfo, samplenames = NULL)
 }
@@ -15,9 +14,8 @@ Give an elegant summary of all the attributes in sampleInfo/SimpleList object.}
   sampleInfo object.}
 }
 \description{
-  Elegant summary of a sampleInfo object. Give an elegant
-  summary of all the attributes in sampleInfo/SimpleList
-  object.
+  Give an elegant summary of all the attributes in
+  sampleInfo/SimpleList object.
 }
 \examples{
 \dontrun{

@@ -1,7 +1,6 @@
 \name{clusterSites}
 \alias{clusterSites}
-\title{Cluster values within a window based on their frequency given discrete factors.
-Given a group of discrete factors (i.e. position ids) and integer values, the function tries of correct/cluster the integer values based on their frequency in a defined windowsize.}
+\title{Cluster values within a window based on their frequency given discrete factors}
 \usage{
   clusterSites(posID = NULL, value = NULL, grouping = NULL,
     psl.rd = NULL, weight = NULL, windowSize = 5,
@@ -45,11 +44,10 @@ Given a group of discrete factors (i.e. position ids) and integer values, the fu
   given cluster chosen by best scoring hit!).
 }
 \description{
-  Cluster values within a window based on their frequency
-  given discrete factors. Given a group of discrete factors
-  (i.e. position ids) and integer values, the function
-  tries of correct/cluster the integer values based on
-  their frequency in a defined windowsize.
+  Given a group of discrete factors (i.e. position ids) and
+  integer values, the function tries of correct/cluster the
+  integer values based on their frequency in a defined
+  windowsize.
 }
 \note{
   The algorithm for clustering when byQuartile=TRUE is as

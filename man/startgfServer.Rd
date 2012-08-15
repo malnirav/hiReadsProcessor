@@ -1,7 +1,6 @@
 \name{startgfServer}
 \alias{startgfServer}
-\title{Start a gfServer instance
-Start a gfServer indexed reference genome to align batch of sequences using BLAT gfServer/gfClient protocol.}
+\title{Start a gfServer instance}
 \usage{
   startgfServer(host = "localhost", port = 5560,
     seqDir = NULL,
@@ -30,9 +29,8 @@ Start a gfServer indexed reference genome to align batch of sequences using BLAT
   system command status for executing gfServer command.
 }
 \description{
-  Start a gfServer instance Start a gfServer indexed
-  reference genome to align batch of sequences using BLAT
-  gfServer/gfClient protocol.
+  Start a gfServer indexed reference genome to align batch
+  of sequences using BLAT gfServer/gfClient protocol.
 }
 \examples{
 \dontrun{

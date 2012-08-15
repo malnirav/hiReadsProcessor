@@ -1,7 +1,6 @@
 \name{splitByBarcode}
 \alias{splitByBarcode}
-\title{Split DNAStringSet object using first X number of bases defined by a vector.
-Given barcodes/MID to sample association vector and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{decodeByBarcode}}}
+\title{Split DNAStringSet object using first X number of bases defined by a vector.}
 \usage{
   splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL,
     showStats = FALSE, returnUnmatched = FALSE,
@@ -34,13 +33,11 @@ Given barcodes/MID to sample association vector and a DNAStringSet object, the f
   barcodesSample.
 }
 \description{
-  Split DNAStringSet object using first X number of bases
-  defined by a vector. Given barcodes/MID to sample
-  association vector and a DNAStringSet object, the
-  function splits/demultiplexes the DNAStringSet object by
-  first few bases dictated by length of barcodes/MID
-  supplied. This is an accessory function used by
-  \code{\link{decodeByBarcode}}
+  Given barcodes/MID to sample association vector and a
+  DNAStringSet object, the function splits/demultiplexes
+  the DNAStringSet object by first few bases dictated by
+  length of barcodes/MID supplied. This is an accessory
+  function used by \code{\link{decodeByBarcode}}
 }
 \examples{
 \dontrun{

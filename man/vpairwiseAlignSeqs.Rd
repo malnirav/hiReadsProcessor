@@ -1,7 +1,6 @@
 \name{vpairwiseAlignSeqs}
 \alias{vpairwiseAlignSeqs}
-\title{Align a pattern to variable length target sequences.
-Align a fixed length pattern sequence to subject sequences using \code{\link{vmatchPattern}}.}
+\title{Align a pattern to variable length target sequences.}
 \usage{
   vpairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
     side = "left", qualityThreshold = 1, showStats = FALSE,
@@ -46,7 +45,6 @@ Align a fixed length pattern sequence to subject sequences using \code{\link{vma
   aligned sequences.
 }
 \description{
-  Align a pattern to variable length target sequences.
   Align a fixed length pattern sequence to subject
   sequences using \code{\link{vmatchPattern}}.
 }

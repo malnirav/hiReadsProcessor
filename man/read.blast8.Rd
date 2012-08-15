@@ -1,7 +1,6 @@
 \name{read.blast8}
 \alias{read.blast8}
-\title{Read blast8 file(s) outputted by BLAT
-Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.}
+\title{Read blast8 file(s) outputted by BLAT}
 \usage{
   read.blast8(files = NULL, asRangedData = FALSE,
     removeFile = TRUE, parallel = FALSE)
@@ -27,11 +26,10 @@ Given filename(s), the function reads the blast8 file format from BLAT as a data
   type.
 }
 \description{
-  Read blast8 file(s) outputted by BLAT Given filename(s),
-  the function reads the blast8 file format from BLAT as a
-  data frame and performs basic score filtering if
-  indicated. Any other file format will yield errors or
-  erroneous results.
+  Given filename(s), the function reads the blast8 file
+  format from BLAT as a data frame and performs basic score
+  filtering if indicated. Any other file format will yield
+  errors or erroneous results.
 }
 \note{
   If parallel=TRUE, then be sure to have a paralle backend

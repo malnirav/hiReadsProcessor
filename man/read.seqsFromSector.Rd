@@ -1,7 +1,6 @@
 \name{read.seqsFromSector}
 \alias{read.seqsFromSector}
-\title{Read fasta/fastq given the path or sampleInfo object.
-Given a sequence reads file path, the function returns a DNAStringSet object.}
+\title{Read fasta/fastq given the path or sampleInfo object.}
 \usage{
   read.seqsFromSector(seqFilePath = NULL, sector = 1)
 }
@@ -18,7 +17,6 @@ Given a sequence reads file path, the function returns a DNAStringSet object.}
   a DNAStringSet object.
 }
 \description{
-  Read fasta/fastq given the path or sampleInfo object.
   Given a sequence reads file path, the function returns a
   DNAStringSet object.
 }

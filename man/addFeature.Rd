@@ -1,7 +1,6 @@
 \name{addFeature}
 \alias{addFeature}
-\title{Add a specific feature/attribute to the sampleInfo object.
-Given a sampleInfo object, the function adds a new feature for the given samples & sectors.}
+\title{Add a specific feature/attribute to the sampleInfo object.}
 \usage{
   addFeature(sampleInfo, sector = NULL, samplename = NULL,
     feature = NULL, value = NULL)
@@ -30,9 +29,8 @@ Given a sampleInfo object, the function adds a new feature for the given samples
   modified sampleInfo object with new feature(s) added.
 }
 \description{
-  Add a specific feature/attribute to the sampleInfo
-  object. Given a sampleInfo object, the function adds a
-  new feature for the given samples & sectors.
+  Given a sampleInfo object, the function adds a new
+  feature for the given samples & sectors.
 }
 \examples{
 \dontrun{

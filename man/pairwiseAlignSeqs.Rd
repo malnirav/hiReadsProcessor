@@ -1,7 +1,6 @@
 \name{pairwiseAlignSeqs}
 \alias{pairwiseAlignSeqs}
-\title{Align a pattern to variable length target sequences.
-Align a fixed length pattern sequence to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended.}
+\title{Align a pattern to variable length target sequences.}
 \usage{
   pairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
     side = "left", qualityThreshold = 1, showStats = FALSE,
@@ -57,7 +56,6 @@ Align a fixed length pattern sequence to subject sequences using \code{\link{pai
   patternSeq.
 }
 \description{
-  Align a pattern to variable length target sequences.
   Align a fixed length pattern sequence to subject
   sequences using \code{\link{pairwiseAlignment}}. This
   function uses default of type="overlap", gapOpening=-1,

@@ -1,7 +1,6 @@
 \name{blatSeqs}
 \alias{blatSeqs}
-\title{Align sequences using BLAT.
-Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for alignment against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution.}
+\title{Align sequences using BLAT.}
 \usage{
   blatSeqs(query = NULL, subject = NULL,
     standaloneBlat = TRUE, port = NULL, host = "localhost",
@@ -52,17 +51,16 @@ Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for
   a character vector of psl filenames.
 }
 \description{
-  Align sequences using BLAT. Align batch of sequences
-  using standalone BLAT or gfServer/gfClient protocol for
-  alignment against an indexed reference genome. Depending
-  on parameters provided, the function either aligns batch
-  of files to a reference genome using gfClient or takes
-  sequences from query & subject parameters and aligns them
-  using standalone BLAT. If standaloneBlat=FALSE and
-  gfServer is not launched apriori, this function will
-  start one using \code{\link{startgfServer}} and kill it
-  using \code{\link{stopgfServer}} upon successful
-  execution.
+  Align batch of sequences using standalone BLAT or
+  gfServer/gfClient protocol for alignment against an
+  indexed reference genome. Depending on parameters
+  provided, the function either aligns batch of files to a
+  reference genome using gfClient or takes sequences from
+  query & subject parameters and aligns them using
+  standalone BLAT. If standaloneBlat=FALSE and gfServer is
+  not launched apriori, this function will start one using
+  \code{\link{startgfServer}} and kill it using
+  \code{\link{stopgfServer}} upon successful execution.
 }
 \examples{
 \dontrun{

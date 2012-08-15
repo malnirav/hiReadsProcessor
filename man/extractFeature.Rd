@@ -1,7 +1,6 @@
 \name{extractFeature}
 \alias{extractFeature}
-\title{Extract a specific feature/attribute of the sampleInfo object.
-Given a sampleInfo object, the function extracts a defined feature(s) for given sample or sector.}
+\title{Extract a specific feature/attribute of the sampleInfo object.}
 \usage{
   extractFeature(sampleInfo, sector = NULL,
     samplename = NULL, feature = NULL)
@@ -30,9 +29,8 @@ Given a sampleInfo object, the function extracts a defined feature(s) for given 
   were supplied.
 }
 \description{
-  Extract a specific feature/attribute of the sampleInfo
-  object. Given a sampleInfo object, the function extracts
-  a defined feature(s) for given sample or sector.
+  Given a sampleInfo object, the function extracts a
+  defined feature(s) for given sample or sector.
 }
 \examples{
 \dontrun{

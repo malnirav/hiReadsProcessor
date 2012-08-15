@@ -1,7 +1,6 @@
 \name{doRCtest}
 \alias{doRCtest}
-\title{Test if pattern aligns better in +/- orientation.
-Given a fixed length pattern sequence and variable length subject sequences, the function roughly finds which orientation of pattern yields the most hits. The function doing the heavylifting is \code{\link{vcountPattern}}. This is an accessory function used in function listed under See Also section below.}
+\title{Test if pattern aligns better in +/- orientation.}
 \usage{
   doRCtest(subjectSeqs = NULL, patternSeq = NULL,
     qualityThreshold = 0.5, core.use = 2)
@@ -27,13 +26,12 @@ Given a fixed length pattern sequence and variable length subject sequences, the
   patternSeq that aligned the best.
 }
 \description{
-  Test if pattern aligns better in +/- orientation. Given a
-  fixed length pattern sequence and variable length subject
-  sequences, the function roughly finds which orientation
-  of pattern yields the most hits. The function doing the
-  heavylifting is \code{\link{vcountPattern}}. This is an
-  accessory function used in function listed under See Also
-  section below.
+  Given a fixed length pattern sequence and variable length
+  subject sequences, the function roughly finds which
+  orientation of pattern yields the most hits. The function
+  doing the heavylifting is \code{\link{vcountPattern}}.
+  This is an accessory function used in function listed
+  under See Also section below.
 }
 \examples{
 \dontrun{

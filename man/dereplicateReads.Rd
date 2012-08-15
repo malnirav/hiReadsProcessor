@@ -1,7 +1,6 @@
 \name{dereplicateReads}
 \alias{dereplicateReads}
-\title{Removes duplicate sequences from DNAStringSet object.
-Given a DNAStringSet object, the function dereplicates reads and adds counts=X to the definition line to indicate replication.}
+\title{Removes duplicate sequences from DNAStringSet object.}
 \usage{
   dereplicateReads(dnaSet)
 }
@@ -13,7 +12,6 @@ Given a DNAStringSet object, the function dereplicates reads and adds counts=X t
   repeat.
 }
 \description{
-  Removes duplicate sequences from DNAStringSet object.
   Given a DNAStringSet object, the function dereplicates
   reads and adds counts=X to the definition line to
   indicate replication.

@@ -1,7 +1,6 @@
 \name{trimSeqs}
 \alias{trimSeqs}
-\title{Trim sequences from a specific side.
-This function trims a DNAStringSet object using the ranges from left, right, or middle of the sequence. This is a helper function utilized in \code{\link{primerIDAlignSeqs}} and \code{\link{extractSeqs}}. If dnaSet and coords are not the same length, then they are required to have a names attribute to perform the matched trimming.}
+\title{Trim sequences from a specific side.}
 \usage{
   trimSeqs(dnaSet, coords, side = "middle", offBy = 0)
 }
@@ -22,10 +21,10 @@ This function trims a DNAStringSet object using the ranges from left, right, or 
   a DNAStringSet object with trimmed sequences.
 }
 \description{
-  Trim sequences from a specific side. This function trims
-  a DNAStringSet object using the ranges from left, right,
-  or middle of the sequence. This is a helper function
-  utilized in \code{\link{primerIDAlignSeqs}} and
+  This function trims a DNAStringSet object using the
+  ranges from left, right, or middle of the sequence. This
+  is a helper function utilized in
+  \code{\link{primerIDAlignSeqs}} and
   \code{\link{extractSeqs}}. If dnaSet and coords are not
   the same length, then they are required to have a names
   attribute to perform the matched trimming.

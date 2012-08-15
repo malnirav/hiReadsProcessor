@@ -1,7 +1,6 @@
 \name{getIntegrationSites}
 \alias{getIntegrationSites}
-\title{Obtain integration sites from BLAT output.
-Given a RangedData object from \code{\link{read.psl}}, the function uses specified filtering parameters to obtain integration sites and maintain sequence attrition. The function will remove any non-best scoring alignments from the object if not already filtered apriori.}
+\title{Obtain integration sites from BLAT output}
 \usage{
   getIntegrationSites(psl.rd = NULL, startWithin = 3,
     alignRatioThreshold = 0.7,
@@ -33,12 +32,11 @@ Given a RangedData object from \code{\link{read.psl}}, the function uses specifi
   filter which follows the scheme: 'pass.FilterName'.
 }
 \description{
-  Obtain integration sites from BLAT output. Given a
-  RangedData object from \code{\link{read.psl}}, the
-  function uses specified filtering parameters to obtain
-  integration sites and maintain sequence attrition. The
-  function will remove any non-best scoring alignments from
-  the object if not already filtered apriori.
+  Given a RangedData object from \code{\link{read.psl}},
+  the function uses specified filtering parameters to
+  obtain integration sites and maintain sequence attrition.
+  The function will remove any non-best scoring alignments
+  from the object if not already filtered apriori.
 }
 \examples{
 \dontrun{

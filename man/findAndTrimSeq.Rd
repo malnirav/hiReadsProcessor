@@ -1,7 +1,6 @@
 \name{findAndTrimSeq}
 \alias{findAndTrimSeq}
-\title{Find and trim the pattern sequence from the subject.
-This function facilitates finding and trimming of the pattern sequence from a collection of subject sequences. The trimming is dictated by side parameter. For more information on the trimming process see the 'side' parameter documentation in \code{\link{trimSeqs}}. For information regarding the pattern alignment see the documentation for \code{\link{pairwiseAlignSeqs}}.}
+\title{Find and trim the pattern sequence from the subject.}
 \usage{
   findAndTrimSeq(patternSeq, subjectSeqs, side = "left",
     offBy = 0, alignWay = "slow", ...)
@@ -39,10 +38,9 @@ This function facilitates finding and trimming of the pattern sequence from a co
   the subject sequences.
 }
 \description{
-  Find and trim the pattern sequence from the subject. This
-  function facilitates finding and trimming of the pattern
-  sequence from a collection of subject sequences. The
-  trimming is dictated by side parameter. For more
+  This function facilitates finding and trimming of the
+  pattern sequence from a collection of subject sequences.
+  The trimming is dictated by side parameter. For more
   information on the trimming process see the 'side'
   parameter documentation in \code{\link{trimSeqs}}. For
   information regarding the pattern alignment see the

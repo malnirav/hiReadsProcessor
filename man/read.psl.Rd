@@ -1,7 +1,6 @@
 \name{read.psl}
 \alias{read.psl}
-\title{Read psl file(s) outputted by BLAT
-Given filename(s), the function reads the psl file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.}
+\title{Read psl file(s) outputted by BLAT}
 \usage{
   read.psl(pslFile = NULL, bestScoring = TRUE,
     asRangedData = FALSE, removeFile = TRUE,
@@ -32,11 +31,10 @@ Given filename(s), the function reads the psl file format from BLAT as a data fr
   type.
 }
 \description{
-  Read psl file(s) outputted by BLAT Given filename(s), the
-  function reads the psl file format from BLAT as a data
-  frame and performs basic score filtering if indicated.
-  Any other file format will yield errors or erroneous
-  results.
+  Given filename(s), the function reads the psl file format
+  from BLAT as a data frame and performs basic score
+  filtering if indicated. Any other file format will yield
+  errors or erroneous results.
 }
 \note{
   If parallel=TRUE, then be sure to have a paralle backend

@@ -1,7 +1,6 @@
 \name{findIntegrations}
 \alias{findIntegrations}
-\title{Find the integration sites and add results to SampleInfo object.
-Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which BLATs, parses PSL files, finds best hit per read per sample, cluster sites, and assign OTU IDs. It calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.}
+\title{Find the integration sites and add results to SampleInfo object.}
 \usage{
   findIntegrations(sampleInfo, seqType = NULL, port = 5560,
     host = "localhost",
@@ -52,13 +51,12 @@ Given a SampleInfo object, the function finds integration sites for each sample 
   pass all the QC steps.
 }
 \description{
-  Find the integration sites and add results to SampleInfo
-  object. Given a SampleInfo object, the function finds
-  integration sites for each sample using their respective
-  settings and adds the results back to the object. This is
-  an all-in-one function which BLATs, parses PSL files,
-  finds best hit per read per sample, cluster sites, and
-  assign OTU IDs. It calls \code{\link{blatSeqs}},
+  Given a SampleInfo object, the function finds integration
+  sites for each sample using their respective settings and
+  adds the results back to the object. This is an
+  all-in-one function which BLATs, parses PSL files, finds
+  best hit per read per sample, cluster sites, and assign
+  OTU IDs. It calls \code{\link{blatSeqs}},
   \code{\link{read.psl}},
   \code{\link{getIntegrationSites}},
   \code{\link{clusterSites}}, \code{\link{otuSites}}. There

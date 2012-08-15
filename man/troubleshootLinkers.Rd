@@ -1,7 +1,6 @@
 \name{troubleshootLinkers}
 \alias{troubleshootLinkers}
-\title{Compare LTRed sequences to all linkers.
-Given a SampleInfo object, the function compares LTRed sequences from each sample per sector to all the linker sequences present in the run. The output is a summary table of counts of good matches to all the linkers per sample.}
+\title{Compare LTRed sequences to all linkers.}
 \usage{
   troubleshootLinkers(sampleInfo, qualityThreshold = 0.55,
     qualityThreshold1 = 0.75, qualityThreshold2 = 0.5,
@@ -43,11 +42,11 @@ Given a SampleInfo object, the function compares LTRed sequences from each sampl
   a dataframe of counts.
 }
 \description{
-  Compare LTRed sequences to all linkers. Given a
-  SampleInfo object, the function compares LTRed sequences
-  from each sample per sector to all the linker sequences
-  present in the run. The output is a summary table of
-  counts of good matches to all the linkers per sample.
+  Given a SampleInfo object, the function compares LTRed
+  sequences from each sample per sector to all the linker
+  sequences present in the run. The output is a summary
+  table of counts of good matches to all the linkers per
+  sample.
 }
 \note{
   If parallel=TRUE, then be sure to have a paralle backend

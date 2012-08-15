@@ -1,7 +1,6 @@
 \name{blatListedSet}
 \alias{blatListedSet}
-\title{Align a listed DNAStringSet to a reference using gfClient or standalone BLAT.
-Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and get a psl file as RangedData object. This function heavily relies on defaults of \code{\link{blatSeqs}}.}
+\title{Align a listed DNAStringSet to a reference using gfClient or standalone BLAT.}
 \usage{
   blatListedSet(dnaSetList = NULL, ...)
 }
@@ -17,13 +16,12 @@ Align sequences from a listed DNAStringSet object returned from \code{\link{extr
   set of sequences.
 }
 \description{
-  Align a listed DNAStringSet to a reference using gfClient
-  or standalone BLAT. Align sequences from a listed
-  DNAStringSet object returned from
-  \code{\link{extractSeqs}} to an indexed reference genome
-  using gfServer/gfClient protocol or using standalone BLAT
-  and get a psl file as RangedData object. This function
-  heavily relies on defaults of \code{\link{blatSeqs}}.
+  Align sequences from a listed DNAStringSet object
+  returned from \code{\link{extractSeqs}} to an indexed
+  reference genome using gfServer/gfClient protocol or
+  using standalone BLAT and get a psl file as RangedData
+  object. This function heavily relies on defaults of
+  \code{\link{blatSeqs}}.
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

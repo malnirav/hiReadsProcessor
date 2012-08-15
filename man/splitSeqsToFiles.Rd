@@ -1,7 +1,6 @@
 \name{splitSeqsToFiles}
 \alias{splitSeqsToFiles}
-\title{Split DNA sequences into smaller files.
-Given a vector of sequences or DNAStringSet or a FASTA filename, the function splits it into smaller pieces as denoted by totalFiles parameter.}
+\title{Split DNA sequences into smaller files.}
 \usage{
   splitSeqsToFiles(x, totalFiles = 4, suffix = "tempy",
     filename = "queryFile.fa")
@@ -22,10 +21,9 @@ Given a vector of sequences or DNAStringSet or a FASTA filename, the function sp
   a vector of filename names created.
 }
 \description{
-  Split DNA sequences into smaller files. Given a vector of
-  sequences or DNAStringSet or a FASTA filename, the
-  function splits it into smaller pieces as denoted by
-  totalFiles parameter.
+  Given a vector of sequences or DNAStringSet or a FASTA
+  filename, the function splits it into smaller pieces as
+  denoted by totalFiles parameter.
 }
 \examples{
 \dontrun{

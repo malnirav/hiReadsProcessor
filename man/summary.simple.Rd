@@ -1,7 +1,6 @@
 \name{summary.simple}
 \alias{summary.simple}
-\title{Simple summary of a sampleInfo object.
-Give a simple summary of major attributes in sampleInfo/SimpleList object.}
+\title{Simple summary of a sampleInfo object.}
 \usage{
   summary.simple(sampleInfo)
 }
@@ -11,9 +10,8 @@ Give a simple summary of major attributes in sampleInfo/SimpleList object.}
   other metadata.}
 }
 \description{
-  Simple summary of a sampleInfo object. Give a simple
-  summary of major attributes in sampleInfo/SimpleList
-  object.
+  Give a simple summary of major attributes in
+  sampleInfo/SimpleList object.
 }
 \examples{
 \dontrun{

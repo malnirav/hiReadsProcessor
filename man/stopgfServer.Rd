@@ -1,7 +1,6 @@
 \name{stopgfServer}
 \alias{stopgfServer}
-\title{Stop a gfServer instance
-Take down the gfServer instance.}
+\title{Stop a gfServer instance}
 \usage{
   stopgfServer(host = "localhost", port = NULL)
 }
@@ -16,7 +15,7 @@ Take down the gfServer instance.}
   system command status for executing kill command.
 }
 \description{
-  Stop a gfServer instance Take down the gfServer instance.
+  Take down the gfServer instance.
 }
 \examples{
 \dontrun{

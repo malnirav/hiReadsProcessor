@@ -1,7 +1,6 @@
 \name{removeReadsWithNs}
 \alias{removeReadsWithNs}
-\title{Remove sequences with ambiguious nucleotides.
-Given a DNAStringSet object, the function removes any reads that has either repeating or total Ns which is greater than to maxNs threshold}
+\title{Remove sequences with ambiguous nucleotides.}
 \usage{
   removeReadsWithNs(dnaSet, maxNs = 5, consecutive = TRUE)
 }
@@ -18,10 +17,9 @@ Given a DNAStringSet object, the function removes any reads that has either repe
   DNAStringSet object.
 }
 \description{
-  Remove sequences with ambiguious nucleotides. Given a
-  DNAStringSet object, the function removes any reads that
-  has either repeating or total Ns which is greater than to
-  maxNs threshold
+  Given a DNAStringSet object, the function removes any
+  reads that has either repeating or total Ns which is
+  greater than to maxNs threshold
 }
 \examples{
 \dontrun{

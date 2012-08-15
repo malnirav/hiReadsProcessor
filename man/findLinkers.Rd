@@ -1,7 +1,6 @@
 \name{findLinkers}
 \alias{findLinkers}
-\title{Find the 3' linkers and add results to SampleInfo object.
-Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of linker portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.}
+\title{Find the 3' linkers and add results to SampleInfo object.}
 \usage{
   findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE,
     parallel = TRUE, samplenames = NULL)
@@ -37,7 +36,6 @@ Given a sampleInfo object, the function finds 3' linkers for each sample per sec
   well.
 }
 \description{
-  Find the 3' linkers and add results to SampleInfo object.
   Given a sampleInfo object, the function finds 3' linkers
   for each sample per sector and adds the results back to
   the object. This is a specialized function which depends
