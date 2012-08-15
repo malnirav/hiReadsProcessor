@@ -1,155 +1,72 @@
 \name{findLTRs}
 \alias{findLTRs}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Find the 5' LTRs and add results to SampleInfo object.
+Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.}
 \usage{
-findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE, samplenames = NULL)
+  findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE,
+    parallel = TRUE, samplenames = NULL)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sampleInfo}{
-%%     ~~Describe \code{sampleInfo} here~~
-}
-  \item{showStats}{
-%%     ~~Describe \code{showStats} here~~
-}
-  \item{doRC}{
-%%     ~~Describe \code{doRC} here~~
-}
-  \item{parallel}{
-%%     ~~Describe \code{parallel} here~~
-}
-  \item{samplenames}{
-%%     ~~Describe \code{samplenames} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{sampleInfo}{sample information SimpleList object
+  outputted from \code{\link{findPrimers}}, which holds
+  decoded and primed sequences for samples per
+  sector/quadrant along with information of sample to LTR
+  associations.}
+
+  \item{showStats}{toggle output of search statistics.
+  Default is FALSE.}
+
+  \item{doRC}{perform reverse complement search of the
+  defined pattern/LTR sequence. Default is FALSE.}
+
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to TRUE.
+  If no parallel backend is registered, then a serial
+  version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
+
+  \item{samplenames}{a vector of samplenames to process.
+  Default is NULL, which processes all samples from
+  sampleInfo object.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  a SimpleList object similar to sampleInfo paramter
+  supplied with new data added under each sector and
+  sample. New data attributes include: LTRed
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
+\description{
+  Find the 5' LTRs and add results to SampleInfo object.
+  Given a sampleInfo object, the function finds 5' LTR
+  following the primer for each sample per sector and adds
+  the results back to the object. This is a specialized
+  function which depends on many other functions shown in
+  'see also section' to perform specialized trimming of 5'
+  viral LTRs found in the sampleInfo object. The sequence
+  itself is never trimmed but rather coordinates of LTR
+  portion is added to primer coordinates and recorded back
+  to the object and used subsequently by
+  \code{\link{extractSeqs}} function to perform the
+  trimming.
 }
 \note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  If parallel=TRUE, then be sure to have a paralle backend
+  registered before running the function. One can use any
+  of the following libraries compatible with
+  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+  example: library(doSMP); w <- startWorkers(2);
+  registerDoSMP(w)
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE, 
-    samplenames = NULL) 
-{
-    stopifnot(class(sampleInfo) == "SimpleList")
-    if (!parallel) {
-        registerDoSEQ()
-    }
-    primed <- extractFeature(sampleInfo, feature = "primed")
-    samplesprimed <- sapply(primed, names, simplify = FALSE)
-    sectorsPrimed <- names(which(sapply(sapply(primed, length), 
-        ">", 1)))
-    rm(primed)
-    gc()
-    if (length(sectorsPrimed) == 0) {
-        stop("No primed information found in sampleInfo...did you run findPrimers()?")
-    }
-    for (sector in sectorsPrimed) {
-        message("Processing sector ", sector)
-        sampleLTRbits <- toupper(extractFeature(sampleInfo, sector = sector, 
-            feature = "ltrbitsequence")[[sector]])
-        if (length(sampleLTRbits) == 0 | mean(nchar(sampleLTRbits)) <= 
-            1 | all(is.na(sampleLTRbits))) {
-            stop("Either LTR bit sequence is too short (<=1) or no LTR bits found in sample information object.")
-        }
-        samplesToProcess <- samplesprimed[[sector]]
-        if (!is.null(samplenames)) {
-            samplesToProcess <- samplesToProcess[samplesToProcess \%in\% 
-                samplenames]
-        }
-        primerTrimmed <- extractSeqs(sampleInfo, sector, samplesToProcess, 
-            feature = "primed")[[sector]]
-        message("\tFinding LTR bits.")
-        ltrBitIdentity <- extractFeature(sampleInfo, sector = sector, 
-            feature = "ltrbitidentity")[[sector]]
-        ltrTrimmed <- foreach(x = iter(samplesToProcess), .inorder = TRUE, 
-            .errorhandling = "pass", .export = c("primerTrimmed", 
-                "sampleLTRbits", "ltrBitIdentity", "doRC", "pairwiseAlignSeqs"), 
-            .packages = "Biostrings") \%dopar\% {
-            pairwiseAlignSeqs(primerTrimmed[[x]], sampleLTRbits[[x]], 
-                "left", qualityThreshold = ltrBitIdentity[[x]], 
-                doRC = doRC)
-        }
-        names(ltrTrimmed) <- samplesToProcess
-        if (any(grepl("simpleError", ltrTrimmed))) {
-            stop("Error encountered in LTR Trimming function", 
-                paste(names(ltrTrimmed[grepl("simpleError", ltrTrimmed)]), 
-                  collapse = ", "))
-        }
-        culprits <- grep("No hits found", ltrTrimmed)
-        if (length(culprits) > 0) {
-            message("Following sample(s) had no hits for LTR bit alignment: ", 
-                paste(samplesToProcess[culprits], collapse = ", "))
-            samplesToProcess <- samplesToProcess[-c(culprits)]
-            ltrTrimmed <- ltrTrimmed[-c(culprits)]
-        }
-        cleanit <- gc()
-        toprint <- as.data.frame(sapply(ltrTrimmed, length))
-        names(toprint) <- "Total"
-        counts <- sapply(primerTrimmed, length)
-        toprint$PercOfPrimed <- 100 * (toprint$Total/counts[rownames(toprint)])
-        toprint$SampleName <- rownames(toprint)
-        rownames(toprint) <- NULL
-        if (showStats) {
-            message("Sequence Stats after LTR bit alignment:")
-            print(toprint)
-        }
-        if (mean(toprint$PercOfPrimed) <= 5) {
-            stop("Something seems to be wrong with the LTRs provided for each sample. On average <= 5\% of sequences found LTR match for the entire run!!!")
-        }
-        message("Adding LTR info back to the object")
-        for (x in names(ltrTrimmed)) {
-            cat(".")
-            if (length(ltrTrimmed[[x]]) > 0) {
-                primed.end <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(ltrTrimmed[[x]])])
-                end(ltrTrimmed[[x]]) <- end(ltrTrimmed[[x]]) + 
-                  primed.end
-                start(ltrTrimmed[[x]]) <- start(ltrTrimmed[[x]]) + 
-                  primed.end
-                sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
-                rm(primed.end)
-            }
-        }
-        rm("ltrTrimmed", "primerTrimmed")
-        cleanit <- gc()
-    }
-    sampleInfo$callHistory <- append(sampleInfo$callHistory, 
-        match.call())
-    return(sampleInfo)
-  }
+\dontrun{
+ findLTRs(sampleInfo,showStats=TRUE)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{pairwiseAlignSeqs}},
+  \code{\link{vpairwiseAlignSeqs}},
+  \code{\link{extractFeature}}, \code{\link{extractSeqs}},
+  \code{\link{primerIDAlignSeqs}},
+  \code{\link{findPrimers}}, \code{\link{findLinkers}},
+  \code{\link{findAndTrimSeq}}
+}
+

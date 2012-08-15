@@ -1,152 +1,80 @@
 \name{findPrimers}
 \alias{findPrimers}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Find the 5' primers and add results to SampleInfo object.
+Given a sampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of primer portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.}
 \usage{
-findPrimers(sampleInfo, alignWay = "slow", showStats = FALSE, doRC = FALSE, parallel = TRUE, samplenames = NULL)
+  findPrimers(sampleInfo, alignWay = "slow",
+    showStats = FALSE, doRC = FALSE, parallel = TRUE,
+    samplenames = NULL)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sampleInfo}{
-%%     ~~Describe \code{sampleInfo} here~~
-}
-  \item{alignWay}{
-%%     ~~Describe \code{alignWay} here~~
-}
-  \item{showStats}{
-%%     ~~Describe \code{showStats} here~~
-}
-  \item{doRC}{
-%%     ~~Describe \code{doRC} here~~
-}
-  \item{parallel}{
-%%     ~~Describe \code{parallel} here~~
-}
-  \item{samplenames}{
-%%     ~~Describe \code{samplenames} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{sampleInfo}{sample information SimpleList object
+  outputted from \code{\link{decodeByBarcode}}, which holds
+  decoded sequences for samples per sector/quadrant along
+  with information of sample to primer associations.}
+
+  \item{alignWay}{method to utilize for detecting the
+  primers. One of following: "slow" (Default), or "fast".
+  Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses
+  \code{\link{vpatternMatch}} at its core, which is less
+  accurate with indels and mismatches but much faster.
+  Slow, calls \code{\link{pairwiseAlignSeqs}} and uses
+  \code{\link{pairwiseAlignment}} at its core, which is
+  accurate with indels and mismatches but slower.}
+
+  \item{showStats}{toggle output of search statistics.
+  Default is FALSE.}
+
+  \item{doRC}{perform reverse complement search of the
+  defined pattern/primer. Default is FALSE.}
+
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to TRUE.
+  If no parallel backend is registered, then a serial
+  version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
+
+  \item{samplenames}{a vector of samplenames to process.
+  Default is NULL, which processes all samples from
+  sampleInfo object.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  a SimpleList object similar to sampleInfo paramter
+  supplied with new data added under each sector and
+  sample. New data attributes include: primed
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
+\description{
+  Find the 5' primers and add results to SampleInfo object.
+  Given a sampleInfo object, the function finds 5' primers
+  for each sample per sector and adds the results back to
+  the object. This is a specialized function which depends
+  on many other functions shown in 'see also section' to
+  perform specialized trimming of 5' primer/adaptor found
+  in the sampleInfo object. The sequence itself is never
+  trimmed but rather coordinates of primer portion is
+  recorded back to the object and used subsequently by
+  \code{\link{extractSeqs}} function to perform the
+  trimming.
 }
 \note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  If parallel=TRUE, then be sure to have a paralle backend
+  registered before running the function. One can use any
+  of the following libraries compatible with
+  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+  example: library(doSMP); w <- startWorkers(2);
+  registerDoSMP(w)
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (sampleInfo, alignWay = "slow", showStats = FALSE, doRC = FALSE, 
-    parallel = TRUE, samplenames = NULL) 
-{
-    stopifnot(class(sampleInfo) == "SimpleList")
-    if (!parallel) {
-        registerDoSEQ()
-    }
-    decoded <- extractFeature(sampleInfo, feature = "decoded")
-    samplesDecoded <- sapply(decoded, names, simplify = FALSE)
-    sectorsDecoded <- names(which(sapply(sapply(decoded, length), 
-        ">", 1)))
-    rm(decoded)
-    gc()
-    if (length(sectorsDecoded) == 0) {
-        stop("No decoded information found in sampleInfo...did you run decodeByBarcode()?")
-    }
-    for (sector in sectorsDecoded) {
-        message("Processing sector ", sector)
-        ltrPrimers <- toupper(extractFeature(sampleInfo, sector = sector, 
-            feature = "primerltrsequence")[[sector]])
-        if (length(ltrPrimers) == 0 | mean(nchar(ltrPrimers)) <= 
-            5 | all(is.na(ltrPrimers))) {
-            stop("Either the primer size is too short (<=5) or no primers are found in sample information object.")
-        }
-        samplesToProcess <- samplesDecoded[[sector]]
-        if (!is.null(samplenames)) {
-            samplesToProcess <- samplesToProcess[samplesToProcess \%in\% 
-                samplenames]
-        }
-        decoded <- extractSeqs(sampleInfo, sector, samplesToProcess, 
-            feature = "decoded")[[sector]]
-        message("\tFinding Primers.")
-        primerIdentity <- extractFeature(sampleInfo, sector = sector, 
-            feature = "primerltridentity")[[sector]]
-        stopifnot(length(primerIdentity) > 0)
-        primerTrimmed <- foreach(x = iter(samplesToProcess), 
-            .inorder = TRUE, .errorhandling = "pass", .export = c("ltrPrimers", 
-                "primerIdentity", "doRC", "alignWay", "vpairwiseAlignSeqs", 
-                "pairwiseAlignSeqs", "decoded"), .packages = "Biostrings") \%dopar\% 
-            {
-                switch(alignWay, fast = vpairwiseAlignSeqs(decoded[[x]], 
-                  ltrPrimers[[x]], "left", qualityThreshold = (primerIdentity[[x]] - 
-                    0.05), doRC = doRC), slow = pairwiseAlignSeqs(decoded[[x]], 
-                  ltrPrimers[[x]], "left", qualityThreshold = (primerIdentity[[x]]), 
-                  doRC = doRC))
-            }
-        names(primerTrimmed) <- samplesToProcess
-        if (any(grepl("simpleError", primerTrimmed))) {
-            stop("Error encountered in LTR Trimming function", 
-                paste(names(primerTrimmed[grepl("simpleError", 
-                  primerTrimmed)]), collapse = ", "))
-        }
-        culprits <- grep("No hits found", primerTrimmed)
-        if (length(culprits) > 0) {
-            message("Following sample(s) had no hits for primer alignment: ", 
-                paste(samplesToProcess[culprits], collapse = ", "))
-            samplesToProcess <- samplesToProcess[-c(culprits)]
-            primerTrimmed <- primerTrimmed[-c(culprits)]
-        }
-        cleanit <- gc()
-        toprint <- as.data.frame(sapply(primerTrimmed, length))
-        names(toprint) <- "Total"
-        counts <- sapply(decoded, length)
-        toprint$PercOfDecoded <- 100 * (toprint$Total/counts[rownames(toprint)])
-        toprint$SampleName <- rownames(toprint)
-        rownames(toprint) <- NULL
-        if (showStats) {
-            message("Sequence Stats after primer alignment:")
-            print(toprint)
-        }
-        if (mean(toprint$PercOfDecoded) <= 5) {
-            stop("Something seems to be wrong with the primers provided for each sample. On average <= 5\% of sequences found primer match for the entire run!!!")
-        }
-        message("Adding primer info back to the object")
-        sampleInfo <- addFeature(sampleInfo, sector, names(primerTrimmed), 
-            feature = "primed", value = primerTrimmed)
-        rm(primerTrimmed)
-        cleanit <- gc()
-    }
-    sampleInfo$callHistory <- append(sampleInfo$callHistory, 
-        match.call())
-    return(sampleInfo)
-  }
+\dontrun{
+ findPrimers(sampleInfo,showStats=TRUE)
+ findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{pairwiseAlignSeqs}},
+  \code{\link{vpairwiseAlignSeqs}},
+  \code{\link{extractFeature}}, \code{\link{extractSeqs}},
+  \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}},
+  \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
+}
+

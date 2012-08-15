@@ -1,91 +1,48 @@
 \name{doRCtest}
 \alias{doRCtest}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Test if pattern aligns better in +/- orientation.
+Given a fixed length pattern sequence and variable length subject sequences, the function roughly finds which orientation of pattern yields the most hits. The function doing the heavylifting is \code{\link{vcountPattern}}. This is an accessory function used in function listed under See Also section below.}
 \usage{
-doRCtest(subjectSeqs = NULL, patternSeq = NULL, qualityThreshold = 0.5, core.use = 2)
+  doRCtest(subjectSeqs = NULL, patternSeq = NULL,
+    qualityThreshold = 0.5, core.use = 2)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{subjectSeqs}{
-%%     ~~Describe \code{subjectSeqs} here~~
-}
-  \item{patternSeq}{
-%%     ~~Describe \code{patternSeq} here~~
-}
-  \item{qualityThreshold}{
-%%     ~~Describe \code{qualityThreshold} here~~
-}
-  \item{core.use}{
-%%     ~~Describe \code{core.use} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{subjectSeqs}{DNAStringSet object containing
+  sequences to be searched for the pattern.}
+
+  \item{patternSeq}{DNAString object or a sequence
+  containing the query sequence to search.}
+
+  \item{qualityThreshold}{percent of patternSeq to match.
+  Default is 0.50, half match. This is supplied to
+  max.mismatch parameter of \code{\link{vcountPattern}} as
+  round(nchar(patternSeq)*(1-qualityThreshold)).}
+
+  \item{cores.use}{Number of cores to use for aligning.
+  Only need two max! Default is 2. If no parallel backend
+  is registered, then a serial version of foreach is ran
+  using \code{\link{registerDoSEQ()}}.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  patternSeq that aligned the best.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\description{
+  Test if pattern aligns better in +/- orientation. Given a
+  fixed length pattern sequence and variable length subject
+  sequences, the function roughly finds which orientation
+  of pattern yields the most hits. The function doing the
+  heavylifting is \code{\link{vcountPattern}}. This is an
+  accessory function used in function listed under See Also
+  section below.
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (subjectSeqs = NULL, patternSeq = NULL, qualityThreshold = 0.5, 
-    core.use = 2) 
-{
-    if (is.null(subjectSeqs) | is.null(patternSeq)) {
-        stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
-    }
-    if (core.use == 1) {
-        registerDoSEQ()
-    }
-    patternSeq.rc <- as.character(reverseComplement(DNAString(patternSeq)))
-    hits <- foreach(x = iter(c(patternSeq, patternSeq.rc)), .inorder = TRUE, 
-        .errorhandling = "pass", .export = c("subjectSeqs", "qualityThreshold"), 
-        .packages = "Biostrings") \%dopar\% {
-        counts <- pmin(vcountPattern(x, subjectSeqs, max.mismatch = round(nchar(x) * 
-            (1 - qualityThreshold))), 1)
-        sum(counts)
-    }
-    if (all(hits == 0)) {
-        stop("No hits found")
-    }
-    if (hits[[1]] < hits[[2]]) {
-        message("There were less/no good hits found for pattern ", 
-            patternSeq, "\nthan its reverse complement...", patternSeq.rc, 
-            "\nUsing the latter to perform the searching.")
-        patternSeq <- patternSeq.rc
-    }
-    return(patternSeq)
-  }
+\dontrun{
+ doRCtest(subjectSeqs,patternSeq)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{pairwiseAlignSeqs}},
+  \code{\link{vpairwiseAlignSeqs}},
+  \code{\link{primerIDAlignSeqs}}
+}
+

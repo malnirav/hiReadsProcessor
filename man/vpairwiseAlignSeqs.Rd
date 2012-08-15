@@ -1,160 +1,70 @@
 \name{vpairwiseAlignSeqs}
 \alias{vpairwiseAlignSeqs}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Align a pattern to variable length target sequences.
+Align a fixed length pattern sequence to subject sequences using \code{\link{vmatchPattern}}.}
 \usage{
-vpairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL, side = "left", qualityThreshold = 1, showStats = FALSE, bufferBases = 5, doRC = TRUE, ...)
+  vpairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
+    side = "left", qualityThreshold = 1, showStats = FALSE,
+    bufferBases = 5, doRC = TRUE, ...)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{subjectSeqs}{
-%%     ~~Describe \code{subjectSeqs} here~~
-}
-  \item{patternSeq}{
-%%     ~~Describe \code{patternSeq} here~~
-}
-  \item{side}{
-%%     ~~Describe \code{side} here~~
-}
-  \item{qualityThreshold}{
-%%     ~~Describe \code{qualityThreshold} here~~
-}
-  \item{showStats}{
-%%     ~~Describe \code{showStats} here~~
-}
-  \item{bufferBases}{
-%%     ~~Describe \code{bufferBases} here~~
-}
-  \item{doRC}{
-%%     ~~Describe \code{doRC} here~~
-}
-  \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{subjectSeqs}{DNAStringSet object containing
+  sequences to be searched for the pattern. This is
+  generally bigger than patternSeq, and cases where
+  subjectSeqs is smaller than patternSeq will be ignored in
+  the alignment.}
+
+  \item{patternSeq}{DNAString object or a sequence
+  containing the query sequence to search. This is
+  generally smaller than subjectSeqs.}
+
+  \item{side}{which side of the sequence to perform the
+  search: left, right, or middle. Default is 'left'.}
+
+  \item{qualityThreshold}{percent of patternSeq to match.
+  Default is 1, full match. This is supplied to
+  max.mismatch parameter of \code{\link{vmatchPattern}} as
+  round(nchar(patternSeq)*(1-qualityThreshold)).}
+
+  \item{showStats}{toggle output of search statistics.
+  Default is FALSE.}
+
+  \item{bufferBases}{use x number of bases in addition to
+  patternSeq length to perform the search. Beneficial in
+  cases where the pattern has homopolymers or indels
+  compared to the subject. Default is 5. Doesn't apply when
+  side='middle'.}
+
+  \item{doRC}{perform reverse complement search of the
+  defined pattern. Default is TRUE.}
+
+  \item{...}{extra parameters for
+  \code{\link{vmatchPattern}}}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  IRanges object with starts, stops, and names of the
+  aligned sequences.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
+\description{
+  Align a pattern to variable length target sequences.
+  Align a fixed length pattern sequence to subject
+  sequences using \code{\link{vmatchPattern}}.
 }
 \note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  Beware, this function only searches for the pattern
+  sequence in one orientation. If you are expecting to find
+  the pattern in both orientation, you might be better off
+  using BLAST!
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (subjectSeqs = NULL, patternSeq = NULL, side = "left", 
-    qualityThreshold = 1, showStats = FALSE, bufferBases = 5, 
-    doRC = TRUE, ...) 
-{
-    if (is.null(subjectSeqs) | is.null(patternSeq)) {
-        stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
-    }
-    if (is.null(names(subjectSeqs))) {
-        names(subjectSeqs) <- paste("read", 1:length(subjectSeqs))
-    }
-    if (tolower(side) == "left") {
-        badSeqs <- DNAStringSet()
-        culprits <- width(subjectSeqs) < (nchar(patternSeq) + 
-            bufferBases)
-        if (any(culprits)) {
-            badSeqs <- subjectSeqs[culprits]
-            message(length(badSeqs), " sequences were removed from aligning since they were shorter than pattern getting aligned: ", 
-                (nchar(patternSeq) + bufferBases), "bp")
-            subjectSeqs <- subjectSeqs[!culprits]
-        }
-        subjectSeqs2 <- subseq(subjectSeqs, start = 1, end = (nchar(patternSeq) + 
-            bufferBases))
-        overFromLeft <- rep(0, length(subjectSeqs))
-    }
-    else if (tolower(side) == "right") {
-        overFromLeft <- width(subjectSeqs) - (nchar(patternSeq) + 
-            bufferBases)
-        overFromLeft[overFromLeft < 1] <- 1
-        subjectSeqs2 <- subseq(subjectSeqs, start = overFromLeft)
-    }
-    else {
-        subjectSeqs2 <- subjectSeqs
-        overFromLeft <- rep(0, length(subjectSeqs))
-    }
-    if (doRC) {
-        patternSeq <- doRCtest(subjectSeqs2, patternSeq, qualityThreshold)
-    }
-    hits <- vmatchPattern(patternSeq, subjectSeqs2, max.mismatch = round(nchar(patternSeq) * 
-        (1 - qualityThreshold)), ...)
-    hits <- unlist(hits, recursive = TRUE, use.names = TRUE)
-    counts <- Rle(names(hits))
-    if (any(runLength(counts) > 1)) {
-        reduced <- reduce(GRanges(seqnames = names(hits), IRanges(start = start(hits), 
-            end = end(hits))))
-        counts <- seqnames(reduced)
-        hits <- ranges(reduced)
-        names(hits) <- as.character(seqnames(reduced))
-        rm(reduced)
-        if (any(runLength(counts) > 1)) {
-            message(paste("More than 1 pattern (", patternSeq, 
-                ") match found for:", paste(runValue(counts)[runLength(counts) > 
-                  1], collapse = ",")))
-            message("\nUsing the latter occuring hit as the dominant for each read.")
-            toremove <- c()
-            for (culprits in as.character(runValue(counts)[runLength(counts) > 
-                1])) {
-                rows <- which(names(hits) \%in\% culprits)
-                toremove <- c(toremove, rows[1:length(rows) - 
-                  1])
-            }
-            hits <- hits[-toremove]
-            counts <- Rle(names(hits))
-            if (any(runLength(counts) > 1)) {
-                stop(paste("More than 1 pattern unresolved (", 
-                  patternSeq, ") match found for:", paste(runValue(counts)[runLength(counts) > 
-                    1], collapse = ",")))
-            }
-        }
-    }
-    good.row <- names(subjectSeqs2) \%in\% names(hits)
-    if (showStats) {
-        message("Total of ", as.numeric(table(good.row)["FALSE"]), 
-            " did not have the defined pattern sequence (", patternSeq, 
-            ") that passed qualityThreshold on the ", side, " side")
-    }
-    starts <- start(hits)
-    ends <- end(hits)
-    namesq <- names(hits)
-    rm("hits", "subjectSeqs2")
-    hits <- IRanges(start = starts + overFromLeft[good.row] - 
-        ifelse(side == "right", 2, 0), end = ends + overFromLeft[good.row] - 
-        ifelse(side == "right", 2, 0), names = namesq)
-    cleanit <- gc()
-    return(hits)
-  }
+\dontrun{
+ vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+ vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{pairwiseAlignSeqs}},
+  \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}},
+  \code{\link{findAndTrimSeq}}
+}
+

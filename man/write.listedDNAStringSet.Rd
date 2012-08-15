@@ -1,98 +1,54 @@
 \name{write.listedDNAStringSet}
 \alias{write.listedDNAStringSet}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
+\title{Write a fasta file per sample in parallel
+Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the function writes a fasta file for each sample as defined in filePath parameter.}
+\usage{
+  write.listedDNAStringSet(dnaSet, filePath = ".",
+    filePrefix = "processed", prependSamplenames = TRUE,
+    parallel = TRUE)
+}
+\arguments{
+  \item{dnaSet}{listed DNAStringSet object containing
+  sequences to be written.}
+
+  \item{filePath}{a path write the fasta files per sample.
+  Default is current working directory.}
+
+  \item{filePrefix}{prefix the filenames with a string.
+  Default is 'processed' followed by samplename.}
+
+  \item{prependSamplenames}{Prepend definition lines with
+  samplenames. Default is TRUE. Make sure the dnaSet
+  parameter is a named list where names are used as
+  samplenames.}
+
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to TRUE.
+  If no parallel backend is registered, then a serial
+  version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
-\usage{
-write.listedDNAStringSet(dnaSet, filePath = ".", filePrefix = "processed", prependSamplenames = TRUE, parallel = TRUE)
-}
-%- maybe also 'usage' for other objects documented here.
-\arguments{
-  \item{dnaSet}{
-%%     ~~Describe \code{dnaSet} here~~
-}
-  \item{filePath}{
-%%     ~~Describe \code{filePath} here~~
-}
-  \item{filePrefix}{
-%%     ~~Describe \code{filePrefix} here~~
-}
-  \item{prependSamplenames}{
-%%     ~~Describe \code{prependSamplenames} here~~
-}
-  \item{parallel}{
-%%     ~~Describe \code{parallel} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
-\value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
+  Write a fasta file per sample in parallel Given a listed
+  DNAStringSet object return from
+  \code{\link{extractSeqs}}, the function writes a fasta
+  file for each sample as defined in filePath parameter.
 }
 \note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  If parallel=TRUE, then be sure to have a paralle backend
+  registered before running the function. One can use any
+  of the following libraries compatible with
+  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+  example: library(doSMP); w <- startWorkers(2);
+  registerDoSMP(w)
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (dnaSet, filePath = ".", filePrefix = "processed", prependSamplenames = TRUE, 
-    parallel = TRUE) 
-{
-    stopifnot(class(dnaSet) == "list")
-    if (!parallel) {
-        registerDoSEQ()
-    }
-    for (sector in names(dnaSet)) {
-        foreach(i = iter(names(dnaSet[[sector]]), .inorder = FALSE, 
-            .errorhandling = "stop", .packages = "Biostrings", 
-            .export = c("dnaSet", "sector", "filePath", "filePrefix", 
-                "prependSamplenames"))) \%dopar\% {
-            outputSeqs <- dnaSet[[sector]][[i]]
-            if (length(outputSeqs) > 0) {
-                if (is.null(names(outputSeqs))) {
-                  message("No names attribute found for ", i, 
-                    " ... using artifically generated names")
-                  names(outputSeqs) <- paste("read", 1:length(outputSeqs), 
-                    sep = "-")
-                }
-                filename <- paste(filePath, paste(filePrefix, 
-                  i, "fa", sep = "."), sep = "/")
-                if (prependSamplenames) {
-                  names(outputSeqs) <- paste(i, names(outputSeqs), 
-                    sep = "-")
-                }
-                write.XStringSet(outputSeqs, file = filename, 
-                  format = "fasta", append = TRUE, width = 20000)
-            }
-        }
-    }
-  }
+\dontrun{
+ write.listedDNAStringSet(dnaSet)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{decodeByBarcode}},
+  \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
+}
+

@@ -1,73 +1,32 @@
 \name{dereplicateReads}
 \alias{dereplicateReads}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Removes duplicate sequences from DNAStringSet object.
+Given a DNAStringSet object, the function dereplicates reads and adds counts=X to the definition line to indicate replication.}
 \usage{
-dereplicateReads(dnaSet)
+  dereplicateReads(dnaSet)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{dnaSet}{
-%%     ~~Describe \code{dnaSet} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{dnaSet}{DNAStringSet object to dereplicate.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  DNAStringSet object with names describing frequency of
+  repeat.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\description{
+  Removes duplicate sequences from DNAStringSet object.
+  Given a DNAStringSet object, the function dereplicates
+  reads and adds counts=X to the definition line to
+  indicate replication.
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (dnaSet) 
-{
-    stopifnot(class(dnaSet) == "DNAStringSet")
-    if (is.null(names(dnaSet))) {
-        message("No names attribute found in dnaSet object...using artifically generated names")
-        names(dnaSet) <- paste("read", 1:length(dnaSet), sep = "-")
-    }
-    dnaSet <- sort(dnaSet)
-    ranks <- rank(dnaSet)
-    counts <- table(ranks)
-    isDuplicate <- duplicated(dnaSet)
-    seqToRank <- data.frame(ranks, counts = as.numeric(counts[as.character(ranks)]), 
-        row.names = names(dnaSet), stringsAsFactors = FALSE)
-    seqToRank <- seqToRank[!isDuplicate, ]
-    dnaSet <- dnaSet[!isDuplicate]
-    names(dnaSet) <- paste(names(dnaSet), "counts=", seqToRank[names(dnaSet), 
-        "counts"], sep = "")
-    return(dnaSet)
-  }
+\dontrun{
+ dereplicateReads(dnaSet)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{replicateReads}},
+  \code{\link{removeReadsWithNs}},
+  \code{\link{decodeByBarcode}},
+  \code{\link{splitByBarcode}}
+}
+

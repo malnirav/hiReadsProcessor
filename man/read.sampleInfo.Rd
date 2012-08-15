@@ -1,184 +1,91 @@
 \name{read.sampleInfo}
 \alias{read.sampleInfo}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Read a sample information file and format appropriate metadata.
+Given a sample information file the function checks if it includes required information to process samples present on each quadrant/lane. The function also adds other columns required for processing with default values if not already defined ahead of time.}
 \usage{
-read.sampleInfo(sampleInfoPath = NULL, splitBySector = TRUE, interactive = TRUE)
+  read.sampleInfo(sampleInfoPath = NULL,
+    splitBySector = TRUE, interactive = TRUE)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sampleInfoPath}{
-%%     ~~Describe \code{sampleInfoPath} here~~
-}
-  \item{splitBySector}{
-%%     ~~Describe \code{splitBySector} here~~
-}
-  \item{interactive}{
-%%     ~~Describe \code{interactive} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{sampleInfoFilePath}{full or relative path to the
+  sample information file, which holds samples to
+  quadrant/lane associations along with other metadata
+  required to trim sequences or process it.}
+
+  \item{splitBySector}{split the data frame into a list by
+  sector column. Default is TRUE.}
+
+  \item{interactive}{whether to prompt each time the
+  function encounters an issue, or use the defaults.
+  Default is TRUE.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  if splitBySector=TRUE, then an object of SimpleList named
+  by quadrant/lane information defined in sampleInfo file,
+  else a dataframe.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
+\description{
+  Read a sample information file and format appropriate
+  metadata. Given a sample information file the function
+  checks if it includes required information to process
+  samples present on each quadrant/lane. The function also
+  adds other columns required for processing with default
+  values if not already defined ahead of time.
 }
 \note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  Required Column Description: sector region/quadrant of
+  the sequencing plate the sample comes from.  barcode
+  unique 4-12bp DNA sequence which identifies the sample
+  primerltrsequence DNA sequence of the viral LTR primer
+  with viral LTR sequence following the primer landing site
+  samplename Name of the sample associated with the barcode
+  sampledescription Detailed description of the sample
+  gender sex of the sample: male or female species species
+  of the sample: homo sapien, mus musculus, etc.  freeze
+  UCSC freeze to which the sample should be aligned to.
+  linkersequence DNA sequence of linker adaptor to found
+  following the genomic sequence.  restrictionenzyme
+  Restriction enzyme used for digestion and sample
+  recovery. Can also be Fragmentase! Metadata Column
+  Description: ltrbitsequence DNA sequence of the viral LTR
+  following the primer landing site.  ltrbitidentity
+  percent of LTR bit sequence to match during the
+  alignment. Default is 1.  primerltridentity percent of
+  primer to match during the alignment. Default is .85
+  linkeridentity percent of linker sequence to match during
+  the alignment. Default is 0.55. Only applies to
+  non-primerID/random tag based linker search.
+  primeridinlinker whether the linker adaptor used has
+  primerID/random tag in it? Default is FALSE.
+  primeridinlinkeridentity1 percent of sequence to match
+  before the random tag. Default is 0.75. Only applies to
+  primerID/random tag based linker search and when
+  primeridinlinker is TRUE.  primeridinlinkeridentity2
+  percent of sequence to match after the random tag.
+  Default is 0.50. Only applies to primerID/random tag
+  based linker search and when primeridinlinker is TRUE.
+  celltype celltype information associated with the sample
+  user name of the user who prepared or processed the
+  sample startwithin upper bound limit of where the
+  alignment should start within the query. Default is 3.
+  alignratiothreshold cuttoff for (alignment span/read
+  length). Default is 0.7.  genomicpercentidentity cuttoff
+  for (1-(misMatches/matches)). Default is 0.98.
+  clustersiteswithin cluster integration sites within a
+  defined window size based on frequency which corrects for
+  any sequencing errors. Default is 5.  keepmultihits
+  whether to keep sequences/reads that return multiple best
+  hits, aka ambiguous locations.  processingdate the date
+  of processing
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (sampleInfoPath = NULL, splitBySector = TRUE, interactive = TRUE) 
-{
-    if (is.null(sampleInfoPath)) {
-        stop("No sample information file path provided.")
-    }
-    sampleInfoPath <- normalizePath(sampleInfoPath, mustWork = TRUE)
-    requiredCols <- c("sector", "barcode", "primerltrsequence", 
-        "samplename", "sampledescription", "gender", "species", 
-        "freeze", "linkersequence", "restrictionenzyme")
-    metaDataCols <- c(ltrbitsequence = "", ltrbitidentity = 1, 
-        primerltridentity = 0.85, linkeridentity = 0.55, primeridinlinker = FALSE, 
-        primeridinlinkeridentity1 = 0.75, primeridinlinkeridentity2 = 0.5, 
-        celltype = "", user = Sys.getenv("USER"), startwithin = 3, 
-        alignratiothreshold = 0.7, clustersiteswithin = 5, keepmultihits = TRUE, 
-        genomicpercentidentity = 0.98, processingdate = format(Sys.time(), 
-            "\%Y-\%m-\%d "))
-    if (grepl(".xls.?$", sampleInfoPath)) {
-        sampleInfo <- unique(read.xlsx(sampleInfoPath, sheetIndex = 1, 
-            stringsAsFactors = FALSE))
-    }
-    else {
-        sampleInfo <- unique(read.delim(sampleInfoPath, stringsAsFactors = FALSE))
-    }
-    names(sampleInfo) <- tolower(gsub("\\.|-|_", "", names(sampleInfo)))
-    ColsNotThere <- !requiredCols \%in\% names(sampleInfo)
-    if (any(ColsNotThere)) {
-        absentCols <- requiredCols[ColsNotThere]
-        info <- paste("Following required column(s) is absent from the Sample Info file:", 
-            paste(absentCols, sep = "", collapse = ", "), sep = "")
-        stop(info)
-    }
-    metaColsNotThere <- !names(metaDataCols) \%in\% names(sampleInfo)
-    if (any(metaColsNotThere)) {
-        sampleInfo <- cbind(sampleInfo, as.data.frame(t(metaDataCols[metaColsNotThere]), 
-            stringsAsFactors = FALSE))
-    }
-    for (column in c("sector", "barcode", "primerltrsequence", 
-        "ltrbitsequence", "samplename", "linkersequence", "restrictionenzyme")) {
-        sampleInfo[, column] <- gsub(" ", "", sampleInfo[, column])
-        if (column \%in\% c("barcode", "primerltrsequence", "ltrbitsequence", 
-            "linkersequence", "restrictionenzyme")) {
-            sampleInfo[, column] <- toupper(sampleInfo[, column])
-        }
-    }
-    ltrbitTest <- nchar(sampleInfo$ltrbitsequence) == 0 | sampleInfo$ltrbitsequence == 
-        ""
-    if (any(ltrbitTest)) {
-        tofix <- which(ltrbitTest)
-        if (interactive) {
-            message("LTR bit not found for ", length(tofix), 
-                " samples. Use last 7 bases of the LTR primer as the LTR bit? (y/n)")
-            choice <- scan(what = character(0), n = 1, quiet = TRUE, 
-                multi.line = FALSE)
-        }
-        else {
-            message("LTR bit not found for ", length(tofix), 
-                " samples. Using last 7 bases of the LTR primer as the LTR bit.")
-            choice <- "y"
-        }
-        if (tolower(choice) == "y") {
-            sampleInfo$ltrbitsequence <- substr(sampleInfo$primerltrsequence, 
-                nchar(sampleInfo$primerltrsequence) - 6, nchar(sampleInfo$primerltrsequence))
-            sampleInfo$primerltrsequence <- substr(sampleInfo$primerltrsequence, 
-                1, nchar(sampleInfo$primerltrsequence) - 7)
-        }
-        else {
-            warning("No LTR bit sequence found for following samples: ", 
-                paste(sampleInfo$samplename[tofix], sep = "", 
-                  collapse = ", "), immediate. = TRUE)
-        }
-    }
-    samplenametest <- nchar(sampleInfo$samplename) == 0 | sampleInfo$samplename == 
-        ""
-    if (any(samplenametest)) {
-        stop("No sample names found in following rows of the sample information file ", 
-            sampleInfoPath, " : ", paste(which(samplenametest), 
-                sep = "", collapse = ", "))
-    }
-    sectortest <- nchar(sampleInfo$sector) == 0 | sampleInfo$sector == 
-        "" | is.na(sampleInfo$sector)
-    if (any(sectortest)) {
-        tofix <- which(sectortest)
-        if (interactive) {
-            message("Sector information not found for ", length(tofix), 
-                " samples. Which sector are they from? (1,2,4,etc)")
-            choice <- scan(what = character(0), quiet = TRUE, 
-                multi.line = FALSE)
-        }
-        else {
-            message("Sector information not found for ", length(tofix), 
-                " samples. Assuming they are from sector 1.")
-            choice <- "1"
-        }
-        if (length(choice) > 0) {
-            sampleInfo$sector[tofix] <- unlist(strsplit(choice, 
-                ","))
-        }
-        else {
-            stop("No Sector information found for following samples: ", 
-                paste(sampleInfo$samplename[tofix], sep = "", 
-                  collapse = ", "))
-        }
-    }
-    sampleInfo$sector <- gsub("\\.0$", "", as.character(sampleInfo$sector))
-    sampleSectorTest <- table(paste(sampleInfo$samplename, sampleInfo$sector))
-    if (any(sampleSectorTest > 1)) {
-        stop("Duplicate sample names found on same quadrant in the sample information file ", 
-            sampleInfoPath, " : ", paste(sampleSectorTest[sampleSectorTest > 
-                1], sep = "", collapse = ", "))
-    }
-    if (splitBySector) {
-        sampleInfo <- SimpleList(split(sampleInfo, sampleInfo$sector))
-        for (sector in 1:length(sampleInfo)) {
-            sampleData <- do.call(SimpleList, split(sampleInfo[[sector]], 
-                sampleInfo[[sector]]$samplename))
-            for (sample.i in 1:length(sampleData)) {
-                sampleData[[sample.i]] <- do.call(SimpleList, 
-                  as.list(sampleData[[sample.i]]))
-            }
-            sampleInfo[[sector]] <- SimpleList(samples = sampleData)
-        }
-    }
-    return(sampleInfo)
-  }
+\dontrun{
+ read.sampleInfo("~/sampleInfo.xls")
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{read.SeqFolder}},
+  \code{\link{decodeByBarcode}},
+  \code{\link{splitByBarcode}}
+}
+

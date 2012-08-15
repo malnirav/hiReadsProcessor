@@ -1,208 +1,79 @@
 \name{blatSeqs}
 \alias{blatSeqs}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Align sequences using BLAT.
+Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for alignment against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution.}
 \usage{
-blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE, port = NULL, host = "localhost", parallel = TRUE, gzipResults = TRUE, blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 8, tileSize = 10, repMatch = 112312, dots = 50, q = "dna", t = "dna"))
+  blatSeqs(query = NULL, subject = NULL,
+    standaloneBlat = TRUE, port = NULL, host = "localhost",
+    parallel = TRUE, gzipResults = TRUE,
+    blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50, q = "dna", t = "dna", out = "psl"))
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{query}{
-%%     ~~Describe \code{query} here~~
-}
-  \item{subject}{
-%%     ~~Describe \code{subject} here~~
-}
-  \item{standaloneBlat}{
-%%     ~~Describe \code{standaloneBlat} here~~
-}
-  \item{port}{
-%%     ~~Describe \code{port} here~~
-}
-  \item{host}{
-%%     ~~Describe \code{host} here~~
-}
-  \item{parallel}{
-%%     ~~Describe \code{parallel} here~~
-}
-  \item{gzipResults}{
-%%     ~~Describe \code{gzipResults} here~~
-}
-  \item{blatParameters}{
-%%     ~~Describe \code{blatParameters} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{query}{an object of DNAStringSet, a character
+  vector, or a path/pattern of fasta files to BLAT. Default
+  is NULL.}
+
+  \item{subject}{an object of DNAStringSet, a character
+  vector, or a path to an indexed genome (nibs,2bits) to
+  serve as a reference or target to the query. Default is
+  NULL. If the subject is a path to a nib or 2bit file,
+  then standaloneBlat will not work!}
+
+  \item{standaloneBlat}{use standalone BLAT as suppose to
+  gfServer/gfClient protocol. Default is TRUE.}
+
+  \item{port}{the same number you started the gfServer
+  with. Required if standaloneBlat=FALSE. Default is NULL.}
+
+  \item{host}{name of the machine running gfServer. Default
+  is 'localhost' and only used when standaloneBlat=FALSE.}
+
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to TRUE.
+  If no parallel backend is registered, then a serial
+  version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
+
+  \item{gzipResults}{gzip the output files? Default is
+  TRUE.}
+
+  \item{blatParameters}{a character vector of options to be
+  passed to gfClient/BLAT command except for 'nohead'
+  option. Default: c(minIdentity=70, minScore=5,
+  stepSize=5, tileSize=10, repMatch=112312, dots=50,
+  q="dna", t="dna", out="psl"). Be sure to only pass
+  parameters accepted by either BLAT or gfClient. For
+  example, if repMatch or stepSize parameters are specified
+  when using gfClient, then the function will simply ignore
+  them! The defaults are configured to align a 19bp
+  sequence with 70% identity.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  a character vector of psl filenames.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\description{
+  Align sequences using BLAT. Align batch of sequences
+  using standalone BLAT or gfServer/gfClient protocol for
+  alignment against an indexed reference genome. Depending
+  on parameters provided, the function either aligns batch
+  of files to a reference genome using gfClient or takes
+  sequences from query & subject parameters and aligns them
+  using standalone BLAT. If standaloneBlat=FALSE and
+  gfServer is not launched apriori, this function will
+  start one using \code{\link{startgfServer}} and kill it
+  using \code{\link{stopgfServer}} upon successful
+  execution.
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (query = NULL, subject = NULL, standaloneBlat = TRUE, 
-    port = NULL, host = "localhost", parallel = TRUE, gzipResults = TRUE, 
-    blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 8, 
-        tileSize = 10, repMatch = 112312, dots = 50, q = "dna", 
-        t = "dna")) 
-{
-    suppressWarnings(blatOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", 
-        "\\1", grep("\\s+-.+=", system("blat", intern = TRUE), 
-            value = TRUE))))
-    suppressWarnings(gfClientOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", 
-        "\\1", grep("\\s+-.+=", system("gfclient", intern = TRUE), 
-            value = TRUE))))
-    if (!standaloneBlat) {
-        message("Using gfClient protocol to perform BLAT.")
-        if (is.null(port)) {
-            stop("The port paramter is empty. Please define the port used to start gfServer with")
-        }
-    }
-    if (is.null(subject)) {
-        stop("The subject parameter is empty. Please supply subject sequences or a path to 2bit or nib files to serve as reference/target")
-    }
-    else {
-        subjectFile <- NULL
-        if (is.atomic(subject)) {
-            if (any(grepl("\\.2bit$|\\.nib$", subject))) {
-                if (standaloneBlat) {
-                  stop("Standalone BLAT cannot be used when subject is an indexed nib or 2bit file.")
-                }
-                indexFileDir <- dirname(subject)
-                subjectFile <- list.files(path = indexFileDir, 
-                  pattern = basename(subject), full.names = TRUE)
-            }
-            else {
-                subject <- DNAStringSet(subject)
-            }
-        }
-        if (is.null(subjectFile)) {
-            if (is.null(names(subject))) {
-                names(subject) <- paste("subject", 1:length(subject))
-            }
-            filename.seq <- "subjectFile.fa.tempyS"
-            write.XStringSet(subject, file = filename.seq, format = "fasta")
-            subjectFile <- filename.seq
-        }
-    }
-    if (is.null(query)) {
-        stop("The query parameter is empty. Please supply reads to be aligned")
-    }
-    else {
-        queryFiles <- NULL
-        if (is.atomic(query)) {
-            if (any(grepl("\\.fna$|\\.fa$|\\*", query))) {
-                queryFiles <- list.files(path = dirname(query), 
-                  pattern = basename(query), full.names = TRUE)
-                if (parallel) {
-                  queryFiles <- unlist(sapply(queryFiles, function(f) splitSeqsToFiles(f, 
-                    getDoParWorkers(), "tempyQ")), use.names = FALSE)
-                }
-            }
-            else {
-                query <- DNAStringSet(query)
-            }
-        }
-        if (is.null(queryFiles)) {
-            if (is.null(names(query))) {
-                names(query) <- paste("read", 1:length(query))
-            }
-            if (parallel) {
-                queryFiles <- splitSeqsToFiles(query, getDoParWorkers(), 
-                  "tempyQ")
-            }
-            else {
-                queryFiles <- "queryFile.fa.tempyQ"
-                write.XStringSet(query, file = queryFiles, format = "fasta")
-            }
-        }
-    }
-    if (!parallel) {
-        registerDoSEQ()
-    }
-    queryFiles <- as.character(queryFiles)
-    subjectFile <- as.character(subjectFile)
-    if (standaloneBlat) {
-        blatOpts <- blatParameters[names(blatParameters) \%in\% 
-            blatOpts]
-        stopifnot(length(subjectFile) == 1)
-        filenames <- foreach(x = iter(queryFiles), .inorder = FALSE, 
-            .export = c("blatOpts", "subjectFile", "gzipResults")) \%dopar\% 
-            {
-                filename.psl <- paste(x, "psl", sep = ".")
-                cmd <- paste("blat", paste(paste("-", names(blatOpts), 
-                  sep = ""), blatOpts, collapse = " ", sep = "="), 
-                  "-noHead", subjectFile, x, filename.psl)
-                message(cmd)
-                system(cmd)
-                if (grepl("\\.tempyQ$", x)) {
-                  system(paste("rm", x))
-                }
-                if (gzipResults) {
-                  system(paste("gzip", filename.psl))
-                  filename.psl <- paste(filename.psl, "gz", sep = ".")
-                }
-                filename.psl
-            }
-        if (grepl("\\.tempyS$", subjectFile)) {
-            system(paste("rm", subjectFile))
-        }
-    }
-    else {
-        gfClientOpts <- blatParameters[names(blatParameters) \%in\% 
-            gfClientOpts]
-        stopifnot(length(subjectFile) > 0)
-        filenames <- foreach(x = iter(queryFiles), .inorder = FALSE, 
-            .export = c("gfClientOpts", "host", "port", "indexFileDir", 
-                "gzipResults")) \%dopar\% {
-            filename.psl <- paste(x, "psl", sep = ".")
-            cmd <- paste("gfClient", paste(paste("-", names(gfClientOpts), 
-                sep = ""), gfClientOpts, collapse = " ", sep = "="), 
-                "-nohead", host, port, "/", x, filename.psl)
-            message(cmd)
-            system(cmd)
-            if (grepl("\\.tempyQ$", x)) {
-                system(paste("rm", x))
-            }
-            if (gzipResults) {
-                system(paste("gzip", filename.psl))
-                filename.psl <- paste(filename.psl, "gz", sep = ".")
-            }
-            filename.psl
-        }
-    }
-    return(unlist(filenames))
-  }
+\dontrun{
+ blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
+ blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{pairwiseAlignSeqs}},
+  \code{\link{vpairwiseAlignSeqs}},
+  \code{\link{startgfServer}}, \code{\link{stopgfServer}},
+  \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}
+}
+

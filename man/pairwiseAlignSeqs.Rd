@@ -1,159 +1,92 @@
 \name{pairwiseAlignSeqs}
 \alias{pairwiseAlignSeqs}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Align a pattern to variable length target sequences.
+Align a fixed length pattern sequence to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended.}
 \usage{
-pairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL, side = "left", qualityThreshold = 1, showStats = FALSE, bufferBases = 5, doRC = TRUE, returnUnmatched = FALSE, returnLowScored = FALSE, ...)
+  pairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
+    side = "left", qualityThreshold = 1, showStats = FALSE,
+    bufferBases = 5, doRC = TRUE, returnUnmatched = FALSE,
+    returnLowScored = FALSE, ...)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{subjectSeqs}{
-%%     ~~Describe \code{subjectSeqs} here~~
-}
-  \item{patternSeq}{
-%%     ~~Describe \code{patternSeq} here~~
-}
-  \item{side}{
-%%     ~~Describe \code{side} here~~
-}
-  \item{qualityThreshold}{
-%%     ~~Describe \code{qualityThreshold} here~~
-}
-  \item{showStats}{
-%%     ~~Describe \code{showStats} here~~
-}
-  \item{bufferBases}{
-%%     ~~Describe \code{bufferBases} here~~
-}
-  \item{doRC}{
-%%     ~~Describe \code{doRC} here~~
-}
-  \item{returnUnmatched}{
-%%     ~~Describe \code{returnUnmatched} here~~
-}
-  \item{returnLowScored}{
-%%     ~~Describe \code{returnLowScored} here~~
-}
-  \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{subjectSeqs}{DNAStringSet object containing
+  sequences to be searched for the pattern. This is
+  generally bigger than patternSeq, and cases where
+  subjectSeqs is smaller than patternSeq will be ignored in
+  the alignment.}
+
+  \item{patternSeq}{DNAString object or a sequence
+  containing the query sequence to search. This is
+  generally smaller than subjectSeqs.}
+
+  \item{side}{which side of the sequence to perform the
+  search: left, right or middle. Default is 'left'.}
+
+  \item{qualityThreshold}{percent of patternSeq to match.
+  Default is 1, full match.}
+
+  \item{showStats}{toggle output of search statistics.
+  Default is FALSE.}
+
+  \item{bufferBases}{use x number of bases in addition to
+  patternSeq length to perform the search. Beneficial in
+  cases where the pattern has homopolymers or indels
+  compared to the subject. Default is 5. Doesn't apply when
+  side='middle'.}
+
+  \item{doRC}{perform reverse complement search of the
+  defined pattern. Default is TRUE.}
+
+  \item{returnUnmatched}{return sequences which had no or
+  less than 5% match to the patternSeq. Default is FALSE.}
+
+  \item{returnLowScored}{return sequences which had quality
+  score less than the defined qualityThreshold. Default is
+  FALSE.}
+
+  \item{...}{extra parameters for
+  \code{\link{pairwiseAlignment}}}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  IRanges object with starts, stops, and names of the
+  aligned sequences. If returnLowScored or returnUnmatched
+  = T, then a CompressedIRangesList where x[["hits"]] has
+  the good scoring hits, x[["Rejected"]] has the failed to
+  match qualityThreshold hits, and x[["Absent"]] has the
+  hits where the aligned bit is <=10% match to the
+  patternSeq.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
+\description{
+  Align a pattern to variable length target sequences.
+  Align a fixed length pattern sequence to subject
+  sequences using \code{\link{pairwiseAlignment}}. This
+  function uses default of type="overlap", gapOpening=-1,
+  and gapExtension=-1 to align the patternSeq against
+  subjectSeqs. One can adjust these parameters if prefered,
+  but not recommended.
 }
 \note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  For qualityThreshold, the alignment score is calculated
+  by (matches*2)-(mismatches+gaps) which programatically
+  translates to
+  round(nchar(patternSeq)*qualityThreshold)*2. Gaps and
+  mismatches are weighed equally with value of -1. If
+  qualityThreshold is 1, then its is a full match, if 0,
+  then any match is accepted which is useful in searching
+  linker sequences at 3' end. Beware, this function only
+  searches for the pattern sequence in one orientation. If
+  you are expecting to find the pattern in both
+  orientation, you might be better off using BLAST!
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (subjectSeqs = NULL, patternSeq = NULL, side = "left", 
-    qualityThreshold = 1, showStats = FALSE, bufferBases = 5, 
-    doRC = TRUE, returnUnmatched = FALSE, returnLowScored = FALSE, 
-    ...) 
-{
-    if (is.null(subjectSeqs) | is.null(patternSeq)) {
-        stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
-    }
-    if (length(patternSeq) > 1) {
-        stop("More than 1 patternSeq is defined. Please only supply one pattern.")
-    }
-    if (is.null(names(subjectSeqs))) {
-        names(subjectSeqs) <- paste("read", 1:length(subjectSeqs))
-    }
-    if (tolower(side) == "left") {
-        badSeqs <- DNAStringSet()
-        culprits <- width(subjectSeqs) < (nchar(patternSeq) + 
-            bufferBases)
-        if (any(culprits)) {
-            badSeqs <- subjectSeqs[culprits]
-            message(length(badSeqs), " sequences were removed from aligning since they were shorter than pattern getting aligned: ", 
-                (nchar(patternSeq) + bufferBases), "bp")
-            subjectSeqs <- subjectSeqs[!culprits]
-        }
-        subjectSeqs2 <- subseq(subjectSeqs, start = 1, end = (nchar(patternSeq) + 
-            bufferBases))
-        overFromLeft <- rep(0, length(subjectSeqs))
-    }
-    else if (tolower(side) == "right") {
-        overFromLeft <- width(subjectSeqs) - (nchar(patternSeq) + 
-            bufferBases)
-        overFromLeft[overFromLeft < 1] <- 1
-        subjectSeqs2 <- subseq(subjectSeqs, start = overFromLeft)
-    }
-    else {
-        subjectSeqs2 <- subjectSeqs
-        overFromLeft <- rep(0, length(subjectSeqs))
-    }
-    if (doRC) {
-        patternSeq <- doRCtest(subjectSeqs2, patternSeq, qualityThreshold)
-    }
-    hits <- pairwiseAlignment(subjectSeqs2, patternSeq, type = "overlap", 
-        gapOpening = -1, gapExtension = -1, ...)
-    stopifnot(length(hits) == length(subjectSeqs2))
-    scores <- round(score(hits))
-    highscored <- scores >= round(nchar(patternSeq) * qualityThreshold) * 
-        2
-    unmatched <- nchar(hits) <= round(nchar(patternSeq) * 0.1)
-    if (showStats & qualityThreshold != 0) {
-        message("Total of ", as.numeric(table(highscored)["FALSE"]), 
-            " did not have the defined pattern sequence (", patternSeq, 
-            ") that passed qualityThreshold on the ", side, " side")
-    }
-    starts <- start(pattern(hits))
-    ends <- end(pattern(hits))
-    namesq <- names(subjectSeqs)
-    hits <- IRanges(start = starts + overFromLeft - ifelse(side == 
-        "right", 2, 0), end = ends + overFromLeft - ifelse(side == 
-        "right", 2, 0), names = namesq)
-    rm("scores", "subjectSeqs2", "subjectSeqs", "starts", "ends", 
-        "namesq")
-    if (!returnLowScored & !returnUnmatched) {
-        hits <- hits[highscored]
-    }
-    else {
-        hitstoreturn <- IRangesList(hits = hits[highscored])
-        if (returnLowScored & length(hits[!highscored]) > 0) {
-            hitstoreturn <- append(hitstoreturn, IRangesList(Rejected = hits[!highscored]))
-        }
-        if (returnUnmatched & length(hits[unmatched]) > 0) {
-            hitstoreturn <- append(hitstoreturn, IRangesList(Absent = hits[unmatched]))
-        }
-        hits <- hitstoreturn
-        rm(hitstoreturn)
-    }
-    cleanit <- gc()
-    return(hits)
-  }
+\dontrun{
+ pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+ pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{primerIDAlignSeqs}},
+  \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}},
+  \code{\link{findAndTrimSeq}}
+}
+

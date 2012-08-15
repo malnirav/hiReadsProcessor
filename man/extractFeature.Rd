@@ -1,106 +1,48 @@
 \name{extractFeature}
 \alias{extractFeature}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Extract a specific feature/attribute of the sampleInfo object.
+Given a sampleInfo object, the function extracts a defined feature(s) for given sample or sector.}
 \usage{
-extractFeature(sampleInfo, sector = NULL, samplename = NULL, feature = NULL)
+  extractFeature(sampleInfo, sector = NULL,
+    samplename = NULL, feature = NULL)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sampleInfo}{
-%%     ~~Describe \code{sampleInfo} here~~
-}
-  \item{sector}{
-%%     ~~Describe \code{sector} here~~
-}
-  \item{samplename}{
-%%     ~~Describe \code{samplename} here~~
-}
-  \item{feature}{
-%%     ~~Describe \code{feature} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{sampleInfo}{sample information SimpleList object,
+  which samples per sector/quadrant information along with
+  other metadata.}
+
+  \item{sector}{a vector or specific sector to extract the
+  feature from. Default is NULL, which extracts all
+  sectors.}
+
+  \item{samplename}{a character vector or a specific sample
+  to extract feature from. Default is NULL, which extracts
+  all samples.}
+
+  \item{feature}{Options include: primed, LTRed, linkered,
+  decoded, and any of the metadata. Default is NULL. When
+  feature='metadata', then it returns names of all the
+  metadata elements associated with the sample as a comma
+  separated list.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  a list or list of lists depending upon which parameters
+  were supplied.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\description{
+  Extract a specific feature/attribute of the sampleInfo
+  object. Given a sampleInfo object, the function extracts
+  a defined feature(s) for given sample or sector.
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (sampleInfo, sector = NULL, samplename = NULL, feature = NULL) 
-{
-    stopifnot(class(sampleInfo) == "SimpleList")
-    if (is.null(feature)) {
-        stop("Please define a feature to extract.")
-    }
-    res <- getSectorsForSamples(sampleInfo, sector, samplename)
-    sectors <- res[["sectors"]]
-    samplenames <- res[["samplenames"]]
-    res <- sapply(sectors, function(y) {
-        sapply(samplenames[[y]], function(x, y) {
-            if (feature == "metadata") {
-                paste(names(sampleInfo$sectors[[y]]$samples[[x]]), 
-                  collapse = ", ")
-            }
-            else {
-                res <- sampleInfo$sectors[[y]]$samples[[x]][[feature]]
-                if (class(res) == "factor") {
-                  if (!any(is.na(suppressWarnings(as.numeric(levels(res)))))) {
-                    as.numeric(as.character(res))
-                  }
-                  else {
-                    as.character(res)
-                  }
-                }
-                else if (class(res) == "character") {
-                  if (!any(is.na(suppressWarnings(as.numeric(res))))) {
-                    as.numeric(res)
-                  }
-                  else {
-                    res
-                  }
-                }
-                else {
-                  res
-                }
-            }
-        }, y = y)
-    }, simplify = FALSE)
-    lengthTest <- lapply(lapply(lapply(res, function(x) sapply(x, 
-        length)), ">", 0), which)
-    mapply(function(x, y) x[y], res, lengthTest, SIMPLIFY = FALSE)
-  }
+\dontrun{
+ extractFeature(sampleInfo,feature="primed")
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{addFeature}}, \code{\link{findPrimers}},
+  \code{\link{findLTRs}}, \code{\link{findLinkers}},
+  \code{\link{extractSeqs}}, \code{\link{trimSeqs}},
+  \code{\link{getSectorsForSamples}}
+}
+

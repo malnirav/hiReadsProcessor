@@ -1,72 +1,37 @@
 \name{removeReadsWithNs}
 \alias{removeReadsWithNs}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Remove sequences with ambiguious nucleotides.
+Given a DNAStringSet object, the function removes any reads that has either repeating or total Ns which is greater than to maxNs threshold}
 \usage{
-removeReadsWithNs(dnaSet, maxNs = 5, consecutive = TRUE)
+  removeReadsWithNs(dnaSet, maxNs = 5, consecutive = TRUE)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{dnaSet}{
-%%     ~~Describe \code{dnaSet} here~~
-}
-  \item{maxNs}{
-%%     ~~Describe \code{maxNs} here~~
-}
-  \item{consecutive}{
-%%     ~~Describe \code{consecutive} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{dnaSet}{DNAStringSet object to evaluate.}
+
+  \item{maxNs}{integer value denoting the threshold of
+  maximum allowed Ns. Default is 5.}
+
+  \item{consecutive}{boolean flag denoting whether Ns to
+  filter is consecutive or total . Default is TRUE.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  DNAStringSet object.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\description{
+  Remove sequences with ambiguious nucleotides. Given a
+  DNAStringSet object, the function removes any reads that
+  has either repeating or total Ns which is greater than to
+  maxNs threshold
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (dnaSet, maxNs = 5, consecutive = TRUE) 
-{
-    if (consecutive) {
-        good.row <- grepl(paste(rep("N", maxNs), collapse = ""), 
-            dnaSet, fixed = TRUE)
-    }
-    else {
-        res <- alphabetFrequency(dnaSet)
-        good.row <- res[, "N"] <= maxNs
-    }
-    return(dnaSet[good.row])
-  }
+\dontrun{
+ removeReadsWithNs(dnaSet)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{dereplicateReads}},
+  \code{\link{replicateReads}},
+  \code{\link{decodeByBarcode}},
+  \code{\link{splitByBarcode}}
+}
+

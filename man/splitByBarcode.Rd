@@ -1,114 +1,55 @@
 \name{splitByBarcode}
 \alias{splitByBarcode}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Split DNAStringSet object using first X number of bases defined by a vector.
+Given barcodes/MID to sample association vector and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{decodeByBarcode}}}
 \usage{
-splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL, showStats = FALSE, returnUnmatched = FALSE, dereplicate = FALSE)
+  splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL,
+    showStats = FALSE, returnUnmatched = FALSE,
+    dereplicate = FALSE)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{barcodesSample}{
-%%     ~~Describe \code{barcodesSample} here~~
-}
-  \item{dnaSet}{
-%%     ~~Describe \code{dnaSet} here~~
-}
-  \item{trimFrom}{
-%%     ~~Describe \code{trimFrom} here~~
-}
-  \item{showStats}{
-%%     ~~Describe \code{showStats} here~~
-}
-  \item{returnUnmatched}{
-%%     ~~Describe \code{returnUnmatched} here~~
-}
-  \item{dereplicate}{
-%%     ~~Describe \code{dereplicate} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{barcodesSample}{a character vector of barcodes to
+  sample name associations. Ex: c("ACATCCAT"="Sample1",
+  "GAATGGAT"="Sample2",...)}
+
+  \item{dnaSet}{DNAStringSet object to evaluate.}
+
+  \item{trimFrom}{integer value serving as start point to
+  trim the sequences from. This is calculated internally
+  length barcode+1. Default is NULL.}
+
+  \item{showStats}{boolean flag denoting whether to show
+  decoding statistics per sample & barcode. Default is
+  FALSE.}
+
+  \item{returnUnmatched}{boolean flag denoting whether to
+  return unmatched reads. Default is FALSE.}
+
+  \item{dereplicate}{return dereplicated sequences. Calls
+  \code{\link{dereplicateReads}}, which appends counts=X to
+  sequence names/deflines. Default is FALSE.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  DNAStringSet object split by sample name found in
+  barcodesSample.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\description{
+  Split DNAStringSet object using first X number of bases
+  defined by a vector. Given barcodes/MID to sample
+  association vector and a DNAStringSet object, the
+  function splits/demultiplexes the DNAStringSet object by
+  first few bases dictated by length of barcodes/MID
+  supplied. This is an accessory function used by
+  \code{\link{decodeByBarcode}}
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (barcodesSample, dnaSet, trimFrom = NULL, showStats = FALSE, 
-    returnUnmatched = FALSE, dereplicate = FALSE) 
-{
-    if (is.null(barcodesSample) | length(barcodesSample) == 0) {
-        stop("No barcodes to samples association vector provided in parameter barcodesSample.")
-    }
-    if (is.null(dnaSet) | length(dnaSet) == 0) {
-        stop("No sequences provided in parameter dnaSet.")
-    }
-    if (is.null(names(dnaSet))) {
-        stop("No names attribute found in dnaSet object")
-    }
-    message("Using following schema for barcode to sample associations")
-    print(as.data.frame(barcodesSample))
-    barcodelen <- unique(nchar(names(barcodesSample)))
-    seqbarcodes <- substr(dnaSet, 1, barcodelen)
-    good.row <- seqbarcodes \%in\% names(barcodesSample)
-    if (!any(good.row)) {
-        stop("No matching barcoded sequences found on this quadrant.")
-    }
-    sampleNames <- barcodesSample[seqbarcodes[good.row]]
-    deflines <- sub("^(\\S+) .+$", "\\1", names(dnaSet)[good.row], 
-        perl = T)
-    if (is.null(trimFrom)) {
-        trimFrom <- barcodelen + 1
-    }
-    unmatched <- DNAStringSet(dnaSet[!good.row])
-    dnaSet <- DNAStringSet(dnaSet[good.row], start = trimFrom)
-    names(dnaSet) <- deflines
-    if (showStats) {
-        message("Number of Sequences with no matching barcode: ", 
-            as.numeric(table(good.row)["FALSE"]))
-        message("Number of Sequences decoded:")
-        print(as.data.frame(table(sampleNames)))
-    }
-    dnaSet <- split(dnaSet, as.character(sampleNames))
-    if (dereplicate) {
-        message("Dereplicating reads.")
-        dnaSet <- lapply(dnaSet, dereplicateReads)
-    }
-    if (returnUnmatched) {
-        dnaSet <- c(dnaSet, unDecodedSeqs = unmatched)
-    }
-    return(dnaSet)
-  }
+\dontrun{
+ splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{decodeByBarcode}},
+  \code{\link{dereplicateReads}},
+  \code{\link{replicateReads}}
+}
+

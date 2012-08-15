@@ -1,189 +1,73 @@
 \name{findLinkers}
 \alias{findLinkers}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Find the 3' linkers and add results to SampleInfo object.
+Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of linker portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.}
 \usage{
-findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE, samplenames = NULL)
+  findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE,
+    parallel = TRUE, samplenames = NULL)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{sampleInfo}{
-%%     ~~Describe \code{sampleInfo} here~~
-}
-  \item{showStats}{
-%%     ~~Describe \code{showStats} here~~
-}
-  \item{doRC}{
-%%     ~~Describe \code{doRC} here~~
-}
-  \item{parallel}{
-%%     ~~Describe \code{parallel} here~~
-}
-  \item{samplenames}{
-%%     ~~Describe \code{samplenames} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{sampleInfo}{sample information SimpleList object
+  outputted from \code{\link{findPrimers}} or
+  \code{\link{findLTRs}}, which holds decoded sequences for
+  samples per sector/quadrant along with information of
+  sample to primer associations.}
+
+  \item{showStats}{toggle output of search statistics.
+  Default is FALSE.}
+
+  \item{doRC}{perform reverse complement search of the
+  defined pattern/linker sequence. Default is FALSE.}
+
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to TRUE.
+  If no parallel backend is registered, then a serial
+  version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
+
+  \item{samplenames}{a vector of samplenames to process.
+  Default is NULL, which processes all samples from
+  sampleInfo object.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  a SimpleList object similar to sampleInfo paramter
+  supplied with new data added under each sector and
+  sample. New data attributes include: linkered. If linkers
+  have primerID then, primerIDs attribute is appended as
+  well.
 }
-\references{
-%% ~put references to the literature/web site here ~
-}
-\author{
-%%  ~~who you are~~
+\description{
+  Find the 3' linkers and add results to SampleInfo object.
+  Given a sampleInfo object, the function finds 3' linkers
+  for each sample per sector and adds the results back to
+  the object. This is a specialized function which depends
+  on many other functions shown in 'see also section' to
+  perform specialized trimming of 3' primer/linker adaptor
+  sequence found in the sampleInfo object. The sequence
+  itself is never trimmed but rather coordinates of linker
+  portion is recorded back to the object and used
+  subsequently by \code{\link{extractSeqs}} function to
+  perform the trimming.
 }
 \note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  If no linker matches are found with default options, then
+  try doRC=TRUE. If parallel=TRUE, then be sure to have a
+  paralle backend registered before running the function.
+  One can use any of the following libraries compatible
+  with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI.
+  For example: library(doSMP); w <- startWorkers(2);
+  registerDoSMP(w)
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE, 
-    samplenames = NULL) 
-{
-    stopifnot(class(sampleInfo) == "SimpleList")
-    if (!parallel) {
-        registerDoSEQ()
-    }
-    primerFlag <- FALSE
-    toProcess <- extractFeature(sampleInfo, feature = "LTRed")
-    toProcessSamples <- sapply(toProcess, names, simplify = FALSE)
-    sectors <- names(which(sapply(sapply(toProcess, length), 
-        ">", 1)))
-    if (length(sectors) == 0) {
-        message("No LTRed information found in sampleInfo. Using primed information to find Linkers")
-        toProcess <- extractFeature(sampleInfo, feature = "primed")
-        toProcessSamples <- sapply(toProcess, names, simplify = FALSE)
-        sectors <- names(which(sapply(sapply(toProcess, length), 
-            ">", 1)))
-        if (length(sectors) == 0) {
-            stop("No primed information found in sampleInfo...did you run findPrimers()?")
-        }
-        primerFlag <- TRUE
-    }
-    rm(toProcess)
-    gc()
-    for (sector in sectors) {
-        message("Processing sector ", sector)
-        sampleLinkers <- toupper(extractFeature(sampleInfo, sector = sector, 
-            feature = "linkersequence")[[sector]])
-        if (length(sampleLinkers) == 0 | mean(nchar(sampleLinkers)) <= 
-            10 | all(is.na(sampleLinkers))) {
-            stop("Either Linker sequence is too short (<=10) or no Linkers found in sample information object.")
-        }
-        linkerIdentity <- extractFeature(sampleInfo, sector = sector, 
-            feature = "linkeridentity")[[sector]]
-        stopifnot(length(linkerIdentity) > 0)
-        primerIded <- extractFeature(sampleInfo, sector = sector, 
-            feature = "primeridinlinker")[[sector]]
-        primerIded.threshold1 <- extractFeature(sampleInfo, sector = sector, 
-            feature = "primeridinlinkeridentity1")[[sector]]
-        primerIded.threshold2 <- extractFeature(sampleInfo, sector = sector, 
-            feature = "primeridinlinkeridentity2")[[sector]]
-        samplesToProcess <- toProcessSamples[[sector]]
-        if (!is.null(samplenames)) {
-            samplesToProcess <- samplesToProcess[samplesToProcess \%in\% 
-                samplenames]
-        }
-        toProcess <- extractSeqs(sampleInfo, sector, samplesToProcess, 
-            feature = ifelse(primerFlag, "primed", "LTRed"))[[sector]]
-        message("\tFinding Linkers.")
-        linkerTrimmed <- foreach(x = iter(samplesToProcess), 
-            .inorder = TRUE, .errorhandling = "pass", .export = c("primerIded", 
-                "toProcess", "sampleLinkers", "doRC", "linkerIdentity", 
-                "primerIded.threshold1", "primerIded.threshold2", 
-                "pairwiseAlignSeqs", "primerIDAlignSeqs"), .packages = "Biostrings") \%dopar\% 
-            {
-                if (primerIded[[x]]) {
-                  primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], 
-                    doAnchored = TRUE, returnUnmatched = TRUE, 
-                    returnRejected = TRUE, doRC = doRC, qualityThreshold1 = primerIded.threshold1[[x]], 
-                    qualityThreshold2 = primerIded.threshold2[[x]])
-                }
-                else {
-                  pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], 
-                    "middle", qualityThreshold = linkerIdentity[[x]], 
-                    returnUnmatched = TRUE, returnLowScored = TRUE, 
-                    doRC = doRC)
-                }
-            }
-        names(linkerTrimmed) <- samplesToProcess
-        if (any(grepl("simpleError", linkerTrimmed))) {
-            stop("Error encountered in Linker Trimming functions", 
-                paste(names(linkerTrimmed[grepl("simpleError", 
-                  linkerTrimmed)]), collapse = ", "))
-        }
-        culprits <- grep("No hits found", linkerTrimmed)
-        if (length(culprits) > 0) {
-            message("Following sample(s) had no hits for Linker alignment: ", 
-                paste(samplesToProcess[culprits], collapse = ", "))
-            samplesToProcess <- samplesToProcess[-c(culprits)]
-            linkerTrimmed <- linkerTrimmed[-c(culprits)]
-        }
-        cleanit <- gc()
-        toprint <- data.frame(Total = sapply(sapply(linkerTrimmed, 
-            "[[", "hits"), length))
-        counts <- sapply(toProcess, length)
-        toprint$PercOfPrimedOrLTRed <- 100 * (toprint$Total/counts[rownames(toprint)])
-        toprint$SampleName <- rownames(toprint)
-        rownames(toprint) <- NULL
-        if (showStats) {
-            message("Sequence Stats after Linker alignment:")
-            print(toprint)
-        }
-        if (mean(toprint$PercOfPrimedOrLTRed) <= 5) {
-            stop("Something seems to be wrong with the linkers provided for each sample. On average <= 5\% of sequences found linker match for the entire run!!!")
-        }
-        message("Adding linker info back to the object")
-        for (x in names(linkerTrimmed)) {
-            for (y in names(linkerTrimmed[[x]])) {
-                cat(".")
-                if (primerFlag) {
-                  LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(linkerTrimmed[[x]][[y]])])
-                }
-                else {
-                  LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$LTRed[names(linkerTrimmed[[x]][[y]])])
-                }
-                end(linkerTrimmed[[x]][[y]]) <- end(linkerTrimmed[[x]][[y]]) + 
-                  LTRed.ends
-                start(linkerTrimmed[[x]][[y]]) <- start(linkerTrimmed[[x]][[y]]) + 
-                  LTRed.ends
-                newAttrName <- paste(ifelse(y == "hits", "", 
-                  y), "linkered", sep = "")
-                sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- linkerTrimmed[[x]][[y]]
-                rm(LTRed.ends)
-            }
-        }
-        rm("linkerTrimmed")
-        cleanit <- gc()
-    }
-    sampleInfo$callHistory <- append(sampleInfo$callHistory, 
-        match.call())
-    return(sampleInfo)
-  }
+\dontrun{
+ findLinkers(sampleInfo,showStats=TRUE)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
+\seealso{
+  \code{\link{pairwiseAlignSeqs}},
+  \code{\link{vpairwiseAlignSeqs}},
+  \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}},
+  \code{\link{findPrimers}}, \code{\link{extractFeature}},
+  \code{\link{extractSeqs}}, \code{\link{findAndTrimSeq}}
+}
+

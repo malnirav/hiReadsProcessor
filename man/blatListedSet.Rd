@@ -1,74 +1,35 @@
 \name{blatListedSet}
 \alias{blatListedSet}
-%- Also NEED an '\alias' for EACH other topic documented here.
-\title{
-%%  ~~function to do ... ~~
-}
-\description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
-}
+\title{Align a listed DNAStringSet to a reference using gfClient or standalone BLAT.
+Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and get a psl file as RangedData object. This function heavily relies on defaults of \code{\link{blatSeqs}}.}
 \usage{
-blatListedSet(dnaSetList = NULL, ...)
+  blatListedSet(dnaSetList = NULL, ...)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{dnaSetList}{
-%%     ~~Describe \code{dnaSetList} here~~
-}
-  \item{\dots}{
-%%     ~~Describe \code{\dots} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+  \item{dnaSetList}{DNAStringSet object containing
+  sequences to be aligned against the reference.}
+
+  \item{...}{parameters to be passed to
+  \code{\link{blatSeqs}}.}
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  a list of RangedData object reflecting psl file type per
+  set of sequences.
 }
-\references{
-%% ~put references to the literature/web site here ~
+\description{
+  Align a listed DNAStringSet to a reference using gfClient
+  or standalone BLAT. Align sequences from a listed
+  DNAStringSet object returned from
+  \code{\link{extractSeqs}} to an indexed reference genome
+  using gfServer/gfClient protocol or using standalone BLAT
+  and get a psl file as RangedData object. This function
+  heavily relies on defaults of \code{\link{blatSeqs}}.
 }
-\author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  \code{\link{pairwiseAlignSeqs}},
+  \code{\link{vpairwiseAlignSeqs}},
+  \code{\link{startgfServer}}, \code{\link{stopgfServer}},
+  \code{\link{blatSeqs}}, \code{\link{read.psl}},
+  \code{\link{pslToRangedData}}
 }
-\examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
 
-## The function is currently defined as
-function (dnaSetList = NULL, ...) 
-{
-    if (is.null(dnaSetList)) {
-        stop("dnaSetList is empty. Please supply a listed DNAStringSet returned from extractSeqs() to be aligned against a reference")
-    }
-    sapply(names(dnaSetList), function(x) {
-        do.call(RangedDataList, sapply(names(dnaSetList[[x]]), 
-            function(y) {
-                if (length(dnaSetList[[x]][[y]]) > 0) {
-                  message("BLATing ", y)
-                  filenames <- blatSeqs(query = dnaSetList[[x]][[y]], 
-                    ...)
-                  read.psl(filenames)
-                }
-            }))
-    })
-  }
-}
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
