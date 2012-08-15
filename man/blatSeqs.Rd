@@ -45,7 +45,7 @@
   example, if repMatch or stepSize parameters are specified
   when using gfClient, then the function will simply ignore
   them! The defaults are configured to align a 19bp
-  sequence with 70% identity.}
+  sequence with 70\% identity.}
 }
 \value{
   a character vector of psl filenames.

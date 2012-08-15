@@ -30,8 +30,8 @@
   defined pattern. Default is TRUE.}
 
   \item{returnUnmatched}{return sequences if it had no or
-  less than 5% match to the first part of patternSeq before
-  the primerID. Default is FALSE.}
+  less than 5\% match to the first part of patternSeq
+  before the primerID. Default is FALSE.}
 
   \item{returnRejected}{return sequences if it only has a
   match to one side of patternSeq or primerID length does

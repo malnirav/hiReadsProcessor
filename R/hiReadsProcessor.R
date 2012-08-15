@@ -471,13 +471,13 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param bufferBases use x number of bases in addition to patternSeq length to perform the search. Beneficial in cases where the pattern has homopolymers or indels compared to the subject. Default is 5. Doesn't apply when side='middle'.
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
-#' @param returnUnmatched return sequences which had no or less than 5% match to the patternSeq. Default is FALSE.
+#' @param returnUnmatched return sequences which had no or less than 5\% match to the patternSeq. Default is FALSE.
 #' @param returnLowScored return sequences which had quality score less than the defined qualityThreshold. Default is FALSE.
 #' @param ... extra parameters for \code{\link{pairwiseAlignment}}
 #'
 #' @note For qualityThreshold, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2. Gaps and mismatches are weighed equally with value of -1. If qualityThreshold is 1, then its is a full match, if 0, then any match is accepted which is useful in searching linker sequences at 3' end. Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST!
 #'
-#' @return IRanges object with starts, stops, and names of the aligned sequences. If returnLowScored or returnUnmatched = T, then a CompressedIRangesList where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed to match qualityThreshold hits, and x[["Absent"]] has the hits where the aligned bit is <=10% match to the patternSeq.
+#' @return IRanges object with starts, stops, and names of the aligned sequences. If returnLowScored or returnUnmatched = T, then a CompressedIRangesList where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed to match qualityThreshold hits, and x[["Absent"]] has the hits where the aligned bit is <=10\% match to the patternSeq.
 #'
 #' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}
 #'
@@ -574,7 +574,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qu
 #' @param qualityThreshold2 percent of second part of patternSeq to match. Default is 0.50.
 #' @param doAnchored for primerID based patternSeq, use the base before and after primer ID in patternSeq as anchors?. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
-#' @param returnUnmatched return sequences if it had no or less than 5% match to the first part of patternSeq before the primerID. Default is FALSE.
+#' @param returnUnmatched return sequences if it had no or less than 5\% match to the first part of patternSeq before the primerID. Default is FALSE.
 #' @param returnRejected return sequences if it only has a match to one side of patternSeq or primerID length does not match # of Ns +/-2 in the pattern. Default is FALSE.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param ... extra parameters for \code{\link{pairwiseAlignment}}
@@ -2003,7 +2003,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #' @param host name of the machine running gfServer. Default is 'localhost' and only used when standaloneBlat=FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param gzipResults gzip the output files? Default is TRUE.
-#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70% identity.
+#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70\% identity.
 #'
 #' @return a character vector of psl filenames.
 #'

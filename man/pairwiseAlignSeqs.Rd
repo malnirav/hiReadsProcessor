@@ -37,7 +37,7 @@
   defined pattern. Default is TRUE.}
 
   \item{returnUnmatched}{return sequences which had no or
-  less than 5% match to the patternSeq. Default is FALSE.}
+  less than 5\% match to the patternSeq. Default is FALSE.}
 
   \item{returnLowScored}{return sequences which had quality
   score less than the defined qualityThreshold. Default is
@@ -52,7 +52,7 @@
   = T, then a CompressedIRangesList where x[["hits"]] has
   the good scoring hits, x[["Rejected"]] has the failed to
   match qualityThreshold hits, and x[["Absent"]] has the
-  hits where the aligned bit is <=10% match to the
+  hits where the aligned bit is <=10\% match to the
   patternSeq.
 }
 \description{
