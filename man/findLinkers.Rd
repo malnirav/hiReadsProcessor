@@ -57,9 +57,7 @@
   registerDoSMP(w)
 }
 \examples{
-\dontrun{
- findLinkers(sampleInfo,showStats=TRUE)
-}
+#findLinkers(sampleInfo,showStats=TRUE)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

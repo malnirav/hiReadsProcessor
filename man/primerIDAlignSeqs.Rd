@@ -89,10 +89,8 @@
   might be better off using BLAST!
 }
 \examples{
-\dontrun{
- primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
- primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold1=0.5)
-}
+#primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+ #primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold1=0.5)
 }
 \seealso{
   \code{\link{vpairwiseAlignSeqs}},

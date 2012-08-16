@@ -76,9 +76,7 @@
   registerDoSMP(w)
 }
 \examples{
-\dontrun{
- findIntegrations(sampleInfo)
-}
+#findIntegrations(sampleInfo)
 }
 \seealso{
   \code{\link{findPrimers}}, \code{\link{findLTRs}},
@@ -87,6 +85,7 @@
   \code{\link{blatListedSet}},
   \code{\link{pslToRangedData}},
   \code{\link{clusterSites}}, \code{\link{otuSites}},
-  \code{\link{getIntegrationSites}}
+  \code{\link{getIntegrationSites}},
+  \code{\link{read.blast8}}
 }
 

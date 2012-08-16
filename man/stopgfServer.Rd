@@ -18,9 +18,7 @@
   Take down the gfServer instance.
 }
 \examples{
-\dontrun{
-	stopgfServer(port=5560)
-}
+#stopgfServer(port=5560)
 }
 \seealso{
   \code{\link{startgfServer}}

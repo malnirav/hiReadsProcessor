@@ -41,9 +41,7 @@
   registerDoSMP(w)
 }
 \examples{
-\dontrun{
- write.listedDNAStringSet(dnaSet)
-}
+#write.listedDNAStringSet(dnaSet)
 }
 \seealso{
   \code{\link{decodeByBarcode}},

@@ -38,10 +38,8 @@
   coords.
 }
 \examples{
-\dontrun{
- trimSeqs(dnaSet,coords)
- trimSeqs(dnaSet,coords,side="left",offBy=1)
-}
+#trimSeqs(dnaSet,coords)
+ #trimSeqs(dnaSet,coords,side="left",offBy=1)
 }
 \seealso{
   \code{\link{extractSeqs}},

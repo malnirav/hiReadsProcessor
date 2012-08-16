@@ -13,10 +13,12 @@
 #'
 #' @seealso \code{\link{read.sampleInfo}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
 #'
-#' @examples \dontrun{  
-#'  read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
-#'  read.SeqFolder(".",seqfilePattern=".+fastq$")
-#' }
+#' @export
+#'
+#' @examples  
+#'  #read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
+#'  #read.SeqFolder(".",seqfilePattern=".+fastq$")
+#'
 read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, seqfilePattern="\\.TCA.454Reads.fna$", interactive=TRUE) {
     if(is.null(SequencingFolderPath)) {
         stop("No Sequencing Folder Path provided.")
@@ -63,42 +65,53 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, s
 #' @param splitBySector split the data frame into a list by sector column. Default is TRUE.
 #' @param interactive whether to prompt each time the function encounters an issue, or use the defaults. Default is TRUE.
 #'
-#' @note 
-#' Required Column Description:
-#'  sector  region/quadrant of the sequencing plate the sample comes from.
-#'  barcode unique 4-12bp DNA sequence which identifies the sample
-#'  primerltrsequence   DNA sequence of the viral LTR primer with viral LTR sequence following the primer landing site
-#'  samplename  Name of the sample associated with the barcode
-#'  sampledescription   Detailed description of the sample
-#'  gender  sex of the sample: male or female
-#'  species species of the sample: homo sapien, mus musculus, etc.
-#'  freeze UCSC freeze to which the sample should be aligned to.
-#'  linkersequence  DNA sequence of linker adaptor to found following the genomic sequence.
-#'  restrictionenzyme   Restriction enzyme used for digestion and sample recovery. Can also be Fragmentase!
-#' Metadata Column Description:
-#'  ltrbitsequence  DNA sequence of the viral LTR following the primer landing site.
-#'  ltrbitidentity  percent of LTR bit sequence to match during the alignment. Default is 1.
-#'  primerltridentity   percent of primer to match during the alignment. Default is .85
-#'  linkeridentity   percent of linker sequence to match during the alignment. Default is 0.55. Only applies to non-primerID/random tag based linker search.
-#'  primeridinlinker    whether the linker adaptor used has primerID/random tag in it? Default is FALSE.
-#'  primeridinlinkeridentity1    percent of sequence to match before the random tag. Default is 0.75. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
-#'  primeridinlinkeridentity2    percent of sequence to match after the random tag. Default is 0.50. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
-#'  celltype    celltype information associated with the sample
-#'  user    name of the user who prepared or processed the sample
-#'  startwithin upper bound limit of where the alignment should start within the query. Default is 3.
-#'  alignratiothreshold cuttoff for (alignment span/read length). Default is 0.7.
-#'  genomicpercentidentity  cuttoff for (1-(misMatches/matches)). Default is 0.98.
-#'  clustersiteswithin  cluster integration sites within a defined window size based on frequency which corrects for any sequencing errors. Default is 5.
-#'  keepmultihits   whether to keep sequences/reads that return multiple best hits, aka ambiguous locations. 
-#'  processingdate  the date of processing 
+#' @details
+#' \itemize{
+#'  \item Required Column Description:
+#'    \itemize{
+#'  	\item sector => region/quadrant of the sequencing plate the sample comes from.
+#'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample
+#'  	\item primerltrsequence => DNA sequence of the viral LTR primer with viral LTR sequence following the primer landing site
+#'  	\item samplename => Name of the sample associated with the barcode
+#'  	\item sampledescription => Detailed description of the sample
+#'  	\item gender => sex of the sample: male or female
+#'  	\item species => species of the sample: homo sapien, mus musculus, etc.
+#'  	\item freeze => UCSC freeze to which the sample should be aligned to.
+#'  	\item linkersequence => DNA sequence of linker adaptor to found following the genomic sequence.
+#'  	\item restrictionenzyme => Restriction enzyme used for digestion and sample recovery. Can also be Fragmentase!
+#' 		}
+#'  \item Metadata Parameter Column Description:
+#'   \itemize{
+#'  	\item ltrbitsequence => DNA sequence of the viral LTR following the primer landing site.
+#'  	\item ltrbitidentity => percent of LTR bit sequence to match during the alignment. Default is 1.
+#'  	\item primerltridentity => percent of primer to match during the alignment. Default is .85
+#'  	\item linkeridentity => percent of linker sequence to match during the alignment. Default is 0.55. Only applies to non-primerID/random tag based linker search.
+#'  	\item primeridinlinker => whether the linker adaptor used has primerID/random tag in it? Default is FALSE.
+#'  	\item primeridinlinkeridentity1 => percent of sequence to match before the random tag. Default is 0.75. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
+#'  	\item primeridinlinkeridentity2 => percent of sequence to match after the random tag. Default is 0.50. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
+#'  	\item celltype => celltype information associated with the sample
+#'  	\item user => name of the user who prepared or processed the sample
+#' 		}
+#'  \item Processing Parameter Column Description:
+#'   \itemize{
+#'  	\item startwithin => upper bound limit of where the alignment should start within the query. Default is 3.
+#'  	\item alignratiothreshold => cuttoff for (alignment span/read length). Default is 0.7.
+#'  	\item genomicpercentidentity => cuttoff for (1-(misMatches/matches)). Default is 0.98.
+#'  	\item clustersiteswithin => cluster integration sites within a defined window size based on frequency which corrects for any sequencing errors. Default is 5.
+#'  	\item keepmultihits => whether to keep sequences/reads that return multiple best hits, aka ambiguous locations. 
+#'  	\item processingdate => the date of processing 
+#' 		}
+#' }
 #'
 #' @return if splitBySector=TRUE, then an object of SimpleList named by quadrant/lane information defined in sampleInfo file, else a dataframe.
 #'
 #' @seealso \code{\link{read.SeqFolder}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
 #'
-#' @examples \dontrun{  
-#'  read.sampleInfo("~/sampleInfo.xls")
-#' }
+#' @export
+#'
+#' @examples  
+#'  #read.sampleInfo("~/sampleInfo.xls")
+#'
 read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive=TRUE) {
     ## read file and make sampleInfo object with sample to metadata associations ##
     if(is.null(sampleInfoPath)) {
@@ -212,9 +225,11 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive
 #'
 #' @seealso \code{\link{replicateReads}}, \code{\link{removeReadsWithNs}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
 #'
-#' @examples \dontrun{  
-#'  dereplicateReads(dnaSet)
-#' }
+#' @export
+#'
+#' @examples  
+#'  #dereplicateReads(dnaSet)
+#'
 dereplicateReads <- function(dnaSet) {
     stopifnot(class(dnaSet)=="DNAStringSet")
     if(is.null(names(dnaSet))) {
@@ -243,9 +258,11 @@ dereplicateReads <- function(dnaSet) {
 #'
 #' @seealso \code{\link{dereplicateReads}}, \code{\link{removeReadsWithNs}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
 #'
-#' @examples \dontrun{  
-#'  replicateReads(decoded)
-#' }
+#' @export
+#'
+#' @examples  
+#'  #replicateReads(decoded)
+#'
 replicateReads <- function(dnaSet,counts=NULL) {
     stopifnot(class(dnaSet)=="DNAStringSet")
     if(is.null(counts)) {
@@ -280,9 +297,11 @@ replicateReads <- function(dnaSet,counts=NULL) {
 #'
 #' @seealso \code{\link{dereplicateReads}}, \code{\link{replicateReads}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
 #'
-#' @examples \dontrun{  
-#'  removeReadsWithNs(dnaSet)
-#' }
+#' @export
+#'
+#' @examples  
+#'  #removeReadsWithNs(dnaSet)
+#'
 removeReadsWithNs <- function(dnaSet,maxNs=5,consecutive=TRUE) {
     if(consecutive) {
         good.row <- grepl(paste(rep("N",maxNs),collapse=""),dnaSet,fixed=TRUE)
@@ -308,9 +327,11 @@ removeReadsWithNs <- function(dnaSet,maxNs=5,consecutive=TRUE) {
 #'
 #' @seealso \code{\link{decodeByBarcode}}, \code{\link{dereplicateReads}}, \code{\link{replicateReads}}
 #'
-#' @examples \dontrun{ 
-#'  splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
+#'
 splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALSE, returnUnmatched=FALSE, dereplicate=FALSE) {
     if(is.null(barcodesSample) | length(barcodesSample)==0) {
         stop("No barcodes to samples association vector provided in parameter barcodesSample.")
@@ -385,10 +406,12 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
 #'
 #' @seealso \code{\link{splitByBarcode}}, \code{\link{dereplicateReads}}, \code{\link{replicateReads}}
 #'
-#' @examples \dontrun{ 
-#'  decodeByBarcode(sampleInfo,showStats=TRUE)
-#'  decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #decodeByBarcode(sampleInfo,showStats=TRUE)
+#'  #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
+#'
 decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALSE, returnUnmatched=FALSE, dereplicate=FALSE) {
     ## tried PDict()...and its slower than this awesome code! ##    
     if(class(sampleInfo)=="SimpleList") {
@@ -481,10 +504,12 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
 #'
 #' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}
 #'
-#' @examples \dontrun{ 
-#'  pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#'  pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+#'  #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
+#'
 pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qualityThreshold=1, showStats=FALSE, bufferBases=5, doRC=TRUE, returnUnmatched=FALSE, returnLowScored=FALSE, ...) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
         stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
@@ -585,10 +610,12 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qu
 #'
 #' @seealso \code{\link{vpairwiseAlignSeqs}}, \code{\link{pairwiseAlignSeqs}}, \code{\link{doRCtest}}
 #'
-#' @examples \dontrun{ 
-#'  primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#'  primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold1=0.5)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+#'  #primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold1=0.5)
+#'
 primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold1=0.75, qualityThreshold2=0.50, doAnchored=FALSE, doRC=TRUE, returnUnmatched=FALSE, returnRejected=FALSE, showStats=FALSE, ...) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
         stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
@@ -728,10 +755,12 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}
 #'
-#' @examples \dontrun{ 
-#'  vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#'  vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+#'  #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
+#'
 vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qualityThreshold=1, showStats=FALSE, bufferBases=5, doRC=TRUE, ...) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
         stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
@@ -825,9 +854,11 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", q
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}
 #'
-#' @examples \dontrun{ 
-#'  doRCtest(subjectSeqs,patternSeq)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #doRCtest(subjectSeqs,patternSeq)
+#'
 doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, core.use=2) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
         stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
@@ -870,10 +901,12 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 #'
-#' @examples \dontrun{ 
-#'  findPrimers(sampleInfo,showStats=TRUE)
-#'  findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #findPrimers(sampleInfo,showStats=TRUE)
+#'  #findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
+#'
 findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
@@ -978,9 +1011,11 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 #'
-#' @examples \dontrun{ 
-#'  findLTRs(sampleInfo,showStats=TRUE)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #findLTRs(sampleInfo,showStats=TRUE)
+#'
 findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
@@ -1089,9 +1124,11 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{findAndTrimSeq}}
 #'
-#' @examples \dontrun{ 
-#'  findLinkers(sampleInfo,showStats=TRUE)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #findLinkers(sampleInfo,showStats=TRUE)
+#'
 findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
@@ -1226,9 +1263,11 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{findAndTrimSeq}}
 #'
-#' @examples \dontrun{ 
-#'  troubleshootLinkers(sampleInfo,showStats=TRUE)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #troubleshootLinkers(sampleInfo,showStats=TRUE)
+#'
 troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThreshold1=0.75, qualityThreshold2=0.50, doRC=TRUE, parallel=TRUE, samplenames=NULL) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
@@ -1317,9 +1356,11 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThresh
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}
 #'
-#' @examples \dontrun{ 
-#' findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
-#' }
+#' @export
+#'
+#' @examples 
+#'  #findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
+#'
 findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, alignWay = "slow", ...) {
     
     ## give names to subjectSeqs if not there for matching purpose in trimSeqs()
@@ -1356,10 +1397,12 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, al
 #'
 #' @seealso \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}
 #'
-#' @examples \dontrun{ 
-#'  trimSeqs(dnaSet,coords)
-#'  trimSeqs(dnaSet,coords,side="left",offBy=1)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #trimSeqs(dnaSet,coords)
+#'  #trimSeqs(dnaSet,coords,side="left",offBy=1)
+#'
 trimSeqs <- function(dnaSet,coords,side="middle",offBy=0) {
     stopifnot(class(dnaSet) %in% c("DNAStringSet","DNAString"))
     stopifnot(class(coords)=="IRanges")
@@ -1415,9 +1458,11 @@ trimSeqs <- function(dnaSet,coords,side="middle",offBy=0) {
 #'
 #' @seealso \code{\link{extractSeqs}}, \code{\link{extractFeature}}, \code{\link{addFeature}}
 #'
-#' @examples \dontrun{ 
-#'  getSectorsForSamples(sampleInfo,samplename="SampleName1")
-#' }
+#' @export
+#'
+#' @examples 
+#'  #getSectorsForSamples(sampleInfo,samplename="SampleName1")
+#'
 getSectorsForSamples <- function(sampleInfo,sector=NULL,samplename=NULL,returnDf=FALSE) {
     stopifnot(class(sampleInfo)=="SimpleList")        
         
@@ -1464,10 +1509,12 @@ getSectorsForSamples <- function(sampleInfo,sector=NULL,samplename=NULL,returnDf
 #'
 #' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{trimSeqs}}, \code{\link{extractFeature}}, \code{\link{getSectorsForSamples}}
 #'
-#' @examples \dontrun{ 
-#'  extractSeqs(sampleInfo)
-#'  extractSeqs(sampleInfo,feature="primed")
-#' }
+#' @export
+#'
+#' @examples 
+#'  #extractSeqs(sampleInfo)
+#'  #extractSeqs(sampleInfo,feature="primed")
+#'
 extractSeqs <- function(sampleInfo,sector=NULL,samplename=NULL,feature="genomic",trim=TRUE,minReadLength=1,sideReturn=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")        
 
@@ -1601,9 +1648,11 @@ extractSeqs <- function(sampleInfo,sector=NULL,samplename=NULL,feature="genomic"
 #'
 #' @seealso \code{\link{addFeature}}, \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{extractSeqs}}, \code{\link{trimSeqs}}, \code{\link{getSectorsForSamples}}
 #'
-#' @examples \dontrun{ 
-#'  extractFeature(sampleInfo,feature="primed")
-#' }
+#' @export
+#'
+#' @examples 
+#'  #extractFeature(sampleInfo,feature="primed")
+#'
 extractFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")        
 
@@ -1651,9 +1700,11 @@ extractFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL) 
 #'
 #' @seealso \code{\link{findPrimers}}, \code{\link{extractSeqs}}, \code{\link{trimSeqs}}, \code{\link{extractFeature}}, \code{\link{getSectorsForSamples}}
 #'
-#' @examples \dontrun{ 
-#'  addFeature(sampleInfo,"1","Sample1",feature="primerIDed","ACDTDASD")
-#' }
+#' @export
+#'
+#' @examples 
+#'  #addFeature(sampleInfo,"1","Sample1",feature="primerIDed","ACDTDASD")
+#'
 addFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL,value=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")        
 
@@ -1697,6 +1748,9 @@ addFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL,value
 #' @return a DNAStringSet object.
 #'
 #' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
+#'
+#' @export
+#'
 read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
     if(is.null(seqFilePath)) {
         stop("Missing seqFilePath!")
@@ -1732,9 +1786,11 @@ read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @examples \dontrun{ 
-#'  write.listedDNAStringSet(dnaSet)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #write.listedDNAStringSet(dnaSet)
+#'
 write.listedDNAStringSet <- function(dnaSet,filePath=".",filePrefix="processed",prependSamplenames=TRUE,parallel=TRUE) {
     stopifnot(class(dnaSet)=="list")
     
@@ -1764,9 +1820,11 @@ write.listedDNAStringSet <- function(dnaSet,filePath=".",filePrefix="processed",
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
 #'
-#' @examples \dontrun{ 
-#'  summary.simple(sampleInfo)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #summary.simple(sampleInfo)
+#'
 summary.simple <- function(sampleInfo) {
     stopifnot(class(sampleInfo)=="SimpleList")
     cat("Total sectors:",paste(names(sampleInfo$sectors),collapse=","),"\n")
@@ -1793,9 +1851,11 @@ summary.simple <- function(sampleInfo) {
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #'
-#' @examples \dontrun{ 
-#'  summary.elegant(sampleInfo)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #summary.elegant(sampleInfo)
+#'
 summary.elegant <- function(sampleInfo,samplenames=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")
     cat("Names of all sectors processed:",paste(names(sampleInfo$sectors),collapse=","),"\n")
@@ -1845,12 +1905,14 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 #'
 #' @return system command status for executing gfServer command.
 #'
-#' @seealso \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}
+#' @seealso \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}
 #'
-#' @examples \dontrun{ 
-#'  startgfServer(port=5560,seqDir="/usr/local/blatSuite34/hg18.2bit")
-#'  stopgfServer(port=5560)
-#' } 
+#' @export
+#'
+#' @examples 
+#'  #startgfServer(port=5560,seqDir="/usr/local/blatSuite34/hg18.2bit")
+#'  #stopgfServer(port=5560)
+#' 
 startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts=c(repMatch=112312, stepSize=5, tileSize=10), waitTime=150) {
     if(is.null(seqDir)) {
         stop("Please define the path of nib/2bit files containing the indexed reference sequence(s)")
@@ -1864,9 +1926,10 @@ startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts
     message("Loading BLAT server...")
     system(paste("sleep",waitTime))
     
-    ## if the server hasn't been started despite the wait time...wait additional waitTime/2 secs.  
+    ## if the server hasn't been started despite the wait time...wait additional 3/4 of waitTime secs.  
     if(!any(grepl(paste("gfServer start", host, port), system("ps",intern=TRUE)))) {
-		system(paste("sleep",ceiling(waitTime/2)))
+    	message("Loading BLAT server...")
+		system(paste("sleep",ceiling(waitTime*.75)))
     }
 }
 
@@ -1881,9 +1944,11 @@ startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts
 #'
 #' @seealso \code{\link{startgfServer}}
 #'
-#' @examples \dontrun{ 
-#' 	stopgfServer(port=5560)
-#' } 
+#' @export
+#'
+#' @examples 
+#' 	#stopgfServer(port=5560)
+#' 
 stopgfServer <- function(host="localhost", port=NULL) {
     if(is.null(port)) {
         stop("Please define the port gfServer is running on.")
@@ -1902,8 +1967,10 @@ stopgfServer <- function(host="localhost", port=NULL) {
 #'
 #' @return a list of RangedData object reflecting psl file type per set of sequences.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{pslToRangedData}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{pslToRangedData}}, \code{\link{read.blast8}}
 #'
+#' @export
+#' 
 blatListedSet <- function(dnaSetList=NULL, ...) {
     if(is.null(dnaSetList)) {
         stop("dnaSetList is empty. Please supply a listed DNAStringSet returned from extractSeqs() to be aligned against a reference")
@@ -1931,10 +1998,12 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #'
 #' @seealso \code{\link{blatListedSet}}
 #'
-#' @examples \dontrun{ 
-#'  pslToRangedData(psl)
-#'  pslToRangedData(psl,useTargetAsRef=FALSE)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #pslToRangedData(psl)
+#'  #pslToRangedData(psl,useTargetAsRef=FALSE)
+#'
 pslToRangedData <- function(x, useTargetAsRef=TRUE) {
     if(useTargetAsRef) {
         metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE),"tStarts")
@@ -1958,10 +2027,12 @@ pslToRangedData <- function(x, useTargetAsRef=TRUE) {
 #'
 #' @seealso \code{\link{blatSeqs}}
 #'
-#' @examples \dontrun{ 
-#'  splitSeqsToFiles(dnaSeq,10,"tempyQ","myDNAseqs.fa")
-#'  splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
-#' }
+#' @export
+#'
+#' @examples 
+#'  #splitSeqsToFiles(dnaSeq,10,"tempyQ","myDNAseqs.fa")
+#'  #splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
+#'
 splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFile.fa") {
     if(is.atomic(x)) {
         message("Splitting file ",x)
@@ -1999,7 +2070,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #' @param query an object of DNAStringSet, a character vector, or a path/pattern of fasta files to BLAT. Default is NULL.
 #' @param subject an object of DNAStringSet, a character vector, or a path to an indexed genome (nibs,2bits) to serve as a reference or target to the query. Default is NULL. If the subject is a path to a nib or 2bit file, then standaloneBlat will not work!
 #' @param standaloneBlat use standalone BLAT as suppose to gfServer/gfClient protocol. Default is TRUE.
-#' @param port the same number you started the gfServer with. Required if standaloneBlat=FALSE. Default is NULL.
+#' @param port the same number you started the gfServer with. Required if standaloneBlat=FALSE. Default is 5560.
 #' @param host name of the machine running gfServer. Default is 'localhost' and only used when standaloneBlat=FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param gzipResults gzip the output files? Default is TRUE.
@@ -2007,13 +2078,15 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #'
 #' @return a character vector of psl filenames.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}, \code{\link{read.blast8}}
 #'
-#' @examples \dontrun{ 
-#'  blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
-#'  blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
-#' }
-blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl")) {
+#' @export
+#'
+#' @examples 
+#'  #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
+#'  #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
+#'
+blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl")) {
 
     ## get all BLAT options from the system for comparison to blatParameters later
     suppressWarnings(blatOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", "\\1", grep("\\s+-.+=", system("blat",intern=TRUE), value=TRUE))))
@@ -2155,12 +2228,14 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=NULL, h
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}
 #'
-#' @examples \dontrun{ 
-#'  read.psl(pslFile="processed.*.psl$")
-#'  read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
-#' }
+#' @export
+#'
+#' @examples 
+#'  #read.psl(pslFile="processed.*.psl$")
+#'  #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
+#'
 read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeFile=TRUE, parallel=FALSE) {
     if(is.null(pslFile)) {
         stop("pslFile parameter empty. Please supply a filename to be read.")
@@ -2232,10 +2307,12 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}
 #'
-#' @examples \dontrun{ 
-#'  read.blast8(files="processed.*.blast8$")
-#'  read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
-#' }
+#' @export
+#'
+#' @examples 
+#'  #read.blast8(files="processed.*.blast8$")
+#'  #read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
+#'
 read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, parallel=FALSE) {
     if(is.null(files)) {
         stop("files parameter empty. Please supply a filename to be read.")
@@ -2296,11 +2373,13 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
 #'
 #' @return a RangedData object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'.
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{clusterSites}}, \code{\link{otuSites}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
 #'
-#' @examples \dontrun{ 
-#'  getIntegrationSites(test.psl.rd)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #getIntegrationSites(test.psl.rd)
+#'
 getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=0.7, genomicpercentidentity=0.98, correctByqStart=TRUE) {
     stopifnot(class(psl.rd)=="RangedData" & !is.null(psl.rd) & !is.null(startWithin) & !is.null(alignRatioThreshold) & !is.null(genomicpercentidentity))
 
@@ -2362,12 +2441,14 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #'
 #' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a RangedData object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
 #'
-#' @examples \dontrun{ 
-#'  clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),1004,1000,1000,1000,1000), grouping=c('a','a','a','b','b','b','c'))
-#'  clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),1004,1000,1000,1000,1000), grouping=c('a','a','a','b','b','b','c'))
+#'  #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
+#'
 clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, weight=NULL, windowSize=5, byQuartile=FALSE, quartile=0.70) {      
     if(is.null(psl.rd)) {
         stopifnot(!is.null(posID))
@@ -2544,12 +2625,14 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 #'
 #' @return a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{read.blast8}}
 #'
-#' @examples \dontrun{ 
-#'  otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#'  otuSites(psl.rd=test.psl.rd)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
+#'  #otuSites(psl.rd=test.psl.rd)
+#'
 otuSites <- function(posID=NULL,readID=NULL,grouping=NULL,psl.rd=NULL) {
     if(is.null(psl.rd)) {
         stopifnot(!is.null(posID))
@@ -2636,11 +2719,13 @@ otuSites <- function(posID=NULL,readID=NULL,grouping=NULL,psl.rd=NULL) {
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedData}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{getIntegrationSites}}
+#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedData}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{getIntegrationSites}}, \code{\link{read.blast8}}
 #'
-#' @examples \dontrun{ 
-#'  findIntegrations(sampleInfo)
-#' }
+#' @export
+#'
+#' @examples 
+#'  #findIntegrations(sampleInfo)
+#'
 findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhost", genomeIndices=c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"), parallel=TRUE, samplenames=NULL) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     

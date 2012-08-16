@@ -45,14 +45,13 @@
   registerDoSMP(w)
 }
 \examples{
-\dontrun{
- read.psl(pslFile="processed.*.psl$")
- read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
-}
+#read.psl(pslFile="processed.*.psl$")
+ #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},
   \code{\link{vpairwiseAlignSeqs}},
-  \code{\link{startgfServer}}, \code{\link{blatSeqs}}
+  \code{\link{startgfServer}}, \code{\link{blatSeqs}},
+  \code{\link{read.blast8}}
 }
 

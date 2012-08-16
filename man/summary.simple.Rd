@@ -14,8 +14,6 @@
   sampleInfo/SimpleList object.
 }
 \examples{
-\dontrun{
- summary.simple(sampleInfo)
-}
+#summary.simple(sampleInfo)
 }
 

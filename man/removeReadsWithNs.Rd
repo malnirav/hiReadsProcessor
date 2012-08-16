@@ -22,9 +22,7 @@
   greater than to maxNs threshold
 }
 \examples{
-\dontrun{
- removeReadsWithNs(dnaSet)
-}
+#removeReadsWithNs(dnaSet)
 }
 \seealso{
   \code{\link{dereplicateReads}},

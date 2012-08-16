@@ -77,10 +77,8 @@
   orientation, you might be better off using BLAST!
 }
 \examples{
-\dontrun{
- pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
- pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
-}
+#pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+ #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
 }
 \seealso{
   \code{\link{primerIDAlignSeqs}},

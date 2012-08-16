@@ -18,10 +18,8 @@
   the query or target as the reference data column.
 }
 \examples{
-\dontrun{
- pslToRangedData(psl)
- pslToRangedData(psl,useTargetAsRef=FALSE)
-}
+#pslToRangedData(psl)
+ #pslToRangedData(psl,useTargetAsRef=FALSE)
 }
 \seealso{
   \code{\link{blatListedSet}}

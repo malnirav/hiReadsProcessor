@@ -21,9 +21,7 @@
   line.
 }
 \examples{
-\dontrun{
- replicateReads(decoded)
-}
+#replicateReads(decoded)
 }
 \seealso{
   \code{\link{dereplicateReads}},

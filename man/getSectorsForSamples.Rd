@@ -33,9 +33,7 @@
   retrieval.
 }
 \examples{
-\dontrun{
- getSectorsForSamples(sampleInfo,samplename="SampleName1")
-}
+#getSectorsForSamples(sampleInfo,samplename="SampleName1")
 }
 \seealso{
   \code{\link{extractSeqs}}, \code{\link{extractFeature}},

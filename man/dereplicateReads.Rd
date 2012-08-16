@@ -17,9 +17,7 @@
   indicate replication.
 }
 \examples{
-\dontrun{
- dereplicateReads(dnaSet)
-}
+#dereplicateReads(dnaSet)
 }
 \seealso{
   \code{\link{replicateReads}},

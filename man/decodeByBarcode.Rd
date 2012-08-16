@@ -55,10 +55,8 @@
   the examples.
 }
 \examples{
-\dontrun{
- decodeByBarcode(sampleInfo,showStats=TRUE)
- decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
-}
+#decodeByBarcode(sampleInfo,showStats=TRUE)
+ #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
 }
 \seealso{
   \code{\link{splitByBarcode}},

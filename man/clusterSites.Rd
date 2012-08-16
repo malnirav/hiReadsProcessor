@@ -64,16 +64,15 @@
   tied then lowest value is used to represent the cluster.
 }
 \examples{
-\dontrun{
- clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),1004,1000,1000,1000,1000), grouping=c('a','a','a','b','b','b','c'))
- clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
-}
+#clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),1004,1000,1000,1000,1000), grouping=c('a','a','a','b','b','b','c'))
+ #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 }
 \seealso{
   \code{\link{startgfServer}}, \code{\link{read.psl}},
   \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
   \code{\link{findIntegrations}},
   \code{\link{pslToRangedData}},
-  \code{\link{getIntegrationSites}}, \code{\link{otuSites}}
+  \code{\link{getIntegrationSites}},
+  \code{\link{otuSites}}, \code{\link{read.blast8}}
 }
 

@@ -39,15 +39,14 @@
   from the object if not already filtered apriori.
 }
 \examples{
-\dontrun{
- getIntegrationSites(test.psl.rd)
-}
+#getIntegrationSites(test.psl.rd)
 }
 \seealso{
   \code{\link{startgfServer}}, \code{\link{read.psl}},
   \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
   \code{\link{findIntegrations}},
   \code{\link{pslToRangedData}},
-  \code{\link{clusterSites}}, \code{\link{otuSites}}
+  \code{\link{clusterSites}}, \code{\link{otuSites}},
+  \code{\link{read.blast8}}
 }
 

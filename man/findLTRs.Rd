@@ -55,9 +55,7 @@
   registerDoSMP(w)
 }
 \examples{
-\dontrun{
- findLTRs(sampleInfo,showStats=TRUE)
-}
+#findLTRs(sampleInfo,showStats=TRUE)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

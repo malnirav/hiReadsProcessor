@@ -33,9 +33,7 @@
   feature for the given samples & sectors.
 }
 \examples{
-\dontrun{
- addFeature(sampleInfo,"1","Sample1",feature="primerIDed","ACDTDASD")
-}
+#addFeature(sampleInfo,"1","Sample1",feature="primerIDed","ACDTDASD")
 }
 \seealso{
   \code{\link{findPrimers}}, \code{\link{extractSeqs}},

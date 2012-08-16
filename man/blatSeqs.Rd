@@ -3,7 +3,7 @@
 \title{Align sequences using BLAT.}
 \usage{
   blatSeqs(query = NULL, subject = NULL,
-    standaloneBlat = TRUE, port = NULL, host = "localhost",
+    standaloneBlat = TRUE, port = 5560, host = "localhost",
     parallel = TRUE, gzipResults = TRUE,
     blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50, q = "dna", t = "dna", out = "psl"))
 }
@@ -22,7 +22,7 @@
   gfServer/gfClient protocol. Default is TRUE.}
 
   \item{port}{the same number you started the gfServer
-  with. Required if standaloneBlat=FALSE. Default is NULL.}
+  with. Required if standaloneBlat=FALSE. Default is 5560.}
 
   \item{host}{name of the machine running gfServer. Default
   is 'localhost' and only used when standaloneBlat=FALSE.}
@@ -63,15 +63,14 @@
   \code{\link{stopgfServer}} upon successful execution.
 }
 \examples{
-\dontrun{
- blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
- blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
-}
+#blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
+ #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},
   \code{\link{vpairwiseAlignSeqs}},
   \code{\link{startgfServer}}, \code{\link{stopgfServer}},
-  \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}
+  \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}},
+  \code{\link{read.blast8}}
 }
 

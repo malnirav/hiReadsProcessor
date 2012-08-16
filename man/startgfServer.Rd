@@ -33,13 +33,11 @@
   of sequences using BLAT gfServer/gfClient protocol.
 }
 \examples{
-\dontrun{
- startgfServer(port=5560,seqDir="/usr/local/blatSuite34/hg18.2bit")
- stopgfServer(port=5560)
-}
+#startgfServer(port=5560,seqDir="/usr/local/blatSuite34/hg18.2bit")
+ #stopgfServer(port=5560)
 }
 \seealso{
   \code{\link{stopgfServer}}, \code{\link{read.psl}},
-  \code{\link{blatSeqs}}
+  \code{\link{blatSeqs}}, \code{\link{read.blast8}}
 }
 

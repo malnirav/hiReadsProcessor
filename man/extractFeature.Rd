@@ -33,9 +33,7 @@
   defined feature(s) for given sample or sector.
 }
 \examples{
-\dontrun{
- extractFeature(sampleInfo,feature="primed")
-}
+#extractFeature(sampleInfo,feature="primed")
 }
 \seealso{
   \code{\link{addFeature}}, \code{\link{findPrimers}},

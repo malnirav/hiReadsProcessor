@@ -33,10 +33,8 @@
   considered as one single group of sites.
 }
 \examples{
-\dontrun{
- otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
- otuSites(psl.rd=test.psl.rd)
-}
+#otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
+ #otuSites(psl.rd=test.psl.rd)
 }
 \seealso{
   \code{\link{startgfServer}}, \code{\link{read.psl}},
@@ -44,6 +42,6 @@
   \code{\link{findIntegrations}},
   \code{\link{pslToRangedData}},
   \code{\link{getIntegrationSites}},
-  \code{\link{clusterSites}}
+  \code{\link{clusterSites}}, \code{\link{read.blast8}}
 }
 

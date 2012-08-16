@@ -18,8 +18,6 @@
   sampleInfo/SimpleList object.
 }
 \examples{
-\dontrun{
- summary.elegant(sampleInfo)
-}
+#summary.elegant(sampleInfo)
 }
 

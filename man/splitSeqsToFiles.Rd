@@ -26,10 +26,8 @@
   denoted by totalFiles parameter.
 }
 \examples{
-\dontrun{
- splitSeqsToFiles(dnaSeq,10,"tempyQ","myDNAseqs.fa")
- splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
-}
+#splitSeqsToFiles(dnaSeq,10,"tempyQ","myDNAseqs.fa")
+ #splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
 }
 \seealso{
   \code{\link{blatSeqs}}

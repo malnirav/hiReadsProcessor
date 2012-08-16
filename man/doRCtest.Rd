@@ -34,9 +34,7 @@
   under See Also section below.
 }
 \examples{
-\dontrun{
- doRCtest(subjectSeqs,patternSeq)
-}
+#doRCtest(subjectSeqs,patternSeq)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},
