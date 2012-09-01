@@ -70,6 +70,7 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, s
 #'  \item Required Column Description:
 #'    \itemize{
 #'  	\item sector => region/quadrant of the sequencing plate the sample comes from.
+#'  	\item sectorfile => sequence file for the region/quadrant. OPTIONAL! If sectorfile is not defined, then the contents of the 'sector' column is going to be combined with the file pattern defined to search for the file.
 #'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample
 #'  	\item primerltrsequence => DNA sequence of the viral LTR primer with viral LTR sequence following the primer landing site
 #'  	\item samplename => Name of the sample associated with the barcode
