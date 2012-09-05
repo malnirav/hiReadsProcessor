@@ -486,7 +486,7 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
 
 #' Align a pattern to variable length target sequences.
 #'
-#' Align a fixed length pattern sequence to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended.
+#' Align a fixed length pattern sequence to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search. This is generally smaller than subjectSeqs. 
@@ -739,7 +739,7 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
 
 #' Align a pattern to variable length target sequences.
 #'
-#' Align a fixed length pattern sequence to subject sequences using \code{\link{vmatchPattern}}.
+#' Align a fixed length pattern sequence to subject sequences using \code{\link{vmatchPattern}}. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search. This is generally smaller than subjectSeqs. 
@@ -1342,7 +1342,7 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThresh
 
 #' Find and trim the pattern sequence from the subject. 
 #'
-#' This function facilitates finding and trimming of the pattern sequence from a collection of subject sequences. The trimming is dictated by side parameter. For more information on the trimming process see the 'side' parameter documentation in \code{\link{trimSeqs}}. For information regarding the pattern alignment see the documentation for \code{\link{pairwiseAlignSeqs}}.
+#' This function facilitates finding and trimming of the pattern sequence from a collection of subject sequences. The trimming is dictated by side parameter. For more information on the trimming process see the 'side' parameter documentation in \code{\link{trimSeqs}}. For information regarding the pattern alignment see the documentation for \code{\link{pairwiseAlignSeqs}}. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
 #'
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search.
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern.
@@ -2091,7 +2091,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
 
     ## get all BLAT options from the system for comparison to blatParameters later
     suppressWarnings(blatOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", "\\1", grep("\\s+-.+=", system("blat",intern=TRUE), value=TRUE))))
-    suppressWarnings(gfClientOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", "\\1", grep("\\s+-.+=", system("gfclient",intern=TRUE), value=TRUE))))
+    suppressWarnings(gfClientOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", "\\1", grep("\\s+-.+=", system("gfClient",intern=TRUE), value=TRUE))))
 
     if(!standaloneBlat) { 
         message("Using gfClient protocol to perform BLAT.")

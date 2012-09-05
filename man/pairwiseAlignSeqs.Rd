@@ -61,7 +61,10 @@
   function uses default of type="overlap", gapOpening=-1,
   and gapExtension=-1 to align the patternSeq against
   subjectSeqs. One can adjust these parameters if prefered,
-  but not recommended.
+  but not recommended. This function is meant for aligning
+  a short pattern onto large collection of subjects. If you
+  are looking to align a vector sequence to subjects, then
+  please use BLAT.
 }
 \note{
   For qualityThreshold, the alignment score is calculated

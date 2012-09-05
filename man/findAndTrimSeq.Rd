@@ -44,7 +44,10 @@
   information on the trimming process see the 'side'
   parameter documentation in \code{\link{trimSeqs}}. For
   information regarding the pattern alignment see the
-  documentation for \code{\link{pairwiseAlignSeqs}}.
+  documentation for \code{\link{pairwiseAlignSeqs}}. This
+  function is meant for aligning a short pattern onto large
+  collection of subjects. If you are looking to align a
+  vector sequence to subjects, then please use BLAT.
 }
 \note{
   If parallel=TRUE, then be sure to have a paralle backend

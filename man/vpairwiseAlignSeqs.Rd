@@ -46,7 +46,10 @@
 }
 \description{
   Align a fixed length pattern sequence to subject
-  sequences using \code{\link{vmatchPattern}}.
+  sequences using \code{\link{vmatchPattern}}. This
+  function is meant for aligning a short pattern onto large
+  collection of subjects. If you are looking to align a
+  vector sequence to subjects, then please use BLAT.
 }
 \note{
   Beware, this function only searches for the pattern
