@@ -18,7 +18,8 @@ Depends:
     doBy,
     RMySQL,
     xlsx,
-    plyr
+    plyr,
+    dataframe
 License: GPL (>= 2)
 LazyLoad: yes
 Collate:

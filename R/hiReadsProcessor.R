@@ -1,3 +1,12 @@
+#' Functions for process LM-PCR reads with hiReadsProcessor.
+#'
+#' hiReadsProcessor contains set of functions which allow users to process single-end LM-PCR sequence data coming out of the 454/Solexa sequencer. Given an excel file containing parameters for demultiplexing and sample metadata, the functions automate trimming of adaptors and identification of the genomic product. In addition, if IntSites MySQL database is setup, the sequence attrition is loaded into respective tables for post processing setup and analysis.
+#'
+#' @import Biostrings GenomicRanges parallel doBy RMySQL xlsx plyr dataframe
+#' @docType package
+#' @name hiReadsProcessor
+NULL
+
 #' Read contents of a sequencing folder and make a SimpleList object
 #'
 #' Given a sequencing folder path, sample information file path, and sequence file extension pattern, the function returns a list of variables required to process the data. The function also calls \code{\link{read.sampleInfo}} which reads in sample processing metadata and formats it if needed.
