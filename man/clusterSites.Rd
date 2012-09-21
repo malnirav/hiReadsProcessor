@@ -4,7 +4,7 @@
 \usage{
   clusterSites(posID = NULL, value = NULL, grouping = NULL,
     psl.rd = NULL, weight = NULL, windowSize = 5,
-    byQuartile = FALSE, quartile = 0.7)
+    byQuartile = FALSE, quartile = 0.7, parallel = TRUE)
 }
 \arguments{
   \item{posID}{a vector of groupings for the value
@@ -34,6 +34,13 @@
 
   \item{quartile}{if byQuartile=TRUE, then the quartile
   which serves as the threshold. Default is 0.70.}
+
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to TRUE.
+  If no parallel backend is registered, then a serial
+  version of foreach is ran using
+  \code{\link{registerDoSEQ()}}. Process is split by the
+  grouping the column.}
 }
 \value{
   a data frame with clusteredValues and frequency shown

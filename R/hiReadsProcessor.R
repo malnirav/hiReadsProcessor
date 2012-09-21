@@ -2016,10 +2016,10 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #'
 pslToRangedData <- function(x, useTargetAsRef=TRUE) {
     if(useTargetAsRef) {
-        metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE),"tStarts")
+        metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),"tStarts")
         RangedData(space=x$tName,IRanges(start=x$tStart,end=x$tEnd),strand=x$strand, x[,metadataCols])
     } else {
-        metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),invert=TRUE,value=TRUE),"qStarts")
+        metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),"qStarts")
         RangedData(space=x$qName,IRanges(start=x$qStart,end=x$qEnd),strand=x$strand, x[,metadataCols])
     }
 }
@@ -2446,6 +2446,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #' @param windowSize size of window for which values should be corrected/clustered. Default is 5.
 #' @param byQuartile flag denoting whether quartile based technique should be employed. See notes for details. Default is TRUE.
 #' @param quartile if byQuartile=TRUE, then the quartile which serves as the threshold. Default is 0.70.
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
 #'
 #' @note The algorithm for clustering when byQuartile=TRUE is as follows: for all values in each grouping, get a distribution and test if their frequency is >= quartile threshold. For values below the quartile threshold, test if any values overlap with the ones that passed the threshold and is within the defined windowSize. If there is a match, then merge with higher value, else leave it as is. This is only useful if the distribution is wide and polynodal. When byQuartile=FALSE, for each group the values within the defined window are merged with the next highest frequently occuring value, if freuquencies are tied then lowest value is used to represent the cluster.  
 #'
@@ -2459,7 +2460,8 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #'  #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),1004,1000,1000,1000,1000), grouping=c('a','a','a','b','b','b','c'))
 #'  #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 #'
-clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, weight=NULL, windowSize=5, byQuartile=FALSE, quartile=0.70) {      
+clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, weight=NULL, windowSize=5, byQuartile=FALSE, quartile=0.70, parallel=TRUE) {
+	if(!parallel) { registerDoSEQ() }      
     if(is.null(psl.rd)) {
         stopifnot(!is.null(posID))
         stopifnot(!is.null(value))
@@ -2574,37 +2576,43 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
     } else {
         message("Clustering by minimum overlap.")
         
-        ## find overlapping positions using findOverlaps() using maxgap adjusted by windowSize! ##
-        sites.rl <- with(sites,RangedData(space=posID2,IRanges(start=value,width=1),freq))
+        sites <- split(sites, sites$grouping)
         
-        # the key part is ignoreSelf=TRUE,ignoreRedundant=FALSE...helps overwrite values at later step
-        res <- as.data.frame(as.matrix(findOverlaps(sites.rl,ignoreSelf=TRUE,ignoreRedundant=FALSE,select="all",maxgap=windowSize))) 
-        
-        # add accessory columns to dictate decision making!
-        # q = query, s = subject, val = value, freq = frequency of query/subject
-        res$q.val <- start(sites.rl)[res$queryHits]; res$s.val <- start(sites.rl)[res$subjectHits]
-        res$q.freq <- sites.rl$freq[res$queryHits]; res$s.freq <- sites.rl$freq[res$subjectHits]
-        res$dist <- with(res,abs(q.val-s.val))
-        stopifnot(!any(res$dist>5)) ## do safety checking!
-
-        # favor a lower value where frequence/cloneCount is tied, else use the value of the highest frequency!
-        res$val <- with(res,ifelse(q.freq==s.freq, ifelse(q.val < s.val,q.val,s.val), ifelse(q.freq >= s.freq,q.val,s.val))) 
-        
-        # for cases where there are >1 matches between query & subject...find the one with the highest frequency and merge with that.
-        # if all frequencies are the same, then use the lowest value to represent the cluster!
-        res$maxFreq <- with(res,pmax(q.freq,s.freq))    
-        maxes <- with(res,tapply(maxFreq,queryHits,max))
-        res$ismaxFreq <- with(res,maxFreq==maxes[as.character(queryHits)])        
-        res <- orderBy(~-queryHits,res) ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
-        hash.df <- unique(subset(res,ismaxFreq)[,c("queryHits","val")])
-        clustered <- structure(as.numeric(hash.df$val),names=as.character(hash.df$queryHits))
-        rm(hash.df)
-        
-        # trickle results back to sites
-        sites$clusteredValue <- sites$value
-        sites$clusteredValue[as.numeric(names(clustered))] <- as.numeric(clustered)
-        rm("clustered","res")
-        cleanit <- gc()
+        sites <- foreach(x=iter(sites), .inorder=FALSE, .packages="IRanges", .combine=rbind) %dopar% {
+        	
+        	## find overlapping positions using findOverlaps() using maxgap adjusted by windowSize! ##
+			sites.rl <- with(x,RangedData(space=posID2,IRanges(start=value,width=1),freq))
+			
+			# the key part is ignoreSelf=TRUE,ignoreRedundant=FALSE...helps overwrite values at later step
+			res <- as.data.frame(as.matrix(findOverlaps(sites.rl,ignoreSelf=TRUE,ignoreRedundant=FALSE,select="all",maxgap=windowSize))) 
+			
+			# add accessory columns to dictate decision making!
+			# q = query, s = subject, val = value, freq = frequency of query/subject
+			res$q.val <- start(sites.rl)[res$queryHits]; res$s.val <- start(sites.rl)[res$subjectHits]
+			res$q.freq <- sites.rl$freq[res$queryHits]; res$s.freq <- sites.rl$freq[res$subjectHits]
+			res$dist <- with(res,abs(q.val-s.val))
+			stopifnot(!any(res$dist>5)) ## do safety checking!
+	
+			# favor a lower value where frequence/cloneCount is tied, else use the value of the highest frequency!
+			res$val <- with(res,ifelse(q.freq==s.freq, ifelse(q.val < s.val,q.val,s.val), ifelse(q.freq >= s.freq,q.val,s.val))) 
+			
+			# for cases where there are >1 matches between query & subject...find the one with the highest frequency and merge with that.
+			# if all frequencies are the same, then use the lowest value to represent the cluster!
+			res$maxFreq <- with(res,pmax(q.freq,s.freq))    
+			maxes <- with(res,tapply(maxFreq,queryHits,max))
+			res$ismaxFreq <- with(res,maxFreq==maxes[as.character(queryHits)])        
+			res <- orderBy(~-queryHits,res) ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
+			hash.df <- unique(subset(res,ismaxFreq)[,c("queryHits","val")])
+			clustered <- structure(as.numeric(hash.df$val),names=as.character(hash.df$queryHits))
+			rm(hash.df)
+			
+			# trickle results back to sites
+			x$clusteredValue <- x$value
+			x$clusteredValue[as.numeric(names(clustered))] <- as.numeric(clustered)
+			rm("clustered","res")
+			cleanit <- gc()
+			x
+        }                
     }
     
     message("\t - Adding clustered value frequencies.")
