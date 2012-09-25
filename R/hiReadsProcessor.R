@@ -2198,7 +2198,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
 		killFlag <- FALSE
         if(!any(grepl(paste("gfServer start", host, port), system("ps",intern=TRUE)))) {
         	message("Starting gfServer.")        
-            startgfServer(host=host, port=port, seqDir=subjectFile, waitTime=150, gfServerOpts=c(repMatch=blatParameters['repMatch'], stepSize=blatParameters['stepSize'], tileSize=blatParameters['tileSize']))
+            startgfServer(host=host, port=port, seqDir=subjectFile, waitTime=150, gfServerOpts=c(repMatch=blatParameters[['repMatch']], stepSize=blatParameters[['stepSize']], tileSize=blatParameters[['tileSize']]))
             killFlag <- TRUE
         }         
 
