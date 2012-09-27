@@ -249,7 +249,7 @@ dereplicateReads <- function(dnaSet) {
     dnaSet <- sort(dnaSet)
     ranks <- rank(dnaSet)
     counts <- table(ranks)
-    isDuplicate <- duplicated(dnaSet)
+    isDuplicate <- duplicated(ranks)
     seqToRank <- data.frame(ranks,counts=as.numeric(counts[as.character(ranks)]),row.names=names(dnaSet),stringsAsFactors = FALSE)
     seqToRank <- seqToRank[!isDuplicate,]
     dnaSet <- dnaSet[!isDuplicate]    
