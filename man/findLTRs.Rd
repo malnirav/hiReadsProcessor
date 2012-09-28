@@ -3,7 +3,7 @@
 \title{Find the 5' LTRs and add results to SampleInfo object.}
 \usage{
   findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE,
-    parallel = TRUE, samplenames = NULL)
+    parallel = TRUE, samplenames = NULL, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -27,6 +27,9 @@
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
   sampleInfo object.}
+
+  \item{...}{extra parameters to be passed to
+  \code{\link{pairwiseAlignment}}.}
 }
 \value{
   a SimpleList object similar to sampleInfo paramter
@@ -44,7 +47,8 @@
   portion is added to primer coordinates and recorded back
   to the object and used subsequently by
   \code{\link{extractSeqs}} function to perform the
-  trimming.
+  trimming. This function heavily relies on
+  \code{\link{pairwiseAlignSeqs}}.
 }
 \note{
   If parallel=TRUE, then be sure to have a paralle backend

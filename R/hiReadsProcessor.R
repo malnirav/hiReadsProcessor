@@ -493,9 +493,9 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
     return(decoded)
 }
 
-#' Align a pattern to variable length target sequences.
+#' Align a short pattern to variable length target sequences.
 #'
-#' Align a fixed length pattern sequence to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
+#' Align a fixed length short pattern sequence (i.e. primers or adaptors) to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search. This is generally smaller than subjectSeqs. 
@@ -561,7 +561,11 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qu
     
     ## do not split this into a multicore function since its faster to align all sequences at once then breaking into smaller chunks
     ## type=overlap is best for primer trimming...see Biostrings Alignment vignette
-    hits <- pairwiseAlignment(subjectSeqs2, patternSeq, type="overlap", gapOpening=-1, gapExtension=-1, ...)        
+    if(any(names(match.call()) %in% c("type","gapOpening","gapExtension"))) {
+    	hits <- pairwiseAlignment(subjectSeqs2, patternSeq, ...)        
+    } else {
+    	hits <- pairwiseAlignment(subjectSeqs2, patternSeq, type="overlap", gapOpening=-1, gapExtension=-1, ...)
+    }
     
     stopifnot(length(hits)==length(subjectSeqs2))
     
@@ -599,9 +603,9 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qu
     return(hits)
 }
 
-#' Align a pattern with PrimerID to variable length target sequences.
+#' Align a short pattern with PrimerID to variable length target sequences.
 #'
-#' Align a fixed length pattern sequence containing primerID to variable length subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patterSeq against subjectSeqs. The search is broken up into as many pieces +1 as there are primerID and then compared against subjectSeqs. For example, patternSeq="AGCATCAGCANNNNNNNNNACGATCTACGCC" will launch two search jobs one per either side of Ns. For each search, qualityThreshold is used to filter out candidate alignments and the area in between is chosen to be the primerID. This strategy is benefical because of Indels introduced through homopolymer errors. Most likely the length of primerID(s) wont the same as you expected!
+#' Align a fixed length short pattern sequence containing primerID to variable length subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patterSeq against subjectSeqs. The search is broken up into as many pieces +1 as there are primerID and then compared against subjectSeqs. For example, patternSeq="AGCATCAGCANNNNNNNNNACGATCTACGCC" will launch two search jobs one per either side of Ns. For each search, qualityThreshold is used to filter out candidate alignments and the area in between is chosen to be the primerID. This strategy is benefical because of Indels introduced through homopolymer errors. Most likely the length of primerID(s) wont the same as you expected!
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. 
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search with the primerID.
@@ -746,9 +750,9 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
     return(hits)
 }
 
-#' Align a pattern to variable length target sequences.
+#' Align a short pattern to variable length target sequences.
 #'
-#' Align a fixed length pattern sequence to subject sequences using \code{\link{vmatchPattern}}. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
+#' Align a fixed length short pattern sequence to subject sequences using \code{\link{vmatchPattern}}. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search. This is generally smaller than subjectSeqs. 
@@ -757,7 +761,7 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param bufferBases use x number of bases in addition to patternSeq length to perform the search. Beneficial in cases where the pattern has homopolymers or indels compared to the subject. Default is 5. Doesn't apply when side='middle'.
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
-#' @param ... extra parameters for \code{\link{vmatchPattern}}
+#' @param ... extra parameters for \code{\link{vmatchPattern}} except for 'max.mismatch' since it's calculated internally using the 'qualityThreshold' parameter.
 #'
 #' @note Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST!
 #'
@@ -904,6 +908,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 #' @param doRC perform reverse complement search of the defined pattern/primer. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param ... extra parameters to be passed to either \code{\link{vpatternMatch}} or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: primed
 #'
@@ -917,7 +922,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 #'  #findPrimers(sampleInfo,showStats=TRUE)
 #'  #findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
 #'
-findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL) {    
+findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
     if(!parallel) { registerDoSEQ() }
@@ -958,8 +963,8 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
         
         primerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("ltrPrimers","primerIdentity","doRC","alignWay", "vpairwiseAlignSeqs", "pairwiseAlignSeqs","decoded"), .packages="Biostrings") %dopar% {
             switch(alignWay,
-                fast = vpairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]-.05), doRC=doRC),
-                slow = pairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]), doRC=doRC)                
+                fast = vpairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]-.05), doRC=doRC, ...),
+                slow = pairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]), doRC=doRC, ...)                
             )        
         }
         names(primerTrimmed) <- samplesToProcess
@@ -1007,13 +1012,14 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 
 #' Find the 5' LTRs and add results to SampleInfo object. 
 #'
-#' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
+#' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming. This function heavily relies on \code{\link{pairwiseAlignSeqs}}.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}}, which holds decoded and primed sequences for samples per sector/quadrant along with information of sample to LTR associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern/LTR sequence. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: LTRed
 #'
@@ -1026,7 +1032,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 #' @examples 
 #'  #findLTRs(sampleInfo,showStats=TRUE)
 #'
-findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL) {    
+findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
     if(!parallel) { registerDoSEQ() }
@@ -1064,7 +1070,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
         message("\tFinding LTR bits.")
         ltrBitIdentity <- extractFeature(sampleInfo,sector=sector,feature="ltrbitidentity")[[sector]]
         ltrTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("primerTrimmed","sampleLTRbits","ltrBitIdentity","doRC", "pairwiseAlignSeqs"), .packages="Biostrings") %dopar% {            
-            pairwiseAlignSeqs(primerTrimmed[[x]], sampleLTRbits[[x]], "left",qualityThreshold=ltrBitIdentity[[x]], doRC=doRC)
+            pairwiseAlignSeqs(primerTrimmed[[x]], sampleLTRbits[[x]], "left", qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
         }
         names(ltrTrimmed) <- samplesToProcess
         
@@ -1120,13 +1126,14 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 
 #' Find the 3' linkers and add results to SampleInfo object. 
 #'
-#' Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of linker portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
+#' Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of linker portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming. This function heavily relies on either \code{\link{pairwiseAlignSeqs}} or \code{\link{primerIDAlignSeqs}} depending upon whether linkers getting aligned have primerID in it or not.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern/linker sequence. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: linkered. If linkers have primerID then, primerIDs attribute is appended as well. 
 #'
@@ -1139,7 +1146,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 #' @examples 
 #'  #findLinkers(sampleInfo,showStats=TRUE)
 #'
-findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL) {    
+findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
     if(!parallel) { registerDoSEQ() }
@@ -1192,9 +1199,9 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
         message("\tFinding Linkers.")
         linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("primerIded","toProcess","sampleLinkers","doRC","linkerIdentity","primerIded.threshold1","primerIded.threshold2","pairwiseAlignSeqs","primerIDAlignSeqs"), .packages="Biostrings") %dopar% {
             if(primerIded[[x]]) {
-                primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], doAnchored=TRUE, returnUnmatched=TRUE, returnRejected=TRUE, doRC=doRC, qualityThreshold1=primerIded.threshold1[[x]], qualityThreshold2=primerIded.threshold2[[x]])
+                primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], doAnchored=TRUE, returnUnmatched=TRUE, returnRejected=TRUE, doRC=doRC, qualityThreshold1=primerIded.threshold1[[x]], qualityThreshold2=primerIded.threshold2[[x]], ...)
             } else {
-                pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", qualityThreshold=linkerIdentity[[x]], returnUnmatched=TRUE, returnLowScored=TRUE, doRC=doRC) ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
+                pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", qualityThreshold=linkerIdentity[[x]], returnUnmatched=TRUE, returnLowScored=TRUE, doRC=doRC, ...) ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
             }        
         }
         names(linkerTrimmed) <- samplesToProcess
@@ -1255,7 +1262,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
     return(sampleInfo)
 }
 
-#' Compare LTRed sequences to all linkers. 
+#' Compare LTRed/Primed sequences to all linkers. 
 #'
 #' Given a SampleInfo object, the function compares LTRed sequences from each sample per sector to all the linker sequences present in the run. The output is a summary table of counts of good matches to all the linkers per sample. 
 #'
@@ -1266,6 +1273,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
 #' @param doRC perform reverse complement search of the linker sequence. Default is TRUE. Highly recommended!
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a dataframe of counts. 
 #'
@@ -1278,7 +1286,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
 #' @examples 
 #'  #troubleshootLinkers(sampleInfo,showStats=TRUE)
 #'
-troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThreshold1=0.75, qualityThreshold2=0.50, doRC=TRUE, parallel=TRUE, samplenames=NULL) {    
+troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThreshold1=0.75, qualityThreshold2=0.50, doRC=TRUE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
     
     if(!parallel) { registerDoSEQ() }
@@ -1324,9 +1332,9 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThresh
             message("Checking ",linkerSeq)
             linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("linkerSeq","toProcess.seqs","doRC","qualityThreshold","qualityThreshold1","qualityThreshold2","pairwiseAlignSeqs","primerIDAlignSeqs"), .packages="Biostrings") %dopar% {
                 if(length(unlist(gregexpr("N",linkerSeq)))>3) {
-                    length(primerIDAlignSeqs(toProcess.seqs[[x]], linkerSeq, doRC=doRC, qualityThreshold1=qualityThreshold1, qualityThreshold2=qualityThreshold2)$hits)
+                    length(primerIDAlignSeqs(toProcess.seqs[[x]], linkerSeq, doRC=doRC, qualityThreshold1=qualityThreshold1, qualityThreshold2=qualityThreshold2, ...)$hits)
                 } else {
-                    length(pairwiseAlignSeqs(toProcess.seqs[[x]], linkerSeq, "middle", qualityThreshold=qualityThreshold, doRC=doRC))
+                    length(pairwiseAlignSeqs(toProcess.seqs[[x]], linkerSeq, "middle", qualityThreshold=qualityThreshold, doRC=doRC, ...))
                 }        
             }
             names(linkerTrimmed) <- samplesToProcess
@@ -1349,9 +1357,9 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThresh
     return(results)
 }
 
-#' Find and trim the pattern sequence from the subject. 
+#' Find and trim a short pattern sequence from the subject. 
 #'
-#' This function facilitates finding and trimming of the pattern sequence from a collection of subject sequences. The trimming is dictated by side parameter. For more information on the trimming process see the 'side' parameter documentation in \code{\link{trimSeqs}}. For information regarding the pattern alignment see the documentation for \code{\link{pairwiseAlignSeqs}}. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
+#' This function facilitates finding and trimming of a short pattern sequence from a collection of subject sequences. The trimming is dictated by side parameter. For more information on the trimming process see the 'side' parameter documentation in \code{\link{trimSeqs}}. For information regarding the pattern alignment see the documentation for \code{\link{pairwiseAlignSeqs}}. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
 #'
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search.
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern.

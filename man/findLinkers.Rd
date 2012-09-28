@@ -3,7 +3,7 @@
 \title{Find the 3' linkers and add results to SampleInfo object.}
 \usage{
   findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE,
-    parallel = TRUE, samplenames = NULL)
+    parallel = TRUE, samplenames = NULL, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -27,6 +27,9 @@
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
   sampleInfo object.}
+
+  \item{...}{extra parameters to be passed to
+  \code{\link{pairwiseAlignment}}.}
 }
 \value{
   a SimpleList object similar to sampleInfo paramter
@@ -45,7 +48,10 @@
   itself is never trimmed but rather coordinates of linker
   portion is recorded back to the object and used
   subsequently by \code{\link{extractSeqs}} function to
-  perform the trimming.
+  perform the trimming. This function heavily relies on
+  either \code{\link{pairwiseAlignSeqs}} or
+  \code{\link{primerIDAlignSeqs}} depending upon whether
+  linkers getting aligned have primerID in it or not.
 }
 \note{
   If no linker matches are found with default options, then

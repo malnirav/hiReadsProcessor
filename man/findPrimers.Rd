@@ -4,7 +4,7 @@
 \usage{
   findPrimers(sampleInfo, alignWay = "slow",
     showStats = FALSE, doRC = FALSE, parallel = TRUE,
-    samplenames = NULL)
+    samplenames = NULL, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -36,6 +36,11 @@
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
   sampleInfo object.}
+
+  \item{...}{extra parameters to be passed to either
+  \code{\link{vpatternMatch}} or
+  \code{\link{pairwiseAlignment}} depending on 'alignWay'
+  parameter.}
 }
 \value{
   a SimpleList object similar to sampleInfo paramter

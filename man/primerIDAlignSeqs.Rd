@@ -1,6 +1,6 @@
 \name{primerIDAlignSeqs}
 \alias{primerIDAlignSeqs}
-\title{Align a pattern with PrimerID to variable length target sequences.}
+\title{Align a short pattern with PrimerID to variable length target sequences.}
 \usage{
   primerIDAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
     qualityThreshold1 = 0.75, qualityThreshold2 = 0.5,
@@ -59,8 +59,8 @@
   ID on patternSeq.
 }
 \description{
-  Align a fixed length pattern sequence containing primerID
-  to variable length subject sequences using
+  Align a fixed length short pattern sequence containing
+  primerID to variable length subject sequences using
   \code{\link{pairwiseAlignment}}. This function uses
   default of type="overlap", gapOpening=-1, and
   gapExtension=-1 to align the patterSeq against

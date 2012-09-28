@@ -1,10 +1,10 @@
 \name{troubleshootLinkers}
 \alias{troubleshootLinkers}
-\title{Compare LTRed sequences to all linkers.}
+\title{Compare LTRed/Primed sequences to all linkers.}
 \usage{
   troubleshootLinkers(sampleInfo, qualityThreshold = 0.55,
     qualityThreshold1 = 0.75, qualityThreshold2 = 0.5,
-    doRC = TRUE, parallel = TRUE, samplenames = NULL)
+    doRC = TRUE, parallel = TRUE, samplenames = NULL, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -37,6 +37,9 @@
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
   sampleInfo object.}
+
+  \item{...}{extra parameters to be passed to
+  \code{\link{pairwiseAlignment}}.}
 }
 \value{
   a dataframe of counts.

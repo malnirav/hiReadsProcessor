@@ -1,6 +1,6 @@
 \name{findAndTrimSeq}
 \alias{findAndTrimSeq}
-\title{Find and trim the pattern sequence from the subject.}
+\title{Find and trim a short pattern sequence from the subject.}
 \usage{
   findAndTrimSeq(patternSeq, subjectSeqs, side = "left",
     offBy = 0, alignWay = "slow", ...)
@@ -38,7 +38,7 @@
   the subject sequences.
 }
 \description{
-  This function facilitates finding and trimming of the
+  This function facilitates finding and trimming of a short
   pattern sequence from a collection of subject sequences.
   The trimming is dictated by side parameter. For more
   information on the trimming process see the 'side'

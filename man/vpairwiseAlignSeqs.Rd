@@ -1,6 +1,6 @@
 \name{vpairwiseAlignSeqs}
 \alias{vpairwiseAlignSeqs}
-\title{Align a pattern to variable length target sequences.}
+\title{Align a short pattern to variable length target sequences.}
 \usage{
   vpairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
     side = "left", qualityThreshold = 1, showStats = FALSE,
@@ -38,14 +38,16 @@
   defined pattern. Default is TRUE.}
 
   \item{...}{extra parameters for
-  \code{\link{vmatchPattern}}}
+  \code{\link{vmatchPattern}} except for 'max.mismatch'
+  since it's calculated internally using the
+  'qualityThreshold' parameter.}
 }
 \value{
   IRanges object with starts, stops, and names of the
   aligned sequences.
 }
 \description{
-  Align a fixed length pattern sequence to subject
+  Align a fixed length short pattern sequence to subject
   sequences using \code{\link{vmatchPattern}}. This
   function is meant for aligning a short pattern onto large
   collection of subjects. If you are looking to align a
