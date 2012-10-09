@@ -1783,7 +1783,7 @@ read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
     }
     
     message("Reading ",seqFilePath)
-    dnaSet <- read.DNAStringSet(normalizePath(seqFilePath,mustWork=TRUE),format=ifelse(grepl("fastq$",seqFilePath),"fastq","fasta"))
+    dnaSet <- readDNAStringSet(normalizePath(seqFilePath,mustWork=TRUE),format=ifelse(grepl("fastq$",seqFilePath),"fastq","fasta"))
     if(length(dnaSet)==0) {
         stop("No sequences found")
     }
@@ -1826,7 +1826,7 @@ write.listedDNAStringSet <- function(dnaSet,filePath=".",filePrefix="processed",
                 if(prependSamplenames) {
                     names(outputSeqs) <- paste(i,names(outputSeqs),sep="-")
                 }
-                write.XStringSet(outputSeqs,file=filename,format="fasta",append=TRUE,width=20000) 
+                writeXStringSet(outputSeqs,file=filename,format="fasta",append=TRUE,width=20000) 
             }
         }
     }
@@ -2060,8 +2060,8 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
         starts <- seq(0,totalSeqs,by=chunks) ## create chunks of starts
         for(skippy in starts[starts!=totalSeqs]) {
             filename.out <- paste(x,skippy,suffix,sep=".")
-            query.tmp <- read.BStringSet(x,nrec=chunks, skip=skippy) ## no need to read the entire file...save memory by reading in N lines
-            write.XStringSet(query.tmp,file=filename.out,format="fasta")            
+            query.tmp <- readBStringSet(x,nrec=chunks, skip=skippy) ## no need to read the entire file...save memory by reading in N lines
+            writeXStringSet(query.tmp,file=filename.out,format="fasta")            
         }
         return(list.files(path=dirname(x), pattern=paste(basename(x),".*",suffix,"$",sep=""), full.names=TRUE))
     } else if (class(x)=="DNAStringSet") {
@@ -2073,7 +2073,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
         stopifnot(length(starts)==length(stops))        
         for(skippy in 1:length(starts)) {
             filename.out <- paste(filename,skippy,suffix,sep=".")            
-            write.XStringSet(x[starts[skippy]:stops[skippy]],file=filename.out,format="fasta")            
+            writeXStringSet(x[starts[skippy]:stops[skippy]],file=filename.out,format="fasta")            
         }            
         return(list.files(path=".", pattern=paste(filename,".*",suffix,"$",sep=""), full.names=TRUE))
     } else {
@@ -2141,7 +2141,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
 
             ## write out the subject sequences into a fasta file
             filename.seq <- "subjectFile.fa.tempyS"
-            write.XStringSet(subject,file=filename.seq,format="fasta")                                  
+            writeXStringSet(subject,file=filename.seq,format="fasta")                                  
             subjectFile <- filename.seq
         }
     }
@@ -2175,7 +2175,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
                 queryFiles <- splitSeqsToFiles(query,getDoParWorkers(),"tempyQ")
             } else {
                 queryFiles <- "queryFile.fa.tempyQ"
-                write.XStringSet(query,file=queryFiles,format="fasta")                
+                writeXStringSet(query,file=queryFiles,format="fasta")                
             }
         }
     }
