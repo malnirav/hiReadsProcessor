@@ -1838,6 +1838,8 @@ write.listedDNAStringSet <- function(dnaSet,filePath=".",filePrefix="processed",
 #'
 #' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
 #'
+#' @return a dataframe summarizing counts of major attributes per sample and sector. 
+#'
 #' @export
 #'
 #' @examples 
@@ -1845,21 +1847,20 @@ write.listedDNAStringSet <- function(dnaSet,filePath=".",filePrefix="processed",
 #'
 summary.simple <- function(sampleInfo) {
     stopifnot(class(sampleInfo)=="SimpleList")
-    cat("Total sectors:",paste(names(sampleInfo$sectors),collapse=","),"\n")
-    for(sector in names(sampleInfo$sectors)) {
-        cat(rep("~",40),"\n")
-        cat("Sector:",sector,"\n")
+    message("Total sectors:",paste(names(sampleInfo$sectors),collapse=","),"\n")
+    do.call(rbind, lapply(names(sampleInfo$sectors), function(sector) {
+        res.df <- data.frame(Sector=sector, SampleName=as.character(extractFeature(sampleInfo,sector=sector,feature="samplename")[[sector]]))
+        res.df$SampleName <- as.character(res.df$SampleName)
         for (metaD in c("decoded","primed","LTRed","linkered","psl","sites")) {
-            res <- sapply(extractFeature(sampleInfo,sector=sector,feature=metaD)[[sector]],length)            
+            res <- sapply(extractFeature(sampleInfo,sector=sector,feature=metaD)[[sector]],length)                        
             if(length(res)>0) {
-                cat("\tTotal",metaD,":",sum(res),"\n")
-                cat("\t\tBy Sample:",paste(names(res),res,sep=":",collapse="\n\t\t\t   "),"\n")
+                res.df[,metaD] <- res[res.df$SampleName]
             } else {
-                cat("\tNo",metaD,"attribute found....skipping\n")
+                res.df[,metaD] <- NA
             }
-            cat("\t",rep("-",25),"\n")
-        }        
-     }    
+        }
+        res.df        
+     }))    
 }
 
 #' Elegant summary of a sampleInfo object.
@@ -2103,6 +2104,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #' @examples 
 #'  #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
 #'  #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
+#'  #blatSeqs("mySeqs.fa","/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
 #'
 blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl")) {
 
