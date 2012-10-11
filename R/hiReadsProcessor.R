@@ -13,7 +13,7 @@ NULL
 #'
 #' @param SequencingFolderPath full or relative path to the sequencing folder
 #' @param sampleInfoFilePath full or relative path to the sample information file, which holds samples to quadrant/lane associations along with other metadata required to trim sequences or process it. Default to NULL, where the function tries to find xls or tab deliminated txt file in the sequencing folder which sounds similar to 'sampleinfo' and present you with choices of file to select from.
-#' @param seqfilePattern regex to describe sequence file endings. See examples. Default is "\\.TCA.454Reads.fna$". 
+#' @param seqfilePattern regex to describe sequence file endings. See examples. Default is "\\.TCA.454Reads.fna$".
 #' @param interactive whether to prompt each time the function encounters an issue, or use the defaults. Default is TRUE.
 #'
 #' @return a SimpleList list which is used by other functions to process and decode the data.
@@ -68,7 +68,7 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, s
 
 #' Read a sample information file and format appropriate metadata.
 #'
-#' Given a sample information file the function checks if it includes required information to process samples present on each quadrant/lane. The function also adds other columns required for processing with default values if not already defined ahead of time.
+#' Given a sample information file, the function checks if it includes required information to process samples present on each sector/quadrant/region/lane. The function also adds other columns required for processing with default values if not already defined ahead of time.
 #'
 #' @param sampleInfoFilePath full or relative path to the sample information file, which holds samples to quadrant/lane associations along with other metadata required to trim sequences or process it. 
 #' @param splitBySector split the data frame into a list by sector column. Default is TRUE.
@@ -78,8 +78,7 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, s
 #' \itemize{
 #'  \item Required Column Description:
 #'    \itemize{
-#'  	\item sector => region/quadrant of the sequencing plate the sample comes from.
-#'  	\item sectorfile => sequence file for the region/quadrant. OPTIONAL! If sectorfile is not defined, then the contents of the 'sector' column is going to be combined with the file pattern defined to search for the file.
+#'  	\item sector => region/quadrant of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed
 #'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample
 #'  	\item primerltrsequence => DNA sequence of the viral LTR primer with viral LTR sequence following the primer landing site
 #'  	\item samplename => Name of the sample associated with the barcode
@@ -324,7 +323,7 @@ removeReadsWithNs <- function(dnaSet,maxNs=5,consecutive=TRUE) {
 
 #' Split DNAStringSet object using first X number of bases defined by a vector.
 #'
-#' Given barcodes/MID to sample association vector and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{decodeByBarcode}}
+#' Given a character vector of barcodes/MID to sample association and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{decodeByBarcode}} or \code{\link{findBarcodes}}
 #'
 #' @param barcodesSample a character vector of barcodes to sample name associations. Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)
 #' @param dnaSet DNAStringSet object to evaluate. 
@@ -387,7 +386,7 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
         print(as.data.frame(table(sampleNames)))
     }
         
-    dnaSet <- split(dnaSet,as.character(sampleNames))
+    dnaSet <- as.list(split(dnaSet,as.character(sampleNames)))
     
     if(dereplicate) {
         message("Dereplicating reads.")
@@ -403,7 +402,7 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
 
 #' Demultiplex reads by their barcodes
 #'
-#' Given a sample information object, the function reads in the raw fasta/fastq file, demultiplexes reads by their barcodes, and appends it back to the sampleInfo object. Calls \code{\link{splitByBarcode}} to perform the actual splitting. If supplied with a character vector and reads themselves, the function behaves a bit differently. See the examples.
+#' Given a sample information object, the function reads in the raw fasta/fastq file, demultiplexes reads by their barcodes, and appends it back to the sampleInfo object. Calls \code{\link{splitByBarcode}} to perform the actual splitting of file by barcode sequences. If supplied with a character vector and reads themselves, the function behaves a bit differently. See the examples.
 #'
 #' @param sampleInfo sample information SimpleList object created using \code{\link{read.sampleInfo}}, which holds barcodes and sample names per sector/quadrant or a character vector of barcodes to sample name associations. Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)
 #' @param sector If sampleInfo is a SimpleList object, then a numeric/character value or vector representing sector(s) in sampleInfo. Optionally if on high memory machine sector='all' will decode/demultiplex sequences from all sectors/quadrants. This option is ignored if sampleInfo is a character vector. Default is NULL. 
@@ -411,6 +410,7 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param returnUnmatched return unmatched sequences. Returns results as a list where x[["unDecodedSeqs"]] has culprits. Default is FALSE.
 #' @param dereplicate return dereplicated sequences. Calls \code{\link{dereplicateReads}}, which appends counts=X to sequence names/deflines. Default is FALSE.
+#' @param alreadyDecoded if reads have be already decoded and split into respective files per sample and 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} is set to reading sample files and not the sector files, then set this to TRUE. Default is FALSE. Enabling this parameter skips the barcode detection step and loads the sequence file as is into the sampleInfo object. 
 #'
 #' @return If sampleInfo is an object of SimpleList then decoded sequences are appeneded to respective sample slots, else a named list of DNAStringSet object. If returnUnmatched=TRUE, then x[["unDecodedSeqs"]] has the unmatched sequences.
 #'
@@ -418,11 +418,14 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
 #'
 #' @export
 #'
+#' @aliases findBarcodes
+#' 
 #' @examples 
+#'  #findBarcodes(sampleInfo,showStats=TRUE)
 #'  #decodeByBarcode(sampleInfo,showStats=TRUE)
-#'  #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
+#'  #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
 #'
-decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALSE, returnUnmatched=FALSE, dereplicate=FALSE) {
+decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALSE, returnUnmatched=FALSE, dereplicate=FALSE, alreadyDecoded=FALSE) {
     ## tried PDict()...and its slower than this awesome code! ##    
     if(class(sampleInfo)=="SimpleList") {
         if(is.null(sector)) {
@@ -435,44 +438,53 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
         if(any(!sectors %in% names(sampleInfo$sectors))) {
             stop("Following sectors not found in names(sampleInfo$sectors): ",sectors[!sectors %in% names(sampleInfo$sectors)])
         }
+                
         for(sector in sectors) {
-            message("Decoding sector: ",sector)
-            ## prepare a vector of barcode to sample associations ##
-            sampleBarcodes <- toupper(extractFeature(sampleInfo,sector=sector,feature="barcode")[[sector]])
-            barcodesSample <- c()
-            barcodesSample[as.character(sampleBarcodes)] <- names(sampleBarcodes)
-    
-            if (length(table(nchar(as.character(sampleBarcodes))))>1) {
-                stop("Multiple barcode lengths found.")
-            }
-            
-            ## length of barcodes before any modifications done later if any! ##
-            realbarcodelen <- unique(nchar(as.character(sampleBarcodes)))
-            
-            if (any(table(as.character(sampleBarcodes))>1)) {
-                message("Duplicate barcode found on this sector.\nPlease choose from one of the options below\n 1: Pick first few bases of primer for tiebreaker? (This could be dangerous if the sequencing run has too many errors!)\n 2: Use the last sample associated with the duplicate as the primary sample?\n 3: Do not do anything.")
-                
-                choice <- scan(what=integer(0),n=1,quiet=TRUE,multi.line=FALSE)
-                
-                if(choice==1) {  
-                    message("Enter # of bases to use from primer:")
-                    howmany <- scan(what=integer(0),n=1,quiet=TRUE,multi.line=FALSE)
-                    samplePrimers <- toupper(extractFeature(sampleInfo,sector=sector,feature="primerltrsequence")[[sector]])
-                    newBarcodes <- toupper(paste(sampleBarcodes,substr(samplePrimers,1,howmany),sep=""))                                                    
-                    if (any(table(newBarcodes)>1)) {
-                        stop("Tiebreaking failed...try choosing high number of bases from primer??? \n",paste(names(which(table(newBarcodes)>1)),collapse=", "))
-                    }
-                    barcodesSample <- c()
-                    barcodesSample[newBarcodes] <- names(sampleBarcodes)
-                } else if(choice==2) {
-                    message("Overwriting duplicate samples associated with the same barcode...")
-                } else {
-                    stop("Aborting due to duplicate barcode found on this sector")
-                }
-            }
-            
+        	## check everything is cool with the provided barcodes first before reading the sequences! ##
+            message("Decoding sector: ",sector)            
+			## prepare a vector of barcode to sample associations ##
+			sampleBarcodes <- toupper(extractFeature(sampleInfo,sector=sector,feature="barcode")[[sector]])
+			barcodesSample <- structure(as.character(sampleBarcodes), names=names(sampleBarcodes))
+	
+			if (length(table(nchar(as.character(sampleBarcodes))))>1) {
+				stop("Multiple barcode lengths found.")
+			}
+			
+			## length of barcodes before any modifications done later if any! ##
+			realbarcodelen <- unique(nchar(as.character(sampleBarcodes)))
+			
+			if (any(table(as.character(sampleBarcodes))>1)) {
+				message("Duplicate barcode found on this sector.\nPlease choose from one of the options below\n 1: Pick first few bases of primer for tiebreaker? (This could be dangerous if the sequencing run has too many errors!)\n 2: Use the last sample associated with the duplicate as the primary sample?\n 3: Do not do anything.")
+				
+				choice <- scan(what=integer(0),n=1,quiet=TRUE,multi.line=FALSE)
+				
+				if(choice==1) {  
+					message("Enter # of bases to use from primer:")
+					howmany <- scan(what=integer(0),n=1,quiet=TRUE,multi.line=FALSE)
+					samplePrimers <- toupper(extractFeature(sampleInfo,sector=sector,feature="primerltrsequence")[[sector]])
+					newBarcodes <- toupper(paste(sampleBarcodes,substr(samplePrimers,1,howmany),sep=""))                                                    
+					if (any(table(newBarcodes)>1)) {
+						stop("Tiebreaking failed...try choosing high number of bases from primer??? \n",paste(names(which(table(newBarcodes)>1)),collapse=", "))
+					}
+					barcodesSample <- structure(newBarcodes, names=names(sampleBarcodes))
+				} else if(choice==2) {
+					message("Overwriting duplicate samples associated with the same barcode...")
+				} else {
+					stop("Aborting due to duplicate barcode found on this sector")
+				}
+			}
+			            
             dnaSet <- read.seqsFromSector(sampleInfo,sector)
-            dnaSet <- splitByBarcode(barcodesSample, dnaSet, trimFrom=realbarcodelen+1, showStats=showStats, returnUnmatched=returnUnmatched, dereplicate=dereplicate)
+            
+            if(alreadyDecoded) {
+            	if(length(barcodesSample)>1) {
+            		stop("alreadyDecoded parameter is set to TRUE. There shouldn't be more than one sample associated to a sequence file.")
+            	}
+				names(dnaSet) <- sub("^(\\S+) .+$","\\1",names(dnaSet),perl = T)
+				dnaSet <- as.list(split(dnaSet,rep(names(barcodesSample),length(dnaSet))))
+            } else {
+            	dnaSet <- splitByBarcode(barcodesSample, dnaSet, trimFrom=realbarcodelen+1, showStats=showStats, returnUnmatched=returnUnmatched, dereplicate=dereplicate)
+            }
             
             for(samplename in names(dnaSet)) {
                 if(samplename=="unDecodedSeqs") {                                        
@@ -492,6 +504,9 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
     }
     return(decoded)
 }
+
+#' @export
+findBarcodes <- decodeByBarcode
 
 #' Align a short pattern to variable length target sequences.
 #'
@@ -930,7 +945,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
     ## test if there are decoded sequences in the sampleinfo object ##
     decoded <- extractFeature(sampleInfo,feature="decoded")
     samplesDecoded <- sapply(decoded,names,simplify=FALSE)
-    sectorsDecoded <- names(which(sapply(sapply(decoded,length),">",1)))
+    sectorsDecoded <- names(which(sapply(sapply(decoded,length),">",0)))
     rm(decoded)
     gc()
 
@@ -1040,7 +1055,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
     ## test if there are primed sequences in the sampleinfo object ##   
     primed <- extractFeature(sampleInfo,feature="primed")
     samplesprimed <- sapply(primed,names,simplify=FALSE)
-    sectorsPrimed <- names(which(sapply(sapply(primed,length),">",1)))
+    sectorsPrimed <- names(which(sapply(sapply(primed,length),">",0)))
     rm(primed)
     gc()
 
@@ -1155,12 +1170,12 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
     primerFlag <- FALSE
     toProcess <- extractFeature(sampleInfo,feature="LTRed")
     toProcessSamples <- sapply(toProcess,names,simplify=FALSE)
-    sectors <- names(which(sapply(sapply(toProcess,length),">",1)))
+    sectors <- names(which(sapply(sapply(toProcess,length),">",0)))
     if(length(sectors)==0) {
         message("No LTRed information found in sampleInfo. Using primed information to find Linkers")
         toProcess <- extractFeature(sampleInfo,feature="primed")
         toProcessSamples <- sapply(toProcess,names,simplify=FALSE)
-        sectors <- names(which(sapply(sapply(toProcess,length),">",1)))
+        sectors <- names(which(sapply(sapply(toProcess,length),">",0)))
         if(length(sectors)==0) {
             stop("No primed information found in sampleInfo...did you run findPrimers()?")
         }
@@ -1776,8 +1791,11 @@ read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
     
     if(class(seqFilePath)=="SimpleList") {
         filePath <- normalizePath(grep(paste(sector,seqFilePath$seqfilePattern,sep=""),seqFilePath$seqFilePaths,value=TRUE),mustWork=TRUE)
-        if(!length(filePath)>0) {
-            stop("No sequence file found for sector: ",sector," in seqFilePath variable (",seqFilePath$seqFilePaths,") using pattern (",paste(sector,seqFilePath$seqfilePattern,sep=""),")")
+        if(length(filePath)==0) {
+            stop("No sequence file found for sector: ",sector," in seqFilePath variable (",paste(seqFilePath$seqFilePaths,collapse=" * "),") using pattern (",paste(sector,seqFilePath$seqfilePattern,sep=""),")")
+        }
+        if(length(filePath)>1) {
+            stop("Multiple sequence file found for sector: ",sector," in seqFilePath variable (",paste(seqFilePath$seqFilePaths,collapse=" * "),") using pattern (",paste(sector,seqFilePath$seqfilePattern,sep=""),")")
         }
         seqFilePath <- filePath
     }

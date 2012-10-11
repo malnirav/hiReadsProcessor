@@ -9,6 +9,10 @@
   which samples per sector/quadrant information along with
   other metadata.}
 }
+\value{
+  a dataframe summarizing counts of major attributes per
+  sample and sector.
+}
 \description{
   Give a simple summary of major attributes in
   sampleInfo/SimpleList object.

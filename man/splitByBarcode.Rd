@@ -33,11 +33,13 @@
   barcodesSample.
 }
 \description{
-  Given barcodes/MID to sample association vector and a
-  DNAStringSet object, the function splits/demultiplexes
-  the DNAStringSet object by first few bases dictated by
-  length of barcodes/MID supplied. This is an accessory
-  function used by \code{\link{decodeByBarcode}}
+  Given a character vector of barcodes/MID to sample
+  association and a DNAStringSet object, the function
+  splits/demultiplexes the DNAStringSet object by first few
+  bases dictated by length of barcodes/MID supplied. This
+  is an accessory function used by
+  \code{\link{decodeByBarcode}} or
+  \code{\link{findBarcodes}}
 }
 \examples{
 #splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)

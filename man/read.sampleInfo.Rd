@@ -24,44 +24,48 @@
   else a dataframe.
 }
 \description{
-  Given a sample information file the function checks if it
-  includes required information to process samples present
-  on each quadrant/lane. The function also adds other
-  columns required for processing with default values if
-  not already defined ahead of time.
+  Given a sample information file, the function checks if
+  it includes required information to process samples
+  present on each sector/quadrant/region/lane. The function
+  also adds other columns required for processing with
+  default values if not already defined ahead of time.
 }
 \details{
   \itemize{ \item Required Column Description: \itemize{
   \item sector => region/quadrant of the sequencing plate
-  the sample comes from.  \item sectorfile => sequence file
-  for the region/quadrant. OPTIONAL! If sectorfile is not
-  defined, then the contents of the 'sector' column is
-  going to be combined with the file pattern defined to
-  search for the file.  \item barcode => unique 4-12bp DNA
-  sequence which identifies the sample \item
-  primerltrsequence => DNA sequence of the viral LTR primer
-  with viral LTR sequence following the primer landing site
-  \item samplename => Name of the sample associated with
-  the barcode \item sampledescription => Detailed
-  description of the sample \item gender => sex of the
-  sample: male or female \item species => species of the
-  sample: homo sapien, mus musculus, etc.  \item freeze =>
-  UCSC freeze to which the sample should be aligned to.
-  \item linkersequence => DNA sequence of linker adaptor to
-  found following the genomic sequence.  \item
-  restrictionenzyme => Restriction enzyme used for
-  digestion and sample recovery. Can also be Fragmentase!
-  } \item Metadata Parameter Column Description: \itemize{
-  \item ltrbitsequence => DNA sequence of the viral LTR
-  following the primer landing site.  \item ltrbitidentity
-  => percent of LTR bit sequence to match during the
-  alignment. Default is 1.  \item primerltridentity =>
-  percent of primer to match during the alignment. Default
-  is .85 \item linkeridentity => percent of linker sequence
-  to match during the alignment. Default is 0.55. Only
-  applies to non-primerID/random tag based linker search.
-  \item primeridinlinker => whether the linker adaptor used
-  has primerID/random tag in it? Default is FALSE.  \item
+  the sample comes from. If files have been split by
+  samples apriori, then the filename associated per sample
+  without the extension. If this is a filename, then be
+  sure to enable 'alreadyDecoded' parameter in
+  \code{\link{findBarcodes}} or
+  \code{\link{decodeByBarcode}}, since contents of this
+  column is pasted together with 'seqfilePattern' parameter
+  in \code{\link{read.SeqFolder}} to find the appropriate
+  file needed \item barcode => unique 4-12bp DNA sequence
+  which identifies the sample \item primerltrsequence =>
+  DNA sequence of the viral LTR primer with viral LTR
+  sequence following the primer landing site \item
+  samplename => Name of the sample associated with the
+  barcode \item sampledescription => Detailed description
+  of the sample \item gender => sex of the sample: male or
+  female \item species => species of the sample: homo
+  sapien, mus musculus, etc.  \item freeze => UCSC freeze
+  to which the sample should be aligned to.  \item
+  linkersequence => DNA sequence of linker adaptor to found
+  following the genomic sequence.  \item restrictionenzyme
+  => Restriction enzyme used for digestion and sample
+  recovery. Can also be Fragmentase!  } \item Metadata
+  Parameter Column Description: \itemize{ \item
+  ltrbitsequence => DNA sequence of the viral LTR following
+  the primer landing site.  \item ltrbitidentity => percent
+  of LTR bit sequence to match during the alignment.
+  Default is 1.  \item primerltridentity => percent of
+  primer to match during the alignment. Default is .85
+  \item linkeridentity => percent of linker sequence to
+  match during the alignment. Default is 0.55. Only applies
+  to non-primerID/random tag based linker search.  \item
+  primeridinlinker => whether the linker adaptor used has
+  primerID/random tag in it? Default is FALSE.  \item
   primeridinlinkeridentity1 => percent of sequence to match
   before the random tag. Default is 0.75. Only applies to
   primerID/random tag based linker search and when

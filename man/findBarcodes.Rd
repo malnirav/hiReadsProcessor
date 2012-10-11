@@ -1,9 +1,8 @@
-\name{decodeByBarcode}
-\alias{decodeByBarcode}
+\name{findBarcodes}
 \alias{findBarcodes}
 \title{Demultiplex reads by their barcodes}
 \usage{
-  decodeByBarcode(sampleInfo, sector = NULL, dnaSet = NULL,
+  findBarcodes(sampleInfo, sector = NULL, dnaSet = NULL,
     showStats = FALSE, returnUnmatched = FALSE,
     dereplicate = FALSE, alreadyDecoded = FALSE)
 }
