@@ -444,7 +444,7 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
             message("Decoding sector: ",sector)            
 			## prepare a vector of barcode to sample associations ##
 			sampleBarcodes <- toupper(extractFeature(sampleInfo,sector=sector,feature="barcode")[[sector]])
-			barcodesSample <- structure(as.character(sampleBarcodes), names=names(sampleBarcodes))
+			barcodesSample <- structure(names(sampleBarcodes), names=as.character(sampleBarcodes))
 	
 			if (length(table(nchar(as.character(sampleBarcodes))))>1) {
 				stop("Multiple barcode lengths found.")
@@ -466,7 +466,7 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
 					if (any(table(newBarcodes)>1)) {
 						stop("Tiebreaking failed...try choosing high number of bases from primer??? \n",paste(names(which(table(newBarcodes)>1)),collapse=", "))
 					}
-					barcodesSample <- structure(newBarcodes, names=names(sampleBarcodes))
+					barcodesSample <- structure(names(sampleBarcodes), names=newBarcodes)
 				} else if(choice==2) {
 					message("Overwriting duplicate samples associated with the same barcode...")
 				} else {
@@ -481,7 +481,7 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
             		stop("alreadyDecoded parameter is set to TRUE. There shouldn't be more than one sample associated to a sequence file.")
             	}
 				names(dnaSet) <- sub("^(\\S+) .+$","\\1",names(dnaSet),perl = T)
-				dnaSet <- as.list(split(dnaSet,rep(names(barcodesSample),length(dnaSet))))
+				dnaSet <- as.list(split(dnaSet,rep(as.character(barcodesSample),length(dnaSet))))
             } else {
             	dnaSet <- splitByBarcode(barcodesSample, dnaSet, trimFrom=realbarcodelen+1, showStats=showStats, returnUnmatched=returnUnmatched, dereplicate=dereplicate)
             }
