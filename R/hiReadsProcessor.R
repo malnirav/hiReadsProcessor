@@ -2394,7 +2394,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
     hits <- orderBy(~qName,hits)
     
     if(asRangedData) {
-        hits <- pslToRangedData(hits, useTargetAsRef=TRUE)
+        hits <- pslToRangedData(hits, useTargetAsRef=TRUE, isblast8=TRUE)
     }
     
     return(hits)
