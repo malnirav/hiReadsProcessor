@@ -2030,6 +2030,7 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #'
 #' @param x dataframe reflecting psl format
 #' @param useTargetAsRef use target or query as space or the reference data. Default is TRUE.
+#' @param isblast8 the input dataframe blast8 format output from BLAT. Default is FALSE.
 #'
 #' @return a RangedData object reflecting psl file type.
 #'
@@ -2041,13 +2042,13 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #'  #pslToRangedData(psl)
 #'  #pslToRangedData(psl,useTargetAsRef=FALSE)
 #'
-pslToRangedData <- function(x, useTargetAsRef=TRUE) {
+pslToRangedData <- function(x, useTargetAsRef=TRUE, isblast8=FALSE) {
     if(useTargetAsRef) {
-        metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),"tStarts")
-        RangedData(space=x$tName,IRanges(start=x$tStart,end=x$tEnd),strand=x$strand, x[,metadataCols])
+        metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),ifelse(isblast8,NA,"tStarts"))
+        RangedData(space=x$tName,IRanges(start=x$tStart,end=x$tEnd),strand=x$strand, x[,na.omit(metadataCols)])
     } else {
-        metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),"qStarts")
-        RangedData(space=x$qName,IRanges(start=x$qStart,end=x$qEnd),strand=x$strand, x[,metadataCols])
+        metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),ifelse(isblast8,NA,"qStarts"))
+        RangedData(space=x$qName,IRanges(start=x$qStart,end=x$qEnd),strand=x$strand, x[,na.omit(metadataCols)])
     }
 }
 

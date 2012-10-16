@@ -2,13 +2,17 @@
 \alias{pslToRangedData}
 \title{Convert psl dataframe to RangedData}
 \usage{
-  pslToRangedData(x, useTargetAsRef = TRUE)
+  pslToRangedData(x, useTargetAsRef = TRUE,
+    isblast8 = FALSE)
 }
 \arguments{
   \item{x}{dataframe reflecting psl format}
 
   \item{useTargetAsRef}{use target or query as space or the
   reference data. Default is TRUE.}
+
+  \item{isblast8}{the input dataframe blast8 format output
+  from BLAT. Default is FALSE.}
 }
 \value{
   a RangedData object reflecting psl file type.
