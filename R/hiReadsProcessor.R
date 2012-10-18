@@ -2044,10 +2044,10 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #'
 pslToRangedData <- function(x, useTargetAsRef=TRUE, isblast8=FALSE) {
     if(useTargetAsRef) {
-        metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),ifelse(isblast8,NA,"tStarts"))
+        metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=FALSE),ifelse(isblast8,NA,"tStarts"))
         RangedData(space=x$tName,IRanges(start=x$tStart,end=x$tEnd),strand=x$strand, x[,na.omit(metadataCols)])
     } else {
-        metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=T),ifelse(isblast8,NA,"qStarts"))
+        metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=FALSE),ifelse(isblast8,NA,"qStarts"))
         RangedData(space=x$qName,IRanges(start=x$qStart,end=x$qEnd),strand=x$strand, x[,na.omit(metadataCols)])
     }
 }
