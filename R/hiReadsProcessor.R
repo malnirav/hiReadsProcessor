@@ -1801,7 +1801,16 @@ read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
     }
     
     message("Reading ",seqFilePath)
-    dnaSet <- readDNAStringSet(normalizePath(seqFilePath,mustWork=TRUE),format=ifelse(grepl("fastq$",seqFilePath),"fastq","fasta"))
+    if(grepl("fastq$",seqFilePath)) {
+    	require(ShortRead)
+    	bore <- readFastq(normalizePath(seqFilePath,mustWork=TRUE))
+    	dnaSet <- sread(bore)
+    	names(dnaSet) <- id(bore)
+    	rm(bore)
+    } else {
+    	dnaSet <- readDNAStringSet(normalizePath(seqFilePath,mustWork=TRUE))
+    }
+    
     if(length(dnaSet)==0) {
         stop("No sequences found")
     }
