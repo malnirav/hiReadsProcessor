@@ -2689,14 +2689,15 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 #'  #otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
 #'  #otuSites(psl.rd=test.psl.rd)
 #'
-otuSites <- function(posID=NULL,readID=NULL,grouping=NULL,psl.rd=NULL) {
+otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
     if(is.null(psl.rd)) {
         stopifnot(!is.null(posID))
         stopifnot(!is.null(readID))
     } else {
         ## find the otuID by clusters ##
-        if(!"clusterTopHit" %in% colnames(psl.rd)) {
-            stop("The object supplied in psl.rd parameter does not have Position column in it. Did you run clusterSites() on it?")
+        if(!"clusterTopHit" %in% colnames(psl.rd) | !"clusteredPosition" %in% colnames(psl.rd)) {
+            stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
+            	  Did you run clusterSites() on it?")
         }
 
         good.rows <- psl.rd$clusterTopHit
@@ -2727,25 +2728,50 @@ otuSites <- function(posID=NULL,readID=NULL,grouping=NULL,psl.rd=NULL) {
     # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
     reads$otuID <- unlist(lapply(lapply(with(reads,split(posIDs,grouping)),as.factor),as.numeric)) 
     reads$newotuID <- reads$otuID 
-    
+	reads$check <- TRUE
+
     ## see if readID with a unique or single posID matches up to a readID with >1 posIDs, if yes then merge
     singles <- reads$counts==1
+    if(any(singles)) {
+		toCheck <- with(reads[singles,], split(posIDs,grouping))
+		toCheck.ids <- with(reads[singles,], split(otuID,grouping))
+		toCheck <- sapply(names(toCheck), function(x) { names(toCheck[[x]]) <- toCheck.ids[[x]]; toCheck[[x]] } )
+		rm(toCheck.ids)
+		
+		allposIDs <- with(reads[!singles,],split(posIDs,grouping))
+			
+		for(f in intersect(names(toCheck),names(allposIDs))) {
+			query <- structure(paste(toCheck[[f]],",",sep=""), names=names(toCheck[[f]])) # this is crucial to avoid matching things like xyzABC to xyz
+			subject <- paste(allposIDs[[f]],",",sep="") # this is crucial to avoid matching things like xyzABC to xyz
+			res <- sapply(query, grep, x=subject, fixed=TRUE)
+			res <- res[sapply(res,length)>0]                    
+			res <- structure(unlist(res,use.names=F),names=rep(names(res),sapply(res,length)))
+			reads[!singles & reads$grouping==f,"newotuID"][as.numeric(res)] <- as.numeric(names(res))
+			reads[reads$grouping==f,"check"][as.numeric(res)] <- FALSE
+		}    
+    }
     
-    toCheck <- with(reads[singles,],split(posIDs,grouping))
-    toCheck.ids <- with(reads[singles,],split(otuID,grouping))
-    toCheck <- sapply(names(toCheck),function(x) { names(toCheck[[x]]) <- toCheck.ids[[x]]; toCheck[[x]] } )
-    rm(toCheck.ids)
+    ## see if readIDs with >1 posID overlap with other readIDs of the same type ##
+    ## this is useful when no readIDs were found with a unique or single posID ##
+    ## merge OTUs with overlapping positions within same grouping ##
+    reads$grouping <- as.character(reads$grouping)
+    reads$posIDs <- as.character(reads$posIDs)
+    for(f in 1:nrow(reads)) {
+        if (reads$check[f]) {
+            grouping.i <- reads$grouping[f]
+            posId <- reads$posIDs[f]
+            oldid <- reads$otuID[f]
+            tocheck <- reads[-f,][reads$check & reads$grouping==grouping.i,]
+            res <- which(unlist(lapply(lapply(strsplit(tocheck$posIDs,","),"%in%", unlist(strsplit(posId,","))),any)))
+            if(length(res)>0) {
+                id <- tocheck$otuID[res]
+                reads[reads$otuID %in% id,"check"] <- FALSE
+                reads[reads$otuID %in% id,"newotuID"] <- oldid
+            }
+        }
+    }
     
-    allposIDs <- with(reads[!singles,],split(posIDs,grouping))
-        
-    for(f in intersect(names(toCheck),names(allposIDs))) {
-        query <- structure(paste(toCheck[[f]],",",sep=""),names=names(toCheck[[f]])) # this is crucial to avoid matching things like xyzABC to xyz
-        subject <- paste(allposIDs[[f]],",",sep="") # this is crucial to avoid matching things like xyzABC to xyz
-        res <- sapply(query, grep, x=subject, fixed=TRUE)
-        res <- res[sapply(res,length)>0]                    
-        res <- structure(unlist(res,use.names=F),names=rep(names(res),sapply(res,length)))
-        reads[!singles & reads$grouping==f,"newotuID"][as.numeric(res)] <- as.numeric(names(res))
-    }    
+    reads$check <- NULL
     
     ## trickle the OTU ids back to sites frame ##    
     ots.ids <- with(reads,split(newotuID,readID))
