@@ -15,11 +15,11 @@ Depends:
     Biostrings,
     GenomicRanges,
     parallel,
-    doBy,
     RMySQL,
     xlsx,
-    plyr,
     dataframe
+Imports:
+    plyr
 License: GPL (>= 2)
 LazyLoad: yes
 Collate:

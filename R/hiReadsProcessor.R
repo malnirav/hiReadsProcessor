@@ -2322,7 +2322,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
     }
 
     message("Ordering by qName and cherry picking!")
-    hits <- orderBy(~qName,hits)
+    hits <- arrange(hits,qName)
     
     if(bestScoring) { ## do round two of bestScore incase any got missed in round one                
         hits$score <- with(hits,matches-misMatches-qBaseInsert-tBaseInsert)
@@ -2400,7 +2400,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
     }
 
     message("Ordering by qName and cherry picking!")
-    hits <- orderBy(~qName,hits)
+    hits <- arrange(hits,qName)
     
     if(asRangedData) {
         hits <- pslToRangedData(hits, useTargetAsRef=TRUE, isblast8=TRUE)
@@ -2549,13 +2549,13 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
     # get frequencies of each posID & value combination by grouping #
     groups <- if(is.null(grouping)) { "" } else { grouping }
     weight2 <- if(is.null(weight)) { 1 } else { weight }
-    sites <- count(orderBy(~posID2+value,data.frame(posID, value, grouping=groups, weight=weight2, posID2=paste(groups,posID,sep=""), stringsAsFactors=FALSE)), wt_var="weight")
+    sites <- count(arrange(data.frame(posID, value, grouping=groups, weight=weight2, posID2=paste(groups,posID,sep=""), stringsAsFactors=FALSE), posID2, value), wt_var="weight")
     rm("groups","weight2")
     
     if(byQuartile) {
         message("Clustering by quartile: ",quartile)
         # obtain the defined quartile of frequency per posID & grouping #
-        sites <- orderBy(~posID2+value-freq,sites)
+        sites <- arrange(sites, posID2, value, desc(freq))
         quartiles <- with(sites,tapply(freq,posID2,quantile,probs=quartile,names=FALSE))
         sites$belowQuartile <- with(sites,freq < quartiles[posID2])
         rm(quartiles)
@@ -2639,7 +2639,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 			res$maxFreq <- with(res,pmax(q.freq,s.freq))    
 			maxes <- with(res,tapply(maxFreq,queryHits,max))
 			res$ismaxFreq <- with(res,maxFreq==maxes[as.character(queryHits)])        
-			res <- orderBy(~-queryHits,res) ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
+			res <- arrange(res,desc(queryHits)) ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
 			hash.df <- unique(subset(res,ismaxFreq)[,c("queryHits","val")])
 			clustered <- structure(as.numeric(hash.df$val),names=as.character(hash.df$queryHits))
 			rm(hash.df)
@@ -2723,7 +2723,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
         
     ## get unique posIDs per readID by grouping 
     reads <- ddply(sites, .(grouping,readID), summarise, posIDs=paste(sort(unique(posID)),collapse=","), counts=length(unique(posID)), .parallel=FALSE)
-    reads <- orderBy(~grouping+posIDs,reads)
+    reads <- arrange(reads, grouping, posIDs)
     
     # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
     reads$otuID <- unlist(lapply(lapply(with(reads,split(posIDs,grouping)),as.factor),as.numeric)) 
