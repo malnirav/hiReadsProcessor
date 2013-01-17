@@ -13,10 +13,12 @@
   decoded, primed, LTRed, and Linkered sequences for
   samples per sector/quadrant along with metadata.}
 
-  \item{seqType}{which type of sequence to blat and find
-  integration sites for: genomic, or genomicLinkered.
-  Default is NULL and determined automatically based on
-  type of restriction enzyme or isolation method used.}
+  \item{seqType}{which type of sequence to BLAT and find
+  integration sites for. Default is NULL and determined
+  automatically based on type of restriction enzyme or
+  isolation method used. Could be any one of following
+  options: genomic, genomicLinkered, decoded, primed,
+  LTRed, linkered.}
 
   \item{port}{a port number to host the gfServer with.
   Default is 5560.}

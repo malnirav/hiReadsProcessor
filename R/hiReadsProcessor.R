@@ -78,16 +78,16 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, s
 #' \itemize{
 #'  \item Required Column Description:
 #'    \itemize{
-#'  	\item sector => region/quadrant of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed
-#'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample
-#'  	\item primerltrsequence => DNA sequence of the viral LTR primer with viral LTR sequence following the primer landing site
+#'  	\item sector => region/quadrant of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed.
+#'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample. If providing filename as sector, then leave this blank.
+#'  	\item primerltrsequence => DNA sequence of the viral LTR primer with viral LTR sequence following the primer landing site. If already trimmed, then mark this as SKIP.
 #'  	\item samplename => Name of the sample associated with the barcode
 #'  	\item sampledescription => Detailed description of the sample
 #'  	\item gender => sex of the sample: male or female
 #'  	\item species => species of the sample: homo sapien, mus musculus, etc.
 #'  	\item freeze => UCSC freeze to which the sample should be aligned to.
-#'  	\item linkersequence => DNA sequence of linker adaptor to found following the genomic sequence.
-#'  	\item restrictionenzyme => Restriction enzyme used for digestion and sample recovery. Can also be Fragmentase!
+#'  	\item linkersequence => DNA sequence of linker adaptor to found following the genomic sequence. If already trimmed, then mark this as SKIP.
+#'  	\item restrictionenzyme => Restriction enzyme used for digestion and sample recovery. Can also be Fragmentase or Sonication!
 #' 		}
 #'  \item Metadata Parameter Column Description:
 #'   \itemize{
@@ -150,7 +150,7 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive
     # add missing meta data columns
     metaColsNotThere <- !names(metaDataCols) %in% names(sampleInfo)
     if(any(metaColsNotThere)) {
-        sampleInfo <- cbind(sampleInfo,as.data.frame(t(metaDataCols[metaColsNotThere]),stringsAsFactors = FALSE))
+        sampleInfo <- cbind(sampleInfo,as.data.frame(t(metaDataCols[metaColsNotThere]),stringsAsFactors = FALSE))        
     }
     
     # do some formatting to avoid later hassels!
@@ -162,6 +162,13 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive
     }
     
     # confirm ltr bit is correct
+    ltrbitTest <- sampleInfo$primerltrsequence=="SKIP"
+    if(any(ltrbitTest)) { ## add SKIP to ltrbit as well if primerltrsequence has been trimmed
+    	tofix <- which(ltrbitTest)
+    	message("adding SKIP to ltrbitsequence to ",length(tofix)," sample since primerltrsequence has been trimmed.")
+    	sampleInfo$ltrbitsequence[tofix] <- "SKIP"
+    }
+    
     ltrbitTest <- nchar(sampleInfo$ltrbitsequence)==0 | sampleInfo$ltrbitsequence==""
     if(any(ltrbitTest)) {
         tofix <- which(ltrbitTest)
@@ -958,68 +965,81 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
         
         ## prepare sample to primer association ##
         ltrPrimers <- toupper(extractFeature(sampleInfo,sector=sector,feature="primerltrsequence")[[sector]])
-        if(length(ltrPrimers)==0 | mean(nchar(ltrPrimers))<=5 | all(is.na(ltrPrimers))) {
+        skippers <- ltrPrimers=="SKIP"
+        if(!all(skippers) & (length(ltrPrimers[!skippers])==0 | mean(nchar(ltrPrimers[!skippers]))<=5 | all(is.na(ltrPrimers[!skippers])))) {
             stop("Either the primer size is too short (<=5) or no primers are found in sample information object.")
         }
-        
+                
         ## refine sample list if specific samples are supplied ##
         samplesToProcess <- samplesDecoded[[sector]]
         if(!is.null(samplenames)) {
             samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
         }
-        
-         ## get the decoded reads ##
-        decoded <- extractSeqs(sampleInfo,sector,samplesToProcess,feature="decoded")[[sector]]
-        
-        ## trim the primers ##
-        message("\tFinding Primers.")
-        primerIdentity <- extractFeature(sampleInfo,sector=sector,feature="primerltridentity")[[sector]]
-        stopifnot(length(primerIdentity)>0)
-        
-        primerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("ltrPrimers","primerIdentity","doRC","alignWay", "vpairwiseAlignSeqs", "pairwiseAlignSeqs","decoded"), .packages="Biostrings") %dopar% {
-            switch(alignWay,
-                fast = vpairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]-.05), doRC=doRC, ...),
-                slow = pairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]), doRC=doRC, ...)                
-            )        
-        }
-        names(primerTrimmed) <- samplesToProcess
-        
-        ## check if any error occured during alignments ##
-        if(any(grepl("simpleError",primerTrimmed))) {
-            stop("Error encountered in LTR Trimming function",paste(names(primerTrimmed[grepl("simpleError",primerTrimmed)]),collapse=", "))
-        }
-        
-        ## remove samples with no linker hits from further processing ##
-        culprits <- grep("No hits found",primerTrimmed)
-        if(length(culprits)>0) {
-            message("Following sample(s) had no hits for primer alignment: ",paste(samplesToProcess[culprits],collapse=", "))
-            samplesToProcess <- samplesToProcess[-c(culprits)]
-            primerTrimmed <- primerTrimmed[-c(culprits)]
-        }
-        
-        cleanit <- gc()
-        
-        toprint <- as.data.frame(sapply(primerTrimmed,length)); names(toprint) <- "Total"            
-        counts <- sapply(decoded,length)
-        toprint$PercOfDecoded <- 100*(toprint$Total/counts[rownames(toprint)])
-        toprint$SampleName <- rownames(toprint)
-        rownames(toprint) <- NULL
 
-        if (showStats) {            
-            message("Sequence Stats after primer alignment:")
-            print(toprint)        
-        }
-
-        ## if <= 5% of sequences found primers...then something is wrong with the primer sequences provided???
-        if(mean(toprint$PercOfDecoded)<=5) {
-            stop("Something seems to be wrong with the primers provided for each sample. On average <= 5% of sequences found primer match for the entire run!!!")
+        ## find any samples which need to be skipped
+        skip.samples <- names(which(skippers))
+        if(length(skip.samples)>0) {
+            samplesToProcess <- samplesToProcess[!samplesToProcess %in% skip.samples]
+            message("Skipping samples ", paste(skip.samples,collapse=","))
+            sampleInfo <- addFeature(sampleInfo, sector, skip.samples, 
+            						feature="primed", value=structure(rep("SKIPPED",length(skip.samples)), names=skip.samples))
         }
         
-        ## modify metadata attribute, write primer coordinates back to sampleInfo object & trim
-        message("Adding primer info back to the object")
-        sampleInfo <- addFeature(sampleInfo,sector,names(primerTrimmed),feature="primed",value=primerTrimmed)
-        rm(primerTrimmed)
-        cleanit <- gc()
+        ## dont bother searching if no samples are to be processed! ##
+        if(length(samplesToProcess)>0) {			
+        	## get the decoded reads ##
+			decoded <- extractSeqs(sampleInfo,sector,samplesToProcess,feature="decoded")[[sector]]
+		
+			## trim the primers ##
+			message("\tFinding Primers.")
+			primerIdentity <- extractFeature(sampleInfo,sector=sector,feature="primerltridentity")[[sector]]
+			stopifnot(length(primerIdentity)>0)
+			
+			primerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("ltrPrimers","primerIdentity","doRC","alignWay", "vpairwiseAlignSeqs", "pairwiseAlignSeqs","decoded"), .packages="Biostrings") %dopar% {
+				switch(alignWay,
+					fast = vpairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]-.05), doRC=doRC, ...),
+					slow = pairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", qualityThreshold=(primerIdentity[[x]]), doRC=doRC, ...)                
+				)        
+			}
+			names(primerTrimmed) <- samplesToProcess
+			
+			## check if any error occured during alignments ##
+			if(any(grepl("simpleError",primerTrimmed))) {
+				stop("Error encountered in LTR Trimming function",paste(names(primerTrimmed[grepl("simpleError",primerTrimmed)]),collapse=", "))
+			}        
+				
+			## remove samples with no primer hits from further processing ##
+			culprits <- grep("No hits found",primerTrimmed)
+			if(length(culprits)>0) {
+				message("Following sample(s) had no hits for primer alignment: ",paste(samplesToProcess[culprits],collapse=", "))
+				samplesToProcess <- samplesToProcess[-c(culprits)]
+				primerTrimmed <- primerTrimmed[-c(culprits)]
+			}
+			
+			cleanit <- gc()
+			
+			toprint <- as.data.frame(sapply(primerTrimmed,length)); names(toprint) <- "Total"            
+			counts <- sapply(decoded,length)
+			toprint$PercOfDecoded <- 100*(toprint$Total/counts[rownames(toprint)])
+			toprint$SampleName <- rownames(toprint)
+			rownames(toprint) <- NULL
+	
+			if (showStats) {            
+				message("Sequence Stats after primer alignment:")
+				print(toprint)        
+			}
+	
+			## if <= 5% of sequences found primers...then something is wrong with the primer sequences provided???
+			if(mean(toprint$PercOfDecoded)<=5) {
+				stop("Something seems to be wrong with the primers provided for each sample. On average <= 5% of sequences found primer match for the entire run!!!")
+			}
+			
+			## modify metadata attribute, write primer coordinates back to sampleInfo object & trim
+			message("Adding primer info back to the object")
+			sampleInfo <- addFeature(sampleInfo,sector,names(primerTrimmed),feature="primed",value=primerTrimmed)
+			rm(primerTrimmed)
+			cleanit <- gc()
+		}
     }
     sampleInfo$callHistory <- append(sampleInfo$callHistory,match.call())
     return(sampleInfo)
@@ -1068,7 +1088,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
         
         ## prepare sample to LTR bit associations ##
         sampleLTRbits <- toupper(extractFeature(sampleInfo,sector=sector,feature="ltrbitsequence")[[sector]])
-        if(length(sampleLTRbits)==0 | mean(nchar(sampleLTRbits))<=1 | all(is.na(sampleLTRbits))) {
+        skippers <- sampleLTRbits=="SKIP"
+        if(!all(skippers) & (length(sampleLTRbits[!skippers])==0 | mean(nchar(sampleLTRbits[!skippers]))<=1 | all(is.na(sampleLTRbits[!skippers])))) {
             stop("Either LTR bit sequence is too short (<=1) or no LTR bits found in sample information object.")
         }
         
@@ -1078,62 +1099,74 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
             samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
         }
         
-        ## get the primer trimmed reads ##
-        primerTrimmed <- extractSeqs(sampleInfo,sector,samplesToProcess,feature="primed")[[sector]]
-        
-        ## trim LTRbits using slow method since its the best! ##
-        message("\tFinding LTR bits.")
-        ltrBitIdentity <- extractFeature(sampleInfo,sector=sector,feature="ltrbitidentity")[[sector]]
-        ltrTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("primerTrimmed","sampleLTRbits","ltrBitIdentity","doRC", "pairwiseAlignSeqs"), .packages="Biostrings") %dopar% {            
-            pairwiseAlignSeqs(primerTrimmed[[x]], sampleLTRbits[[x]], "left", qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
+        # find any samples which need to be skipped
+        skip.samples <- names(which(skippers))
+        if(length(skip.samples)>0) {
+            samplesToProcess <- samplesToProcess[!samplesToProcess %in% skip.samples]
+            message("Skipping samples ", paste(skip.samples,collapse=","))
+            sampleInfo <- addFeature(sampleInfo, sector, skip.samples, 
+            						feature="LTRed", value=structure(rep("SKIPPED",length(skip.samples)), names=skip.samples))
         }
-        names(ltrTrimmed) <- samplesToProcess
-        
-        ## check if any error occured during alignments ##
-        if(any(grepl("simpleError",ltrTrimmed))) {
-            stop("Error encountered in LTR Trimming function",paste(names(ltrTrimmed[grepl("simpleError",ltrTrimmed)]),collapse=", "))
+		
+		## dont bother searching if no samples are to be processed! ##
+        if(length(samplesToProcess)>0) {
+			## get the primer trimmed reads ##
+			primerTrimmed <- extractSeqs(sampleInfo,sector,samplesToProcess,feature="primed")[[sector]]
+			
+			## trim LTRbits using slow method since its the best! ##
+			message("\tFinding LTR bits.")
+			ltrBitIdentity <- extractFeature(sampleInfo,sector=sector,feature="ltrbitidentity")[[sector]]
+			ltrTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("primerTrimmed","sampleLTRbits","ltrBitIdentity","doRC", "pairwiseAlignSeqs"), .packages="Biostrings") %dopar% {            
+				pairwiseAlignSeqs(primerTrimmed[[x]], sampleLTRbits[[x]], "left", qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
+			}
+			names(ltrTrimmed) <- samplesToProcess
+			
+			## check if any error occured during alignments ##
+			if(any(grepl("simpleError",ltrTrimmed))) {
+				stop("Error encountered in LTR Trimming function",paste(names(ltrTrimmed[grepl("simpleError",ltrTrimmed)]),collapse=", "))
+			}
+			
+			## remove samples with no LTR hits from further processing ##
+			culprits <- grep("No hits found",ltrTrimmed)
+			if(length(culprits)>0) {
+				message("Following sample(s) had no hits for LTR bit alignment: ",paste(samplesToProcess[culprits],collapse=", "))
+				samplesToProcess <- samplesToProcess[-c(culprits)]
+				ltrTrimmed <- ltrTrimmed[-c(culprits)]
+			}    
+			
+			cleanit <- gc()
+	
+			toprint <- as.data.frame(sapply(ltrTrimmed,length)); names(toprint) <- "Total"
+			counts <- sapply(primerTrimmed,length)
+			toprint$PercOfPrimed <- 100*(toprint$Total/counts[rownames(toprint)])        
+			toprint$SampleName <- rownames(toprint)
+			rownames(toprint) <- NULL    
+			
+			if (showStats) {                            
+				message("Sequence Stats after LTR bit alignment:")
+				print(toprint)        
+			}
+	
+			## if <= 5% of sequences found LTRs...then something is wrong with the LTR sequences provided???
+			if(mean(toprint$PercOfPrimed)<=5) {
+				stop("Something seems to be wrong with the LTRs provided for each sample. On average <= 5% of sequences found LTR match for the entire run!!!")
+			}
+			
+			## modify metadata attribute, add LTR bit coordinates to primer and write back to sampleInfo object & trim
+			message("Adding LTR info back to the object")
+			for(x in names(ltrTrimmed)) {
+				cat('.')
+				if(length(ltrTrimmed[[x]])>0) {
+					primed.end <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(ltrTrimmed[[x]])])
+					end(ltrTrimmed[[x]]) <- end(ltrTrimmed[[x]]) + primed.end
+					start(ltrTrimmed[[x]]) <- start(ltrTrimmed[[x]]) + primed.end
+					sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
+					rm(primed.end)
+				}
+			}
+			rm("ltrTrimmed","primerTrimmed")
+			cleanit <- gc()
         }
-        
-        ## remove samples with no linker hits from further processing ##
-        culprits <- grep("No hits found",ltrTrimmed)
-        if(length(culprits)>0) {
-            message("Following sample(s) had no hits for LTR bit alignment: ",paste(samplesToProcess[culprits],collapse=", "))
-            samplesToProcess <- samplesToProcess[-c(culprits)]
-            ltrTrimmed <- ltrTrimmed[-c(culprits)]
-        }    
-        
-        cleanit <- gc()
-
-        toprint <- as.data.frame(sapply(ltrTrimmed,length)); names(toprint) <- "Total"
-        counts <- sapply(primerTrimmed,length)
-        toprint$PercOfPrimed <- 100*(toprint$Total/counts[rownames(toprint)])        
-        toprint$SampleName <- rownames(toprint)
-        rownames(toprint) <- NULL    
-        
-        if (showStats) {                            
-            message("Sequence Stats after LTR bit alignment:")
-            print(toprint)        
-        }
-
-        ## if <= 5% of sequences found LTRs...then something is wrong with the LTR sequences provided???
-        if(mean(toprint$PercOfPrimed)<=5) {
-            stop("Something seems to be wrong with the LTRs provided for each sample. On average <= 5% of sequences found LTR match for the entire run!!!")
-        }
-        
-        ## modify metadata attribute, add LTR bit coordinates to primer and write back to sampleInfo object & trim
-        message("Adding LTR info back to the object")
-        for(x in names(ltrTrimmed)) {
-            cat('.')
-            if(length(ltrTrimmed[[x]])>0) {
-                primed.end <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(ltrTrimmed[[x]])])
-                end(ltrTrimmed[[x]]) <- end(ltrTrimmed[[x]]) + primed.end
-                start(ltrTrimmed[[x]]) <- start(ltrTrimmed[[x]]) + primed.end
-                sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
-                rm(primed.end)
-            }
-        }
-        rm("ltrTrimmed","primerTrimmed")
-        cleanit <- gc()
     }
     sampleInfo$callHistory <- append(sampleInfo$callHistory,match.call())
     return(sampleInfo)
@@ -1189,7 +1222,8 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
         
         ## prepare sample to linker association ##
         sampleLinkers <- toupper(extractFeature(sampleInfo,sector=sector,feature="linkersequence")[[sector]])
-        if(length(sampleLinkers)==0 | mean(nchar(sampleLinkers))<=10 | all(is.na(sampleLinkers))) {
+        skippers <- sampleLinkers=="SKIP"
+        if(!all(skippers) & (length(sampleLinkers[!skippers])==0 | mean(nchar(sampleLinkers[!skippers]))<=10 | all(is.na(sampleLinkers[!skippers])))) {
             stop("Either Linker sequence is too short (<=10) or no Linkers found in sample information object.")
         }
         
@@ -1207,71 +1241,84 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
         if(!is.null(samplenames)) {
             samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
         }
-                
-        toProcess <- extractSeqs(sampleInfo,sector,samplesToProcess,feature=ifelse(primerFlag,"primed","LTRed"))[[sector]]
         
-        ## trim the Linkers ##
-        message("\tFinding Linkers.")
-        linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("primerIded","toProcess","sampleLinkers","doRC","linkerIdentity","primerIded.threshold1","primerIded.threshold2","pairwiseAlignSeqs","primerIDAlignSeqs"), .packages="Biostrings") %dopar% {
-            if(primerIded[[x]]) {
-                primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], doAnchored=TRUE, returnUnmatched=TRUE, returnRejected=TRUE, doRC=doRC, qualityThreshold1=primerIded.threshold1[[x]], qualityThreshold2=primerIded.threshold2[[x]], ...)
-            } else {
-                pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", qualityThreshold=linkerIdentity[[x]], returnUnmatched=TRUE, returnLowScored=TRUE, doRC=doRC, ...) ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
-            }        
-        }
-        names(linkerTrimmed) <- samplesToProcess
-        
-        ## check if any error occured during alignments ##
-        if(any(grepl("simpleError",linkerTrimmed))) {
-            stop("Error encountered in Linker Trimming functions",paste(names(linkerTrimmed[grepl("simpleError",linkerTrimmed)]),collapse=", "))
+        # find any samples which need to be skipped
+        skip.samples <- names(which(skippers))
+        if(length(skip.samples)>0) {
+            samplesToProcess <- samplesToProcess[!samplesToProcess %in% skip.samples]
+            message("Skipping samples ", paste(skip.samples,collapse=","))
+            sampleInfo <- addFeature(sampleInfo, sector, skip.samples, 
+            						feature="linkered", value=structure(rep("SKIPPED",length(skip.samples)), names=skip.samples))
         }
         
-        ## remove samples with no linker hits from further processing ##
-        culprits <- grep("No hits found",linkerTrimmed)
-        if(length(culprits)>0) {
-            message("Following sample(s) had no hits for Linker alignment: ",paste(samplesToProcess[culprits],collapse=", "))
-            samplesToProcess <- samplesToProcess[-c(culprits)]
-            linkerTrimmed <- linkerTrimmed[-c(culprits)]
-        }        
-        
-        cleanit <- gc()
-        
-        toprint <- data.frame("Total"=sapply(sapply(linkerTrimmed,"[[","hits"),length))
-        counts <- sapply(toProcess,length)
-        toprint$PercOfPrimedOrLTRed <- 100*(toprint$Total/counts[rownames(toprint)]) 
-        toprint$SampleName <- rownames(toprint)
-        rownames(toprint) <- NULL    
-        
-        if (showStats) {                            
-            message("Sequence Stats after Linker alignment:")
-            print(toprint)        
-        }
-
-        ## if <= 5% of sequences found linkers...then something is wrong with the linker sequences provided???
-        if(mean(toprint$PercOfPrimedOrLTRed)<=5) {
-            stop("Something seems to be wrong with the linkers provided for each sample. On average <= 5% of sequences found linker match for the entire run!!!")
-        }
-        
-        message("Adding linker info back to the object")
-        ## modify metadata attribute, add linker coordinates to LTRed and write back to sampleInfo object
-        ## for primerID based samples...write back all the returned attibutes
-        for(x in names(linkerTrimmed)) {
-            for(y in names(linkerTrimmed[[x]])) {
-                cat('.')
-                if(primerFlag){
-                    LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(linkerTrimmed[[x]][[y]])])
-                } else {
-                    LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$LTRed[names(linkerTrimmed[[x]][[y]])])
-                }                    
-                end(linkerTrimmed[[x]][[y]]) <- end(linkerTrimmed[[x]][[y]]) + LTRed.ends
-                start(linkerTrimmed[[x]][[y]]) <- start(linkerTrimmed[[x]][[y]]) + LTRed.ends
-                newAttrName <- paste(ifelse(y=="hits","",y),"linkered",sep="")
-                sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- linkerTrimmed[[x]][[y]]
-                rm(LTRed.ends)
-            }
-        }            
-        rm("linkerTrimmed")
-        cleanit <- gc()
+        ## dont bother searching if no samples are to be processed! ##
+        if(length(samplesToProcess)>0) {
+					
+			toProcess <- extractSeqs(sampleInfo,sector,samplesToProcess,feature=ifelse(primerFlag,"primed","LTRed"))[[sector]]
+			
+			## trim the Linkers ##
+			message("\tFinding Linkers.")
+			linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, .errorhandling="pass", .export=c("primerIded","toProcess","sampleLinkers","doRC","linkerIdentity","primerIded.threshold1","primerIded.threshold2","pairwiseAlignSeqs","primerIDAlignSeqs"), .packages="Biostrings") %dopar% {
+				if(primerIded[[x]]) {
+					primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], doAnchored=TRUE, returnUnmatched=TRUE, returnRejected=TRUE, doRC=doRC, qualityThreshold1=primerIded.threshold1[[x]], qualityThreshold2=primerIded.threshold2[[x]], ...)
+				} else {
+					pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", qualityThreshold=linkerIdentity[[x]], returnUnmatched=TRUE, returnLowScored=TRUE, doRC=doRC, ...) ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
+				}        
+			}
+			names(linkerTrimmed) <- samplesToProcess
+			
+			## check if any error occured during alignments ##
+			if(any(grepl("simpleError",linkerTrimmed))) {
+				stop("Error encountered in Linker Trimming functions",paste(names(linkerTrimmed[grepl("simpleError",linkerTrimmed)]),collapse=", "))
+			}
+			
+			## remove samples with no linker hits from further processing ##
+			culprits <- grep("No hits found",linkerTrimmed)
+			if(length(culprits)>0) {
+				message("Following sample(s) had no hits for Linker alignment: ",paste(samplesToProcess[culprits],collapse=", "))
+				samplesToProcess <- samplesToProcess[-c(culprits)]
+				linkerTrimmed <- linkerTrimmed[-c(culprits)]
+			}        
+			
+			cleanit <- gc()
+			
+			toprint <- data.frame("Total"=sapply(sapply(linkerTrimmed,"[[","hits"),length))
+			counts <- sapply(toProcess,length)
+			toprint$PercOfPrimedOrLTRed <- 100*(toprint$Total/counts[rownames(toprint)]) 
+			toprint$SampleName <- rownames(toprint)
+			rownames(toprint) <- NULL    
+			
+			if (showStats) {                            
+				message("Sequence Stats after Linker alignment:")
+				print(toprint)        
+			}
+	
+			## if <= 5% of sequences found linkers...then something is wrong with the linker sequences provided???
+			if(mean(toprint$PercOfPrimedOrLTRed)<=5) {
+				stop("Something seems to be wrong with the linkers provided for each sample. On average <= 5% of sequences found linker match for the entire run!!!")
+			}
+			
+			message("Adding linker info back to the object")
+			## modify metadata attribute, add linker coordinates to LTRed and write back to sampleInfo object
+			## for primerID based samples...write back all the returned attibutes
+			for(x in names(linkerTrimmed)) {
+				for(y in names(linkerTrimmed[[x]])) {
+					cat('.')
+					if(primerFlag){
+						LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(linkerTrimmed[[x]][[y]])])
+					} else {
+						LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$LTRed[names(linkerTrimmed[[x]][[y]])])
+					}                    
+					end(linkerTrimmed[[x]][[y]]) <- end(linkerTrimmed[[x]][[y]]) + LTRed.ends
+					start(linkerTrimmed[[x]][[y]]) <- start(linkerTrimmed[[x]][[y]]) + LTRed.ends
+					newAttrName <- paste(ifelse(y=="hits","",y),"linkered",sep="")
+					sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- linkerTrimmed[[x]][[y]]
+					rm(LTRed.ends)
+				}
+			}            
+			rm("linkerTrimmed")
+			cleanit <- gc()
+		}
     }
     sampleInfo$callHistory <- append(sampleInfo$callHistory,match.call())
     return(sampleInfo)
@@ -1824,39 +1871,47 @@ read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
 #' @param dnaSet listed DNAStringSet object containing sequences to be written.
 #' @param filePath a path write the fasta files per sample. Default is current working directory.
 #' @param filePrefix prefix the filenames with a string. Default is 'processed' followed by samplename.
-#' @param prependSamplenames Prepend definition lines with samplenames. Default is TRUE. Make sure the dnaSet parameter is a named list where names are used as samplenames.  
+#' @param prependSamplenames Prepend definition lines with samplenames. Default is TRUE. Make sure the dnaSet parameter is a named list where names are used as samplenames.
+#' @param format Either fasta (the default) or fastq.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #'
 #' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
+#' @note Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
 #' @export
 #'
 #' @examples 
 #'  #write.listedDNAStringSet(dnaSet)
 #'
-write.listedDNAStringSet <- function(dnaSet,filePath=".",filePrefix="processed",prependSamplenames=TRUE,parallel=TRUE) {
+write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed", prependSamplenames=TRUE, format="fasta", parallel=TRUE) {
     stopifnot(class(dnaSet)=="list")
     
     if(!parallel) { registerDoSEQ() }
     
-    for(sector in names(dnaSet)) {
-        foreach(i=iter(names(dnaSet[[sector]]), .inorder=FALSE, .errorhandling="stop", .packages="Biostrings", .export=c("dnaSet","sector","filePath","filePrefix","prependSamplenames"))) %dopar% {
-            outputSeqs <- dnaSet[[sector]][[i]]
-            if(length(outputSeqs)>0) {
-                if(is.null(names(outputSeqs))) {
-                    message("No names attribute found for ",i," ... using artifically generated names")
-                    names(outputSeqs) <- paste("read",1:length(outputSeqs),sep="-")
-                }
-                filename <- paste(filePath,paste(filePrefix,i,"fa",sep="."),sep="/")
-                if(prependSamplenames) {
-                    names(outputSeqs) <- paste(i,names(outputSeqs),sep="-")
-                }
-                writeXStringSet(outputSeqs,file=filename,format="fasta",append=TRUE,width=20000) 
-            }
-        }
+    ## do a safety check to see if dnaSet is a list of list or list of DNAStringSet objects ##    
+    ## if list of list, then flatten it ##
+    if(all(sapply(dnaSet,class)=="list")) {
+    	names(dnaSet) <- NULL
+    	dnaSet <- unlist(dnaSet)
     }
+    
+	out <- foreach(i=iter(names(dnaSet), .inorder=FALSE, .errorhandling="stop", .packages="Biostrings", .export=c("dnaSet","filePath","filePrefix","prependSamplenames"))) %dopar% {
+		outputSeqs <- dnaSet[[i]]
+		if(length(outputSeqs)>0) {
+			if(is.null(names(outputSeqs))) {
+				message("No names attribute found for ",i," ... using artifically generated names")
+				names(outputSeqs) <- paste("read",1:length(outputSeqs),sep="-")
+			}
+			## remove '.' at the beginning of the filename incase filePrefix is empty
+			filename <- gsub("^\\.","",paste(filePrefix,i,ifelse(format=="fastq","fastq","fa"),sep="."))
+			filename <- paste(filePath, filename, sep="/")
+			if(prependSamplenames) {
+				names(outputSeqs) <- paste(i,names(outputSeqs),sep="-")
+			}
+			writeXStringSet(outputSeqs, file=filename, format=format, append=TRUE) 
+		}
+	}    
 }
 
 #' Simple summary of a sampleInfo object.
@@ -2650,7 +2705,9 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 			rm("clustered","res")
 			cleanit <- gc()
 			x
-        }                
+        }
+        
+        sites <- do.call(rbind,sites)                
     }
     
     message("\t - Adding clustered value frequencies.")
@@ -2790,7 +2847,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
 #' Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which BLATs, parses PSL files, finds best hit per read per sample, cluster sites, and assign OTU IDs. It calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered sequences for samples per sector/quadrant along with metadata.
-#' @param seqType which type of sequence to blat and find integration sites for: genomic, or genomicLinkered. Default is NULL and determined automatically based on type of restriction enzyme or isolation method used.
+#' @param seqType which type of sequence to BLAT and find integration sites for. Default is NULL and determined automatically based on type of restriction enzyme or isolation method used. Could be any one of following options: genomic, genomicLinkered, decoded, primed, LTRed, linkered.
 #' @param port a port number to host the gfServer with. Default is 5560.
 #' @param host name of the machine running gfServer. Default is 'localhost'.
 #' @param genomeIndices an associative character vector of freeze to full or relative path of respective .nib or .2bit files. Default is c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit").
@@ -2817,18 +2874,18 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     feature <- ifelse(is.null(seqType),"linkered",seqType)
     
     message("Checking for ",feature," reads.")		
-	linkered <- extractFeature(sampleInfo,feature=feature)
-    sampleslinkered <- sapply(linkered,names,simplify=FALSE)
-    sectorslinkered <- names(which(sapply(sapply(linkered,length),">",1)))
-    rm(linkered)
+	featured <- extractFeature(sampleInfo,feature=feature)
+    samplesfeatured <- sapply(featured,names,simplify=FALSE)
+    sectorsfeatured <- names(which(sapply(sapply(featured,length),">",0)))
+    rm(featured)
     cleanit <- gc()
 
-    if(length(sectorslinkered)==0) {
+    if(length(sectorsfeatured)==0) {
         stop("No ",feature," information found in sampleInfo object provided.")
     }
 
     ## subset specific samples if defined ##
-    samplesToProcess <- unlist(sampleslinkered,use.names=F)
+    samplesToProcess <- unlist(samplesfeatured,use.names=F)
     if(!is.null(samplenames)) {
         samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
     }
@@ -2851,14 +2908,14 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
         message("Getting sequences to BLAT")        
         # get sequences to blat #
         if (is.null(seqType)) {
-            wanted <- names(restrictionenzyme[!grepl("FRAG",restrictionenzyme,ignore.case=TRUE)])
+            wanted <- names(restrictionenzyme[!grepl("FRAG|SONIC",restrictionenzyme,ignore.case=TRUE)])
             wanted <- wanted[wanted %in% names(freeze[freeze==f])]
             seqs <- extractSeqs(sampleInfo, samplename=wanted, feature="genomic", minReadLength=5)
             if(any(as.numeric(sapply(seqs,length))>0)) {
                 write.listedDNAStringSet(seqs,filePrefix=paste("processed",f,sep=""))
             }
 
-            wanted <- names(restrictionenzyme[grepl("FRAG",restrictionenzyme,ignore.case=TRUE)])
+            wanted <- names(restrictionenzyme[grepl("FRAG|SONIC",restrictionenzyme,ignore.case=TRUE)])
             wanted <- wanted[wanted %in% names(freeze[freeze==f])]
             seqs <- extractSeqs(sampleInfo, samplename=wanted, feature="genomicLinkered", minReadLength=5)
             if(any(as.numeric(sapply(seqs,length))>0)) {
@@ -2872,13 +2929,13 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
         }
         
         # BLAT seqs #
-        pslFile <- blatSeqs(query=paste("processed",f,".*.fa$",sep=""), subject=genomeIndices[[f]], standaloneBlat=FALSE, host=host, port=port, parallel=parallel, gzipResults=TRUE)                
+        pslFile <- blatSeqs(query=paste0("processed",f,".*.fa$"), subject=genomeIndices[[f]], standaloneBlat=FALSE, host=host, port=port, parallel=parallel, gzipResults=TRUE)                
         
         message("Cleaning!")
         # add pslFiles for later use #
         pslFiles <- c(pslFiles,pslFile)
         cleanit <- gc()
-        system(paste("rm",paste("processed",f,".*.fa",sep="")))
+        system(paste("rm",paste0("processed",f,".*.fa")))
     }
     
     message("Reading PSL files.")
