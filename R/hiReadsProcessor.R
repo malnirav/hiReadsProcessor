@@ -1896,7 +1896,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
     	dnaSet <- unlist(dnaSet)
     }
     
-	out <- foreach(i=iter(names(dnaSet), .inorder=FALSE, .errorhandling="stop", .packages="Biostrings", .export=c("dnaSet","filePath","filePrefix","prependSamplenames"))) %dopar% {
+	out <- foreach(i=iter(names(dnaSet)), .inorder=FALSE, .errorhandling="stop", .packages="Biostrings", .export=c("dnaSet","filePath","filePrefix","prependSamplenames")) %dopar% {
 		outputSeqs <- dnaSet[[i]]
 		if(length(outputSeqs)>0) {
 			if(is.null(names(outputSeqs))) {
