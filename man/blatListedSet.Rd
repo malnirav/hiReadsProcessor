@@ -28,6 +28,7 @@
   \code{\link{vpairwiseAlignSeqs}},
   \code{\link{startgfServer}}, \code{\link{stopgfServer}},
   \code{\link{blatSeqs}}, \code{\link{read.psl}},
-  \code{\link{pslToRangedData}}, \code{\link{read.blast8}}
+  \code{\link{pslToRangedObject}},
+  \code{\link{read.blast8}}
 }
 

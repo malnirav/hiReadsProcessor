@@ -78,7 +78,7 @@
   \code{\link{startgfServer}}, \code{\link{read.psl}},
   \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
   \code{\link{findIntegrations}},
-  \code{\link{pslToRangedData}},
+  \code{\link{pslToRangedObject}},
   \code{\link{getIntegrationSites}},
   \code{\link{otuSites}}, \code{\link{read.blast8}}
 }

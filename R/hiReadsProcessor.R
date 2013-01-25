@@ -1998,11 +1998,10 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 #'
 #' Start a gfServer indexed reference genome to align batch of sequences using BLAT gfServer/gfClient protocol.
 #'
+#' @param seqDir absolute or relative path to the genome index (nib/2bit files).
 #' @param host name of the machine to run gfServer on. Default: localhost
 #' @param port a port number to host the gfServer with. Default is 5560.
-#' @param seqDir the path of nib/2bit files relative to the current working dir. Default is root.
 #' @param gfServerOpts a character vector of options to be passed to gfServer command on top of server defaults. Default: c(repMatch=112312, stepSize=5, tileSize=10)
-#' @param waitTime number of seconds to wait for gfServer to load. Default is 150. Increase this number for larger genomes, but for humans it should be suffice!
 #'
 #' @return system command status for executing gfServer command.
 #'
@@ -2011,27 +2010,25 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 #' @export
 #'
 #' @examples 
-#'  #startgfServer(port=5560,seqDir="/usr/local/blatSuite34/hg18.2bit")
+#'  #startgfServer(seqDir="/usr/local/blatSuite34/hg18.2bit",port=5560)
 #'  #stopgfServer(port=5560)
 #' 
-startgfServer <- function(host="localhost", port=5560, seqDir=NULL, gfServerOpts=c(repMatch=112312, stepSize=5, tileSize=10), waitTime=150) {
+startgfServer <- function(seqDir=NULL, host="localhost", port=5560, gfServerOpts=c(repMatch=112312, stepSize=5, tileSize=10)) {
     if(is.null(seqDir)) {
         stop("Please define the path of nib/2bit files containing the indexed reference sequence(s)")
     }
     
-    cmd <- paste("gfServer start",host, port, paste(paste("-",names(gfServerOpts),sep=""), gfServerOpts, collapse=" ", sep="="), seqDir, "&")
+    cmd <- paste("gfServer start", 
+					host, port, 
+					paste(paste("-",names(gfServerOpts),sep=""), gfServerOpts, collapse=" ", sep="="), 
+					normalizePath(seqDir), "&")
     message(cmd)
-    system(cmd)
-    
+    system(cmd)        
+
     ## wait for server to load & be ready
-    message("Loading BLAT server...")
-    system(paste("sleep",waitTime))
-    
-    ## if the server hasn't been started despite the wait time...wait additional 3/4 of waitTime secs.  
-    if(!any(grepl(paste("gfServer start", host, port), system("ps",intern=TRUE)))) {
-    	message("Loading BLAT server...")
-		system(paste("sleep",ceiling(waitTime*.75)))
-    }
+    message("Loading BLAT server...")    
+    searchCMD <- sprintf("n=`ps ax | grep '%s' | grep -v 'grep' | awk '{print $3}'`", paste("gfServer start", host, port))
+    system(paste(searchCMD, "; while [ \"$n\" != \"S\" -o \"$n\" != \"S+\" ]; do" ,searchCMD, "; if [ \"$n\" != \"S\" -o \"$n\" != \"S+\" ]; then echo '.'; sleep 30; else n=\"R\"; fi; done"))
 }
 
 #' Stop a gfServer instance
@@ -2055,7 +2052,7 @@ stopgfServer <- function(host="localhost", port=NULL) {
         stop("Please define the port gfServer is running on.")
     }
     
-    cmd <- paste("kill `ps -ax | grep 'gfServer' | grep '",host," ",port,"' | awk '{print $1}'`",sep="")
+    cmd <- sprintf("kill `ps ax | grep '%s' | grep -v 'grep' | awk '{print $1}'`", paste("gfServer start", host, port))
     system(cmd)
 }
 
@@ -2068,7 +2065,7 @@ stopgfServer <- function(host="localhost", port=NULL) {
 #'
 #' @return a list of RangedData object reflecting psl file type per set of sequences.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{pslToRangedData}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{read.blast8}}
 #'
 #' @export
 #' 
@@ -2088,32 +2085,39 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
     })
  }
 
-#' Convert psl dataframe to RangedData
+#' Convert psl dataframe to RangedData/GRanges
 #'
-#' Convert psl dataframe to RangedData object using either the query or target as the reference data column. 
+#' Convert psl dataframe to RangedData or GRanges object using either the query or target as the reference data column. 
 #'
 #' @param x dataframe reflecting psl format
 #' @param useTargetAsRef use target or query as space or the reference data. Default is TRUE.
+#' @param asGRanges make a GRanges object instead of RangedData. Default is FALSE.
 #' @param isblast8 the input dataframe blast8 format output from BLAT. Default is FALSE.
 #'
-#' @return a RangedData object reflecting psl file type.
+#' @return a RangedData/GRanges object reflecting psl file type.
 #'
 #' @seealso \code{\link{blatListedSet}}
 #'
 #' @export
 #'
 #' @examples 
-#'  #pslToRangedData(psl)
-#'  #pslToRangedData(psl,useTargetAsRef=FALSE)
+#'  #pslToRangedObject(psl)
+#'  #pslToRangedObject(psl,asGRanges=TRUE)
+#'  #pslToRangedObject(psl,useTargetAsRef=FALSE)
 #'
-pslToRangedData <- function(x, useTargetAsRef=TRUE, isblast8=FALSE) {
+pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=FALSE, isblast8=FALSE) {
     if(useTargetAsRef) {
         metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=FALSE),ifelse(isblast8,NA,"tStarts"))
-        RangedData(space=x$tName,IRanges(start=x$tStart,end=x$tEnd),strand=x$strand, x[,na.omit(metadataCols)])
+        out <- RangedData(space=x$tName,IRanges(start=x$tStart,end=x$tEnd),strand=x$strand, x[,na.omit(metadataCols)])
     } else {
         metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),invert=TRUE,value=TRUE,fixed=FALSE),ifelse(isblast8,NA,"qStarts"))
-        RangedData(space=x$qName,IRanges(start=x$qStart,end=x$qEnd),strand=x$strand, x[,na.omit(metadataCols)])
+        out <- RangedData(space=x$qName,IRanges(start=x$qStart,end=x$qEnd),strand=x$strand, x[,na.omit(metadataCols)])
     }
+    
+    if(asGRanges) {
+    	out <- as(out,"GRanges")
+    }
+    out
 }
 
 #' Split DNA sequences into smaller files.
@@ -2291,7 +2295,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
 		killFlag <- FALSE
         if(!any(grepl(paste("gfServer start", host, port), system("ps",intern=TRUE)))) {
         	message("Starting gfServer.")        
-            startgfServer(host=host, port=port, seqDir=subjectFile, waitTime=150, gfServerOpts=c(repMatch=blatParameters[['repMatch']], stepSize=blatParameters[['stepSize']], tileSize=blatParameters[['tileSize']]))
+            startgfServer(seqDir=subjectFile, host=host, port=port, gfServerOpts=c(repMatch=blatParameters[['repMatch']], stepSize=blatParameters[['stepSize']], tileSize=blatParameters[['tileSize']]))
             killFlag <- TRUE
         }         
 
@@ -2389,7 +2393,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
     }
     
     if(asRangedData) {
-        hits <- pslToRangedData(hits, useTargetAsRef=TRUE)
+        hits <- pslToRangedObject(hits, useTargetAsRef=TRUE)
     }
     
     return(hits)
@@ -2458,7 +2462,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
     hits <- arrange(hits,qName)
     
     if(asRangedData) {
-        hits <- pslToRangedData(hits, useTargetAsRef=TRUE, isblast8=TRUE)
+        hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, isblast8=TRUE)
     }
     
     return(hits)
@@ -2476,7 +2480,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
 #'
 #' @return a RangedData object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'.
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
@@ -2545,7 +2549,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #'
 #' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a RangedData object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
@@ -2563,7 +2567,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         if(!"Position" %in% colnames(psl.rd)) {
             stop("The object supplied in psl.rd parameter does not have Position column in it. Did you run getIntegrationSites() on it?")
         }
-        posIDs <- paste(space(psl.rd),psl.rd$strand,sep="")
+        posIDs <- paste0(space(psl.rd),psl.rd$strand)
         values <- psl.rd$Position
         if(is.null(weight)) { ## see if sequences were dereplicated before in the pipeline which adds counts=x identifier to the deflines
             weight <- suppressWarnings(as.numeric(sub(".+counts=(\\d+)","\\1",psl.rd$qName)))
@@ -2604,7 +2608,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
     # get frequencies of each posID & value combination by grouping #
     groups <- if(is.null(grouping)) { "" } else { grouping }
     weight2 <- if(is.null(weight)) { 1 } else { weight }
-    sites <- count(arrange(data.frame(posID, value, grouping=groups, weight=weight2, posID2=paste(groups,posID,sep=""), stringsAsFactors=FALSE), posID2, value), wt_var="weight")
+    sites <- count(arrange(data.frame(posID, value, grouping=groups, weight=weight2, posID2=paste0(groups,posID), stringsAsFactors=FALSE), posID2, value), wt_var="weight")
     rm("groups","weight2")
     
     if(byQuartile) {
@@ -2694,7 +2698,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 			res$maxFreq <- with(res,pmax(q.freq,s.freq))    
 			maxes <- with(res,tapply(maxFreq,queryHits,max))
 			res$ismaxFreq <- with(res,maxFreq==maxes[as.character(queryHits)])        
-			res <- arrange(res,desc(queryHits)) ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
+			res <- arrange(res,desc(queryHits),desc(val)) ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
 			hash.df <- unique(subset(res,ismaxFreq)[,c("queryHits","val")])
 			clustered <- structure(as.numeric(hash.df$val),names=as.character(hash.df$queryHits))
 			rm(hash.df)
@@ -2705,9 +2709,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 			rm("clustered","res")
 			cleanit <- gc()
 			x
-        }
-        
-        sites <- do.call(rbind,sites)                
+        }        
     }
     
     message("\t - Adding clustered value frequencies.")
@@ -2738,7 +2740,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 #'
 #' @return a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedData}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
@@ -2746,7 +2748,8 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 #'  #otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
 #'  #otuSites(psl.rd=test.psl.rd)
 #'
-otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
+otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parallel=TRUE) {
+	if(!parallel) { registerDoSEQ() }
     if(is.null(psl.rd)) {
         stopifnot(!is.null(posID))
         stopifnot(!is.null(readID))
@@ -2779,7 +2782,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
     rm(groups)
         
     ## get unique posIDs per readID by grouping 
-    reads <- ddply(sites, .(grouping,readID), summarise, posIDs=paste(sort(unique(posID)),collapse=","), counts=length(unique(posID)), .parallel=FALSE)
+    reads <- ddply(sites, .(grouping,readID), summarise, posIDs=paste(sort(unique(posID)),collapse=","), counts=length(unique(posID)), .parallel=parallel)
     reads <- arrange(reads, grouping, posIDs)
     
     # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
@@ -2790,6 +2793,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
     ## see if readID with a unique or single posID matches up to a readID with >1 posIDs, if yes then merge
     singles <- reads$counts==1
     if(any(singles)) {
+    	message('Merging non-singletons with singletons.')
 		toCheck <- with(reads[singles,], split(posIDs,grouping))
 		toCheck.ids <- with(reads[singles,], split(otuID,grouping))
 		toCheck <- sapply(names(toCheck), function(x) { names(toCheck[[x]]) <- toCheck.ids[[x]]; toCheck[[x]] } )
@@ -2811,24 +2815,27 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
     ## see if readIDs with >1 posID overlap with other readIDs of the same type ##
     ## this is useful when no readIDs were found with a unique or single posID ##
     ## merge OTUs with overlapping positions within same grouping ##
+    message('Merging non-singletons.')
     reads$grouping <- as.character(reads$grouping)
     reads$posIDs <- as.character(reads$posIDs)
-    for(f in 1:nrow(reads)) {
-        if (reads$check[f]) {
-            grouping.i <- reads$grouping[f]
-            posId <- reads$posIDs[f]
-            oldid <- reads$otuID[f]
-            tocheck <- reads[-f,][reads$check & reads$grouping==grouping.i,]
-            res <- which(unlist(lapply(lapply(strsplit(tocheck$posIDs,","),"%in%", unlist(strsplit(posId,","))),any)))
-            if(length(res)>0) {
-                id <- tocheck$otuID[res]
-                reads[reads$otuID %in% id,"check"] <- FALSE
-                reads[reads$otuID %in% id,"newotuID"] <- oldid
-            }
-        }
+    reads <- split(reads, reads$grouping)
+    reads <- foreach(x=iter(reads), .inorder=FALSE, .combine=rbind) %dopar% {		
+		for(f in 1:nrow(x)) {
+			if (x$check[f]) {
+				posId <- x$posIDs[f]
+				oldid <- x$otuID[f]
+				tocheck <- x[-f,][x$check,]
+				res <- which(unlist(lapply(lapply(strsplit(tocheck$posIDs,","),"%in%", unlist(strsplit(posId,","))),any)))
+				if(length(res)>0) {
+					id <- tocheck$otuID[res]
+					x[x$otuID %in% id,"check"] <- FALSE
+					x[x$otuID %in% id,"newotuID"] <- oldid
+				}
+			}
+		}
+		x$check <- NULL
+		x
     }
-    
-    reads$check <- NULL
     
     ## trickle the OTU ids back to sites frame ##    
     ots.ids <- with(reads,split(newotuID,readID))
@@ -2840,6 +2847,147 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
     
     if(is.null(grouping)) { sites$grouping<-NULL }
     return(sites)
+}
+
+#' Make OTUs of genomic positions grouped by reads
+#'
+#' Given a group of genomic positions per read/clone, the function tries to yield a unique OTU ID for the collection based on overlap of locations to other reads/clones by grouping. This is mainly useful when each readID has many locations which needs to be considered as one single group of sites.
+#'
+#' @param position a vector of integer locations/positions, i.e. genomic location
+#' @param chromosome a character vector of seqnames or chromosomes, i.e. tname/chromosomes
+#' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
+#' @param strand a character vector of strand: +,-, or * (default)
+#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param psl.rd a RangedData object returned from \code{\link{clusterSites}}. Default is NULL. 
+#'
+#' @return a data frame with position, chromosome, strand, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
+#'
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{read.blast8}}
+#'
+#' @export
+#'
+#' @examples 
+#'  #otuSites(position=sample(1:100,7),chromosome=paste0('chr',sample(1:3,7,replace=T)), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
+#'  #otuSites(psl.rd=test.psl.rd)
+#'
+otuSites2 <- function(position=NULL, chromosome=NULL, readID=NULL, strand="*", grouping=NULL, psl.rd=NULL, parallel=TRUE) {
+  if(!parallel) { registerDoSEQ() }
+  if(is.null(psl.rd)) {
+    stopifnot(!is.null(position))
+    stopifnot(!is.null(chromosome))
+    stopifnot(!is.null(readID))
+  } else {
+    ## find the otuID by clusters ##
+    if(!"clusterTopHit" %in% colnames(psl.rd) | !"clusteredPosition" %in% colnames(psl.rd)) {
+      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
+            	  Did you run clusterSites() on it?")
+    }
+    
+    good.rows <- psl.rd$clusterTopHit
+    position <- psl.rd$clusteredPosition
+    chromosome <- space(psl.rd)
+    strand <- psl.rd$strand
+    readID <- psl.rd$qName
+    grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
+    
+    otus <- otuSites(position=position[good.rows], 
+                     chromosome=chromosome[good.rows], 
+                     strand=strand[good.rows], 
+                     readID=readID[good.rows], 
+                     grouping=grouping[good.rows], 
+                     parallel=parallel)
+    
+    message("Adding otuIDs back to psl.rd.")        
+    otuIDs <- with(otus,
+                   split(otuID,
+                         paste(position,chromosome,strand,readID,grouping)))
+    psl.rd$otuIDs <- NA
+    psl.rd$otuIDs[good.rows] <- as.numeric(otuIDs[paste(position[good.rows], 
+                                                        chromosome[good.rows], 
+                                                        strand[good.rows], 
+                                                        readIDs[good.rows], 
+                                                        grouping[good.rows])])
+    
+    rm("otus","otuIDs","posIDs","readIDs","grouping")
+    cleanit <- gc()
+    return(psl.rd)
+  }
+  
+  groups <- if(is.null(grouping)) { "A" } else { grouping }
+  sites <- data.frame(chromosome, position, strand, readID,
+                      posID=paste0(chromosome,position,strand),
+                      grouping=groups,stringsAsFactors=FALSE)
+  rm(groups)
+  
+  ## get unique positions per readID by grouping 
+  reads <- ddply(sites, .(grouping,readID), summarise, 
+                 posIDs=paste(unique(posID),collapse=","), 
+                 counts=length(unique(posID)), .parallel=parallel)
+  
+  # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
+  reads$otuID <- unlist(lapply(lapply(with(reads,split(posIDs,grouping)),as.factor),as.numeric)) 
+  sites <- merge(sites, reads[,c("grouping","readID","counts","otuID")], by=c("grouping","readID"), all.x=TRUE)
+  sites$posID <- NULL
+  rm(reads)
+  sites <- arrange(sites, grouping, chromosome, position, strand)
+  sites.gr <- with(sites, GRanges(seqnames=chromosome, IRanges(start=position,width=1), 
+                                  strand, readID, grouping, counts, otuID, newotuID=otuID, check=TRUE))
+  
+  ## see if readID with a unique or single locations matches up to a readID with >1 location, if yes then merge
+  singles <- sites.gr$counts==1
+  if(any(singles)) {
+    message('Merging non-singletons with singletons if any...')
+    singletons <- subset(sites.gr, singles)
+    nonsingletons <- subset(sites.gr, !singles)
+    
+    for(f in intersect(singletons$grouping,nonsingletons$grouping)) {
+      sigs <- subset(singletons, singletons$grouping==f)
+      nonsigs <- subset(nonsingletons, nonsingletons$grouping==f)
+      res <- findOverlaps(nonsigs,sigs,maxgap=1)
+      if(length(res)>0) {
+        res <- as.data.frame(res)
+        res$sigsOTU <- sigs$otuID[res$subjectHits]
+        res$sigsReadID <- sigs$readID[res$subjectHits]  
+        res$nonsigsReadID <- nonsigs$readID[res$queryHits]         
+        s.to.q <- with(res,structure(sigsOTU,names=nonsigsReadID))
+        mcols(x)[nonsigs$readID %in% res$nonsigsReadID,"newotuID"] <- s.to.q[mcols(nonsigs)[nonsigs$readID %in% res$nonsigsReadID,"readID"]]
+        mcols(x)[nonsigs$readID %in% c(res$nonsigsReadID,res$sigsReadID),"check"] <- FALSE
+      }
+    }
+    sites.gr <- c(sigs,nonsigs)
+  }
+  rm("query","subject")
+  
+  ## see if readIDs with >1 locations overlap with other readIDs of the same type ##
+  ## this is useful when no readIDs were found with a unique or single locations ##
+  ## merge OTUs with overlapping positions within same grouping ##
+  message('Merging non-singletons...')
+  sites.gr$grouping <- as.character(sites.gr$grouping)
+  sites.gr.list <- split(sites.gr, sites.gr$grouping)
+  sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .packages="GenomicRanges", .combine=c) %dopar% {		    
+    res <- findOverlaps(x, maxgap=1, ignoreSelf=TRUE,ignoreRedundant=TRUE, select="all")
+    if(length(res)>0) {
+      res <- as.data.frame(res)
+      res$queryOTU <- x$otuID[res$queryHits]
+      res$queryReadID <- x$readID[res$queryHits]       
+      res$subjectReadID <- x$readID[res$subjectHits]
+      s.to.q <- with(res,structure(queryOTU,names=subjectReadID))
+      mcols(x)[x$readID %in% res$subjectReadID,"newotuID"] <- s.to.q[mcols(x)[x$readID %in% res$subjectReadID,"readID"]]
+      mcols(x)[x$readID %in% c(res$subjectReadID,res$queryReadID),"check"] <- FALSE
+    }
+    x
+  }
+  
+  ## trickle the OTU ids back to sites frame ##    
+  ots.ids <- with(mcols(sites.gr),split(newotuID,readID))
+  sites$otuID <- as.numeric(unlist(ots.ids[sites$readID]))
+  
+  stopifnot(any(!is.na(sites$otuID)))
+  rm(reads)
+  cleanit <- gc()
+  
+  if(is.null(grouping)) { sites$grouping<-NULL }
+  return(sites)
 }
 
 #' Find the integration sites and add results to SampleInfo object. 
@@ -2858,7 +3006,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL) {
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedData}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{getIntegrationSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{getIntegrationSites}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
@@ -2973,7 +3121,14 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     sampleInfo <- addFeature(sampleInfo,sector=NULL,samplename=names(psl.hits),feature="psl",value=psl.hits)
 
     message("Adding sites back to the object.")
-    psl.hits <- sapply(psl.hits, function(x) x[with(x,clusterTopHit & pass.allQC & !isMultiHit),])
+    psl.hits <- sapply(psl.hits, function(x) {
+    		x <- DataFrame(x)
+    		cols <- setdiff(colnames(x), c('matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert', 'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'tSize', 'blockCount', 'blockSizes', 'qStarts', 'score', 'tStarts', 'pass.startWithin', 'alignRatio', 'pass.alignRatio', 'percIdentity', 'pass.percIdentity', 'pass.allQC', 'clusterTopHit', 'width', 'Position'))
+			x <- subset(x, clusterTopHit & pass.allQC, select=cols)
+    		x$start <- x$end <- x$clusteredPosition
+    		x$clusteredPosition <- NULL    
+    		RangedData(x)		
+    })
     sampleInfo <- addFeature(sampleInfo,sector=NULL,samplename=names(psl.hits),feature="sites",value=psl.hits)
 
     cleanit <- gc()

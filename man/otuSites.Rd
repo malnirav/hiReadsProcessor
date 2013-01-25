@@ -3,7 +3,7 @@
 \title{Make OTUs of discrete positions grouped by reads}
 \usage{
   otuSites(posID = NULL, readID = NULL, grouping = NULL,
-    psl.rd = NULL)
+    psl.rd = NULL, parallel = TRUE)
 }
 \arguments{
   \item{posID}{a vector of discrete positions, i.e.
@@ -40,7 +40,7 @@
   \code{\link{startgfServer}}, \code{\link{read.psl}},
   \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
   \code{\link{findIntegrations}},
-  \code{\link{pslToRangedData}},
+  \code{\link{pslToRangedObject}},
   \code{\link{getIntegrationSites}},
   \code{\link{clusterSites}}, \code{\link{read.blast8}}
 }
