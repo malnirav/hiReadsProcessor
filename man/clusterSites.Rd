@@ -1,6 +1,6 @@
 \name{clusterSites}
 \alias{clusterSites}
-\title{Cluster values within a window based on their frequency given discrete factors}
+\title{Cluster/Correct values within a window based on their frequency given discrete factors}
 \usage{
   clusterSites(posID = NULL, value = NULL, grouping = NULL,
     psl.rd = NULL, weight = NULL, windowSize = 5,
@@ -52,7 +52,7 @@
 }
 \description{
   Given a group of discrete factors (i.e. position ids) and
-  integer values, the function tries of correct/cluster the
+  integer values, the function tries to correct/cluster the
   integer values based on their frequency in a defined
   windowsize.
 }
@@ -71,15 +71,14 @@
   tied then lowest value is used to represent the cluster.
 }
 \examples{
-#clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),1004,1000,1000,1000,1000), grouping=c('a','a','a','b','b','b','c'))
+#clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))
  #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 }
 \seealso{
-  \code{\link{startgfServer}}, \code{\link{read.psl}},
-  \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
   \code{\link{findIntegrations}},
-  \code{\link{pslToRangedObject}},
   \code{\link{getIntegrationSites}},
-  \code{\link{otuSites}}, \code{\link{read.blast8}}
+  \code{\link{otuSites}}, \code{\link{otuSites2}},
+  \code{\link{crossOverCheck}},
+  \code{\link{pslToRangedObject}}
 }
 

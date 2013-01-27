@@ -86,8 +86,8 @@
   \code{\link{read.psl}}, \code{\link{blatSeqs}},
   \code{\link{blatListedSet}},
   \code{\link{pslToRangedObject}},
-  \code{\link{clusterSites}}, \code{\link{otuSites}},
-  \code{\link{getIntegrationSites}},
-  \code{\link{read.blast8}}
+  \code{\link{clusterSites}}, \code{\link{otuSites2}},
+  \code{\link{crossOverCheck}},
+  \code{\link{getIntegrationSites}}
 }
 

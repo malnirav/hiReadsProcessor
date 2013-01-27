@@ -1,0 +1,51 @@
+\name{crossOverCheck}
+\alias{crossOverCheck}
+\title{Remove values/positions which are overlapping between discrete groups based on their frequency.}
+\usage{
+  crossOverCheck(posID = NULL, value = NULL,
+    grouping = NULL, weight = NULL, psl.rd = NULL)
+}
+\arguments{
+  \item{posID}{a vector of groupings for the value
+  parameter (i.e. Chr,strand). Required if psl.rd parameter
+  is not defined.}
+
+  \item{value}{a vector of integer locations/positions that
+  needs to be binned, i.e. genomic location. Required if
+  psl.rd parameter is not defined.}
+
+  \item{grouping}{additional vector of grouping by which to
+  pool the rows (i.e. samplenames). Default is NULL.}
+
+  \item{weight}{a numeric vector of weights to use when
+  calculating frequency of value by posID and grouping if
+  specified. Default is NULL.}
+
+  \item{psl.rd}{a RangedData object. Default is NULL.}
+}
+\value{
+  a data frame of the original input with columns denoting
+  whether a given row is crossover or not. If psl.rd
+  parameter is defined, then a RangedData object with
+  'isCrossover' column appended at the end.
+}
+\description{
+  Given a group of discrete factors (i.e. position ids) and
+  integer values, the function tests if they overlap
+  between groups. If overlap is found, then the group
+  having highest frequency of a given position wins, else
+  the position is filtered out from all the groups. The
+  main use of this function is to remove crossover sites
+  from different samples in the data.
+}
+\examples{
+#crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), grouping=c('a','a','b','b','b','b','c','c'))
+ #crossOverCheck(psl.rd=test.psl.rd)
+}
+\seealso{
+  \code{\link{clusterSites}}, \code{\link{otuSites}},
+  \code{\link{otuSites2}}, \code{\link{findIntegrations}},
+  \code{\link{getIntegrationSites}},
+  \code{\link{pslToRangedObject}}
+}
+

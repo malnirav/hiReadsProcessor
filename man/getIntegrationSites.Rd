@@ -46,7 +46,7 @@
   \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
   \code{\link{findIntegrations}},
   \code{\link{pslToRangedObject}},
-  \code{\link{clusterSites}}, \code{\link{otuSites}},
-  \code{\link{read.blast8}}
+  \code{\link{clusterSites}}, \code{\link{otuSites2}},
+  \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 }
 

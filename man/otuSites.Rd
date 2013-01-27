@@ -32,16 +32,26 @@
   when each readID has many posID which needs to be
   considered as one single group of sites.
 }
+\note{
+  The algorithm for making OTUs of sites is as follows: for
+  each readID check how many positions are there. Separate
+  readIDs with only position from the rest. Check if any
+  readIDs with >1 position match to any readIDs with only
+  one position. If there is a match, then assign both
+  readIDs with the same OTU ID. Check if any positions from
+  readIDs with >1 position match any other readIDs with >1
+  position. If yes, then assign same OTU ID to all readIDs
+  sharing 1 or more positions.
+}
 \examples{
 #otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
  #otuSites(psl.rd=test.psl.rd)
 }
 \seealso{
-  \code{\link{startgfServer}}, \code{\link{read.psl}},
-  \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
+  \code{\link{clusterSites}}, \code{\link{otuSites2}},
+  \code{\link{crossOverCheck}},
   \code{\link{findIntegrations}},
-  \code{\link{pslToRangedObject}},
   \code{\link{getIntegrationSites}},
-  \code{\link{clusterSites}}, \code{\link{read.blast8}}
+  \code{\link{pslToRangedObject}}
 }
 

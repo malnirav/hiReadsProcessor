@@ -2480,7 +2480,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
 #'
 #' @return a RangedData object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'.
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
@@ -2531,9 +2531,9 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
     return(psl.rd)
 }
 
-#' Cluster values within a window based on their frequency given discrete factors
+#' Cluster/Correct values within a window based on their frequency given discrete factors
 #'
-#' Given a group of discrete factors (i.e. position ids) and integer values, the function tries of correct/cluster the integer values based on their frequency in a defined windowsize.
+#' Given a group of discrete factors (i.e. position ids) and integer values, the function tries to correct/cluster the integer values based on their frequency in a defined windowsize.
 #'
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined. 
 #' @param value a vector of integer with values that needs to corrected/clustered (i.e. Positions). Required if psl.rd parameter is not defined. 
@@ -2549,12 +2549,12 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #'
 #' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a RangedData object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
 #' @examples 
-#'  #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),1004,1000,1000,1000,1000), grouping=c('a','a','a','b','b','b','c'))
+#'  #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))
 #'  #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 #'
 clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, weight=NULL, windowSize=5, byQuartile=FALSE, quartile=0.70, parallel=TRUE) {
@@ -2577,18 +2577,18 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         clusters <- clusterSites(posIDs, values, grouping=grouping, windowSize=windowSize, weight=weight, byQuartile=byQuartile, quartile=quartile)
         message("Adding clustered data back to psl.rd.")
         
-        clusteredValues <- with(clusters,split(clusteredValue,paste(posID,value,grouping,sep="")))
-        psl.rd$clusteredPosition <- as.numeric(clusteredValues[paste(posIDs,values,grouping,sep="")])
+        clusteredValues <- with(clusters,split(clusteredValue,paste0(posID,value,grouping)))
+        psl.rd$clusteredPosition <- as.numeric(clusteredValues[paste0(posIDs,values,grouping)])
         
         ## add frequency of new clusteredPosition ##
-        clusteredValueFreq <- with(clusters, split(clusteredValue.freq, paste(posID,value,grouping, sep="")))
-        psl.rd$clonecount <- as.numeric(clusteredValueFreq[paste(posIDs, values, grouping, sep="")])
+        clusteredValueFreq <- with(clusters, split(clusteredValue.freq, paste0(posID,value,grouping)))
+        psl.rd$clonecount <- as.numeric(clusteredValueFreq[paste0(posIDs, values, grouping)])
         rm("clusteredValueFreq","clusteredValues","clusters")
         cleanit <- gc()
         
         ## pick best scoring hit to represent a cluster ##
         message("Picking best scoring hit to represent a cluster.")
-        posIDs <- paste(space(psl.rd),psl.rd$strand,psl.rd$clusteredPosition,sep="")
+        posIDs <- paste0(space(psl.rd),psl.rd$strand,psl.rd$clusteredPosition,grouping)
         bestScore <- tapply(psl.rd$score,posIDs,max)
         isBest <- psl.rd$score==bestScore[posIDs]
         
@@ -2738,9 +2738,11 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
 #' @param psl.rd a RangedData object returned from \code{\link{clusterSites}}. Default is NULL. 
 #'
+#' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions. 
+#'
 #' @return a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
@@ -2749,132 +2751,9 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 #'  #otuSites(psl.rd=test.psl.rd)
 #'
 otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parallel=TRUE) {
-	if(!parallel) { registerDoSEQ() }
-    if(is.null(psl.rd)) {
-        stopifnot(!is.null(posID))
-        stopifnot(!is.null(readID))
-    } else {
-        ## find the otuID by clusters ##
-        if(!"clusterTopHit" %in% colnames(psl.rd) | !"clusteredPosition" %in% colnames(psl.rd)) {
-            stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
-            	  Did you run clusterSites() on it?")
-        }
-
-        good.rows <- psl.rd$clusterTopHit
-        posIDs <- paste(space(psl.rd),psl.rd$strand,psl.rd$clusteredPosition,sep="")
-        readIDs <- psl.rd$qName
-        grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
-
-        otus <- otuSites(posIDs[good.rows], readIDs[good.rows], grouping[good.rows])
-        
-        message("Adding otuIDs back to psl.rd.")        
-        otuIDs <- with(otus,split(otuID,paste(posID,readID,grouping)))
-        psl.rd$otuIDs <- NA
-        psl.rd$otuIDs[good.rows] <- as.numeric(otuIDs[paste(posIDs[good.rows], readIDs[good.rows], grouping[good.rows])])
-        
-        rm("otus","otuIDs","posIDs","readIDs","grouping")
-        cleanit <- gc()
-        return(psl.rd)
-    }
-    
-    groups <- if(is.null(grouping)) { "A" } else { grouping }
-    sites <- data.frame(posID,readID,grouping=groups,stringsAsFactors=FALSE)
-    rm(groups)
-        
-    ## get unique posIDs per readID by grouping 
-    reads <- ddply(sites, .(grouping,readID), summarise, posIDs=paste(sort(unique(posID)),collapse=","), counts=length(unique(posID)), .parallel=parallel)
-    reads <- arrange(reads, grouping, posIDs)
-    
-    # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
-    reads$otuID <- unlist(lapply(lapply(with(reads,split(posIDs,grouping)),as.factor),as.numeric)) 
-    reads$newotuID <- reads$otuID 
-	reads$check <- TRUE
-
-    ## see if readID with a unique or single posID matches up to a readID with >1 posIDs, if yes then merge
-    singles <- reads$counts==1
-    if(any(singles)) {
-    	message('Merging non-singletons with singletons.')
-		toCheck <- with(reads[singles,], split(posIDs,grouping))
-		toCheck.ids <- with(reads[singles,], split(otuID,grouping))
-		toCheck <- sapply(names(toCheck), function(x) { names(toCheck[[x]]) <- toCheck.ids[[x]]; toCheck[[x]] } )
-		rm(toCheck.ids)
-		
-		allposIDs <- with(reads[!singles,],split(posIDs,grouping))
-			
-		for(f in intersect(names(toCheck),names(allposIDs))) {
-			query <- structure(paste(toCheck[[f]],",",sep=""), names=names(toCheck[[f]])) # this is crucial to avoid matching things like xyzABC to xyz
-			subject <- paste(allposIDs[[f]],",",sep="") # this is crucial to avoid matching things like xyzABC to xyz
-			res <- sapply(query, grep, x=subject, fixed=TRUE)
-			res <- res[sapply(res,length)>0]                    
-			res <- structure(unlist(res,use.names=F),names=rep(names(res),sapply(res,length)))
-			reads[!singles & reads$grouping==f,"newotuID"][as.numeric(res)] <- as.numeric(names(res))
-			reads[reads$grouping==f,"check"][as.numeric(res)] <- FALSE
-		}    
-    }
-    
-    ## see if readIDs with >1 posID overlap with other readIDs of the same type ##
-    ## this is useful when no readIDs were found with a unique or single posID ##
-    ## merge OTUs with overlapping positions within same grouping ##
-    message('Merging non-singletons.')
-    reads$grouping <- as.character(reads$grouping)
-    reads$posIDs <- as.character(reads$posIDs)
-    reads <- split(reads, reads$grouping)
-    reads <- foreach(x=iter(reads), .inorder=FALSE, .combine=rbind) %dopar% {		
-		for(f in 1:nrow(x)) {
-			if (x$check[f]) {
-				posId <- x$posIDs[f]
-				oldid <- x$otuID[f]
-				tocheck <- x[-f,][x$check,]
-				res <- which(unlist(lapply(lapply(strsplit(tocheck$posIDs,","),"%in%", unlist(strsplit(posId,","))),any)))
-				if(length(res)>0) {
-					id <- tocheck$otuID[res]
-					x[x$otuID %in% id,"check"] <- FALSE
-					x[x$otuID %in% id,"newotuID"] <- oldid
-				}
-			}
-		}
-		x$check <- NULL
-		x
-    }
-    
-    ## trickle the OTU ids back to sites frame ##    
-    ots.ids <- with(reads,split(newotuID,readID))
-    sites$otuID <- as.numeric(unlist(ots.ids[sites$readID]))
-    
-    stopifnot(any(!is.na(sites$otuID)))
-    rm(reads)
-    cleanit <- gc()
-    
-    if(is.null(grouping)) { sites$grouping<-NULL }
-    return(sites)
-}
-
-#' Make OTUs of genomic positions grouped by reads
-#'
-#' Given a group of genomic positions per read/clone, the function tries to yield a unique OTU ID for the collection based on overlap of locations to other reads/clones by grouping. This is mainly useful when each readID has many locations which needs to be considered as one single group of sites.
-#'
-#' @param position a vector of integer locations/positions, i.e. genomic location
-#' @param chromosome a character vector of seqnames or chromosomes, i.e. tname/chromosomes
-#' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
-#' @param strand a character vector of strand: +,-, or * (default)
-#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData object returned from \code{\link{clusterSites}}. Default is NULL. 
-#'
-#' @return a data frame with position, chromosome, strand, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
-#'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{read.blast8}}
-#'
-#' @export
-#'
-#' @examples 
-#'  #otuSites(position=sample(1:100,7),chromosome=paste0('chr',sample(1:3,7,replace=T)), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#'  #otuSites(psl.rd=test.psl.rd)
-#'
-otuSites2 <- function(position=NULL, chromosome=NULL, readID=NULL, strand="*", grouping=NULL, psl.rd=NULL, parallel=TRUE) {
   if(!parallel) { registerDoSEQ() }
   if(is.null(psl.rd)) {
-    stopifnot(!is.null(position))
-    stopifnot(!is.null(chromosome))
+    stopifnot(!is.null(posID))
     stopifnot(!is.null(readID))
   } else {
     ## find the otuID by clusters ##
@@ -2884,29 +2763,16 @@ otuSites2 <- function(position=NULL, chromosome=NULL, readID=NULL, strand="*", g
     }
     
     good.rows <- psl.rd$clusterTopHit
-    position <- psl.rd$clusteredPosition
-    chromosome <- space(psl.rd)
-    strand <- psl.rd$strand
-    readID <- psl.rd$qName
+    posIDs <- paste(space(psl.rd),psl.rd$strand,psl.rd$clusteredPosition,sep="")
+    readIDs <- psl.rd$qName
     grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
     
-    otus <- otuSites(position=position[good.rows], 
-                     chromosome=chromosome[good.rows], 
-                     strand=strand[good.rows], 
-                     readID=readID[good.rows], 
-                     grouping=grouping[good.rows], 
-                     parallel=parallel)
+    otus <- otuSites(posIDs[good.rows], readIDs[good.rows], grouping[good.rows])
     
     message("Adding otuIDs back to psl.rd.")        
-    otuIDs <- with(otus,
-                   split(otuID,
-                         paste(position,chromosome,strand,readID,grouping)))
+    otuIDs <- with(otus,split(otuID,paste(posID,readID,grouping)))
     psl.rd$otuIDs <- NA
-    psl.rd$otuIDs[good.rows] <- as.numeric(otuIDs[paste(position[good.rows], 
-                                                        chromosome[good.rows], 
-                                                        strand[good.rows], 
-                                                        readIDs[good.rows], 
-                                                        grouping[good.rows])])
+    psl.rd$otuIDs[good.rows] <- as.numeric(otuIDs[paste(posIDs[good.rows], readIDs[good.rows], grouping[good.rows])])
     
     rm("otus","otuIDs","posIDs","readIDs","grouping")
     cleanit <- gc()
@@ -2914,72 +2780,67 @@ otuSites2 <- function(position=NULL, chromosome=NULL, readID=NULL, strand="*", g
   }
   
   groups <- if(is.null(grouping)) { "A" } else { grouping }
-  sites <- data.frame(chromosome, position, strand, readID,
-                      posID=paste0(chromosome,position,strand),
-                      grouping=groups,stringsAsFactors=FALSE)
+  sites <- data.frame(posID,readID,grouping=groups,stringsAsFactors=FALSE)
   rm(groups)
   
-  ## get unique positions per readID by grouping 
-  reads <- ddply(sites, .(grouping,readID), summarise, 
-                 posIDs=paste(unique(posID),collapse=","), 
-                 counts=length(unique(posID)), .parallel=parallel)
+  ## get unique posIDs per readID by grouping 
+  reads <- ddply(sites, .(grouping,readID), summarise, posIDs=paste(sort(unique(posID)),collapse=","), counts=length(unique(posID)), .parallel=parallel)
+  reads <- arrange(reads, grouping, posIDs)
   
   # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
   reads$otuID <- unlist(lapply(lapply(with(reads,split(posIDs,grouping)),as.factor),as.numeric)) 
-  sites <- merge(sites, reads[,c("grouping","readID","counts","otuID")], by=c("grouping","readID"), all.x=TRUE)
-  sites$posID <- NULL
-  rm(reads)
-  sites <- arrange(sites, grouping, chromosome, position, strand)
-  sites.gr <- with(sites, GRanges(seqnames=chromosome, IRanges(start=position,width=1), 
-                                  strand, readID, grouping, counts, otuID, newotuID=otuID, check=TRUE))
+  reads$newotuID <- reads$otuID 
+  reads$check <- TRUE
   
-  ## see if readID with a unique or single locations matches up to a readID with >1 location, if yes then merge
-  singles <- sites.gr$counts==1
+  ## see if readID with a unique or single posID matches up to a readID with >1 posIDs, if yes then merge
+  singles <- reads$counts==1
   if(any(singles)) {
-    message('Merging non-singletons with singletons if any...')
-    singletons <- subset(sites.gr, singles)
-    nonsingletons <- subset(sites.gr, !singles)
+    message('Merging non-singletons with singletons.')
+    toCheck <- with(reads[singles,], split(posIDs,grouping))
+    toCheck.ids <- with(reads[singles,], split(otuID,grouping))
+    toCheck <- sapply(names(toCheck), function(x) { names(toCheck[[x]]) <- toCheck.ids[[x]]; toCheck[[x]] } )
+    rm(toCheck.ids)
     
-    for(f in intersect(singletons$grouping,nonsingletons$grouping)) {
-      sigs <- subset(singletons, singletons$grouping==f)
-      nonsigs <- subset(nonsingletons, nonsingletons$grouping==f)
-      res <- findOverlaps(nonsigs,sigs,maxgap=1)
-      if(length(res)>0) {
-        res <- as.data.frame(res)
-        res$sigsOTU <- sigs$otuID[res$subjectHits]
-        res$sigsReadID <- sigs$readID[res$subjectHits]  
-        res$nonsigsReadID <- nonsigs$readID[res$queryHits]         
-        s.to.q <- with(res,structure(sigsOTU,names=nonsigsReadID))
-        mcols(x)[nonsigs$readID %in% res$nonsigsReadID,"newotuID"] <- s.to.q[mcols(nonsigs)[nonsigs$readID %in% res$nonsigsReadID,"readID"]]
-        mcols(x)[nonsigs$readID %in% c(res$nonsigsReadID,res$sigsReadID),"check"] <- FALSE
+    allposIDs <- with(reads[!singles,],split(posIDs,grouping))
+    
+    for(f in intersect(names(toCheck),names(allposIDs))) {
+      query <- structure(paste(toCheck[[f]],",",sep=""), names=names(toCheck[[f]])) # this is crucial to avoid matching things like xyzABC to xyz
+      subject <- paste(allposIDs[[f]],",",sep="") # this is crucial to avoid matching things like xyzABC to xyz
+      res <- sapply(query, grep, x=subject, fixed=TRUE)
+      res <- res[sapply(res,length)>0]                    
+      res <- structure(unlist(res,use.names=F),names=rep(names(res),sapply(res,length)))
+      reads[!singles & reads$grouping==f,"newotuID"][as.numeric(res)] <- as.numeric(names(res))
+      reads[reads$grouping==f,"check"][as.numeric(res)] <- FALSE
+    }    
+  }
+  
+  ## see if readIDs with >1 posID overlap with other readIDs of the same type ##
+  ## this is useful when no readIDs were found with a unique or single posID ##
+  ## merge OTUs with overlapping positions within same grouping ##
+  message('Merging non-singletons.')
+  reads$grouping <- as.character(reads$grouping)
+  reads$posIDs <- as.character(reads$posIDs)
+  reads <- split(reads, reads$grouping)
+  reads <- foreach(x=iter(reads), .inorder=FALSE, .combine=rbind) %dopar% {		
+    for(f in 1:nrow(x)) {
+      if (x$check[f]) {
+        posId <- x$posIDs[f]
+        oldid <- x$otuID[f]
+        tocheck <- x[-f,][x$check,]
+        res <- which(unlist(lapply(lapply(strsplit(tocheck$posIDs,","),"%in%", unlist(strsplit(posId,","))),any)))
+        if(length(res)>0) {
+          id <- tocheck$otuID[res]
+          x[x$otuID %in% id,"check"] <- FALSE
+          x[x$otuID %in% id,"newotuID"] <- oldid
+        }
       }
     }
-    sites.gr <- c(sigs,nonsigs)
-  }
-  rm("query","subject")
-  
-  ## see if readIDs with >1 locations overlap with other readIDs of the same type ##
-  ## this is useful when no readIDs were found with a unique or single locations ##
-  ## merge OTUs with overlapping positions within same grouping ##
-  message('Merging non-singletons...')
-  sites.gr$grouping <- as.character(sites.gr$grouping)
-  sites.gr.list <- split(sites.gr, sites.gr$grouping)
-  sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .packages="GenomicRanges", .combine=c) %dopar% {		    
-    res <- findOverlaps(x, maxgap=1, ignoreSelf=TRUE,ignoreRedundant=TRUE, select="all")
-    if(length(res)>0) {
-      res <- as.data.frame(res)
-      res$queryOTU <- x$otuID[res$queryHits]
-      res$queryReadID <- x$readID[res$queryHits]       
-      res$subjectReadID <- x$readID[res$subjectHits]
-      s.to.q <- with(res,structure(queryOTU,names=subjectReadID))
-      mcols(x)[x$readID %in% res$subjectReadID,"newotuID"] <- s.to.q[mcols(x)[x$readID %in% res$subjectReadID,"readID"]]
-      mcols(x)[x$readID %in% c(res$subjectReadID,res$queryReadID),"check"] <- FALSE
-    }
+    x$check <- NULL
     x
   }
   
   ## trickle the OTU ids back to sites frame ##    
-  ots.ids <- with(mcols(sites.gr),split(newotuID,readID))
+  ots.ids <- with(reads,split(newotuID,readID))
   sites$otuID <- as.numeric(unlist(ots.ids[sites$readID]))
   
   stopifnot(any(!is.na(sites$otuID)))
@@ -2988,6 +2849,248 @@ otuSites2 <- function(position=NULL, chromosome=NULL, readID=NULL, strand="*", g
   
   if(is.null(grouping)) { sites$grouping<-NULL }
   return(sites)
+}
+
+#' Bin values or make OTUs by assigning a unique ID to them within discrete factors.
+#'
+#' Given a group of values or genomic positions per read/clone, the function tries to yield a unique OTU (operation taxinomical unit) ID for the collection based on overlap of locations to other reads/clones by grouping. This is mainly useful when each read has many locations which needs to be considered as one single group of sites.
+#'
+#' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.
+#' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
+#' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
+#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param psl.rd a RangedData object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
+#'
+#' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions.
+#'
+#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
+#'
+#' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
+#'
+#' @export
+#'
+#' @examples 
+#'  #otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
+#'  #otuSites2(psl.rd=test.psl.rd)
+#'
+otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, 
+                      grouping=NULL, psl.rd=NULL, parallel=TRUE) {
+  if(!parallel) { registerDoSEQ() }
+  if(is.null(psl.rd)) {
+    stopifnot(!is.null(posID))
+    stopifnot(!is.null(value))
+    stopifnot(!is.null(readID))
+  } else {
+    ## find the otuID by clusters ##
+    if(!"clusterTopHit" %in% colnames(psl.rd) | 
+       !"clusteredPosition" %in% colnames(psl.rd)) {
+          stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
+    }
+    
+    good.rows <- psl.rd$clusterTopHit
+    value <- psl.rd$clusteredPosition
+    posID <- paste0(space(psl.rd),psl.rd$strand)
+    readID <- psl.rd$qName
+    grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
+    
+    otus <- otuSites2(posID=posID[good.rows], 
+                     value=value[good.rows], 
+                     readID=readID[good.rows], 
+                     grouping=grouping[good.rows], 
+                     parallel=parallel)
+    
+    message("Adding otuIDs back to psl.rd.")        
+    otuIDs <- with(otus,
+                   split(otuID,
+                         paste0(posID,value,readID,grouping)))
+    psl.rd$otuID <- NA
+    psl.rd$otuID[good.rows] <- as.numeric(otuIDs[paste0(posID[good.rows], 
+                                                        value[good.rows], 
+                                                        readID[good.rows], 
+                                                        grouping[good.rows])])
+    
+    message("Cleaning up!")
+    rm("otus","otuIDs","value","posID","readID","grouping","good.rows")
+    cleanit <- gc()
+    return(psl.rd)
+  }
+  
+  groups <- if(is.null(grouping)) { "A" } else { grouping }
+  sites <- data.frame(posID, value, readID,
+                      posID2=paste0(posID, value),
+                      grouping=groups, stringsAsFactors=FALSE)
+  rm(groups)
+  
+  ## get unique positions per readID by grouping 
+  reads <- ddply(sites, .(grouping,readID), summarise, 
+                 posIDs=paste(unique(posID2),collapse=","), 
+                 counts=length(unique(posID2)), .parallel=parallel)
+  
+  # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
+  reads$otuID <- unlist(
+    lapply(lapply(with(reads,split(posIDs,grouping)), as.factor), as.numeric)
+    ) 
+  sites <- merge(sites, reads[,c("grouping","readID","counts","otuID")], 
+                 by=c("grouping","readID"), all.x=TRUE)
+  sites$posID2 <- NULL
+  rm(reads)
+  sites <- arrange(sites, grouping, posID, value)
+  sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=value,width=1), 
+                                  strand="*", readID, grouping, counts, 
+                                  otuID, newotuID=otuID, check=TRUE))
+  mcols(sites.gr)$grouping <- as.character(mcols(sites.gr)$grouping)
+  
+  ## see if readID with a unique or single locations matches up to a readID with >1 location, if yes then merge
+  mcols(sites.gr)$singles <- mcols(sites.gr)$counts==1
+  if(any(mcols(sites.gr)$singles)) {
+    message('Merging non-singletons with singletons if any...')    
+    sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
+    sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .packages="GenomicRanges", .combine=c) %dopar% {
+      sigs <- subset(x, mcols(x)$singles)
+      nonsigs <- subset(x, !mcols(x)$singles)
+      res <- findOverlaps(nonsigs,sigs,maxgap=1)
+      if(length(res)>0) {
+        res <- as.data.frame(res)
+        res$sigsOTU <- mcols(sigs)$otuID[res$subjectHits]
+        res$sigsReadID <- mcols(sigs)$readID[res$subjectHits]  
+        res$nonsigsReadID <- mcols(nonsigs)$readID[res$queryHits]         
+        s.to.q <- with(res,structure(sigsOTU,names=nonsigsReadID))
+        rows <- mcols(nonsigs)$readID %in% res$nonsigsReadID
+        mcols(nonsigs)[rows,"newotuID"] <- s.to.q[mcols(nonsigs)[rows,"readID"]]
+        mcols(nonsigs)[mcols(nonsigs)$readID %in% c(res$nonsigsReadID,res$sigsReadID),"check"] <- FALSE
+      }
+      c(sigs,nonsigs)
+    }
+    rm(sites.gr.list)
+  }  
+  mcols(sites.gr)$singles <- NULL
+  
+  ## see if readIDs with >1 locations overlap with other readIDs of the same type ##
+  ## this is useful when no readIDs were found with a unique or single locations ##
+  ## merge OTUs with overlapping positions within same grouping ##
+  message('Merging non-singletons...')
+  goods <- subset(sites.gr, !mcols(sites.gr)$check)
+  sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
+  sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
+  sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .packages="GenomicRanges", .combine=c) %dopar% {		    
+    res <- findOverlaps(x, maxgap=1, ignoreSelf=TRUE,ignoreRedundant=TRUE, select="all")
+    if(length(res)>0) {
+      res <- as.data.frame(res)
+      res$queryOTU <- mcols(x)$otuID[res$queryHits]
+      res$queryReadID <- mcols(x)$readID[res$queryHits]       
+      res$subjectReadID <- mcols(x)$readID[res$subjectHits]
+      s.to.q <- with(res,structure(queryOTU,names=subjectReadID))
+      rows <- mcols(x)$readID %in% res$subjectReadID
+      mcols(x)[rows,"newotuID"] <- s.to.q[mcols(x)[rows,"readID"]]
+      mcols(x)[mcols(x)$readID %in% c(res$subjectReadID,res$queryReadID),"check"] <- FALSE
+    }
+    x
+  }
+  sites.gr <- c(sites.gr,goods)
+  rm("sites.gr.list","goods")
+  
+  ## trickle the OTU ids back to sites frame ##    
+  ots.ids <- with(mcols(sites.gr),sapply(split(newotuID,readID),unique))
+  if(!is.numeric(ots.ids)) {
+    stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
+  }
+  sites$otuID <- as.numeric(unlist(ots.ids[sites$readID],use.names=F))
+  
+  stopifnot(any(!is.na(sites$otuID)))
+  cleanit <- gc()
+  
+  if(is.null(grouping)) { sites$grouping<-NULL }
+  return(sites)
+}
+
+#' Remove values/positions which are overlapping between discrete groups based on their frequency.
+#'
+#' Given a group of discrete factors (i.e. position ids) and integer values, the function tests if they overlap between groups. If overlap is found, then the group having highest frequency of a given position wins, else the position is filtered out from all the groups. The main use of this function is to remove crossover sites from different samples in the data.
+#'
+#' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.
+#' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
+#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
+#' @param psl.rd a RangedData object. Default is NULL. 
+#'
+#' @return a data frame of the original input with columns denoting whether a given row is crossover or not. If psl.rd parameter is defined, then a RangedData object with 'isCrossover' column appended at the end.
+#'
+#' @seealso  \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
+#'
+#' @export
+#'
+#' @examples 
+#'  #crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), grouping=c('a','a','b','b','b','b','c','c'))
+#'  #crossOverCheck(psl.rd=test.psl.rd)
+#'
+crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, psl.rd=NULL) {
+  if(is.null(psl.rd)) {
+    stopifnot(!is.null(posID))
+    stopifnot(!is.null(value))
+  } else {     
+    if(!"clusterTopHit" %in% colnames(psl.rd) | 
+         !"clusteredPosition" %in% colnames(psl.rd)) {
+      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
+    }
+    
+    posID <- paste0(space(psl.rd),psl.rd$strand)
+    if("clusteredPosition" %in% colnames(psl.rd)) {
+      message("Using clusteredPosition column from psl.rd as the value parameter.")
+      value <- psl.rd$clusteredPosition
+    } else if("Position" %in% colnames(psl.rd)) {
+      message("Using Position column from psl.rd as the value parameter.")
+      value <- psl.rd$Position
+    } else {
+      message("Using start(psl.rd) as the value parameter.")
+      value <- start(psl.rd)
+    }
+    
+    if(is.null(weight)) { ## see if clonecount column exists
+      isthere <- grepl("clonecount",colnames(psl.rd))
+      if(any(isthere)) { weight <- psl.rd[[which(isthere)]] } else { weight <- weight }
+    }
+    grouping <- if(is.null(grouping)) { "" } else { grouping }
+    crossed <- crossOverCheck(posID, value, grouping=grouping, weight=weight)
+    
+    message("Adding isCrossover data back to psl.rd.")        
+    crossedValues <- with(crossed,split(isCrossover,paste0(posID,value,grouping)))
+    psl.rd$isCrossover <- as.logical(crossedValues[paste0(posID,value,grouping)])
+    
+    message("Cleaning up!")
+    rm("posID","value","grouping","crossed","crossedValues")
+    cleanit <- gc()
+    return(psl.rd)
+  }
+  
+  # get frequencies of each posID & value combination by grouping #
+  groups <- if(is.null(grouping)) { "" } else { grouping }
+  weight2 <- if(is.null(weight)) { 1 } else { weight }
+  sites <- data.frame(posID, value, grouping=groups, weight=weight2, 
+                      stringsAsFactors=FALSE)
+  sites <- count(arrange(sites, grouping, posID, value), wt_var="weight")
+  rm("groups","weight2")
+  
+  sites$isCrossover <- FALSE
+  sites$FoundIn <- sites$grouping
+  
+  # find overlapping positions & pick the winner based on frequencies #
+  sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=value,width=1), 
+                                  strand="*", grouping, freq))
+  res <- findOverlaps(sites.gr, maxgap=1, ignoreSelf=TRUE, ignoreRedundant=FALSE, select="all")
+  if(length(res)>0) {
+    res <- as.data.frame(res)
+    res$qgroup <- mcols(sites.gr)$grouping[res$queryHits]
+    res$sgroup <- mcols(sites.gr)$grouping[res$subjectHits]
+    res$qfreq <- mcols(sites.gr)$freq[res$queryHits]
+    res$sfreq <- mcols(sites.gr)$freq[res$subjectHits]
+    res <- ddply(res, .(queryHits), summarize, 
+                 FoundIn=paste(sort(c(unique(qgroup),unique(sgroup))),collapse=","),
+                 isBest=all(qfreq>sfreq))
+    sites$isCrossover[subset(res,!isBest)$queryHits] <- TRUE  
+    sites$FoundIn[res$queryHits] <- res$FoundIn
+  }
+  sites
 }
 
 #' Find the integration sites and add results to SampleInfo object. 
@@ -3006,7 +3109,7 @@ otuSites2 <- function(position=NULL, chromosome=NULL, readID=NULL, strand="*", g
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doSMP); w <- startWorkers(2); registerDoSMP(w)
 #'
-#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{getIntegrationSites}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{getIntegrationSites}}
 #'
 #' @export
 #'
