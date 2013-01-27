@@ -3213,7 +3213,7 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
         
         # get sites OTU for tagging multihits #
         if(as.logical(keepmultihits[[x]])) {        
-            psl.x <- otuSites(psl.rd=psl.x)
+            psl.x <- otuSites2(psl.rd=psl.x)
         }
         
         psl.x
@@ -3225,12 +3225,11 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
 
     message("Adding sites back to the object.")
     psl.hits <- sapply(psl.hits, function(x) {
-    		x <- DataFrame(x)
-    		cols <- setdiff(colnames(x), c('matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert', 'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'tSize', 'blockCount', 'blockSizes', 'qStarts', 'score', 'tStarts', 'pass.startWithin', 'alignRatio', 'pass.alignRatio', 'percIdentity', 'pass.percIdentity', 'pass.allQC', 'clusterTopHit', 'width', 'Position'))
-			x <- subset(x, clusterTopHit & pass.allQC, select=cols)
-    		x$start <- x$end <- x$clusteredPosition
-    		x$clusteredPosition <- NULL    
-    		RangedData(x)		
+      x <- DataFrame(x)      
+      x <- subset(x, clusterTopHit & pass.allQC, select=setdiff(colnames(x), c('matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert', 'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'tSize', 'blockCount', 'blockSizes', 'qStarts', 'score', 'tStarts', 'pass.startWithin', 'alignRatio', 'pass.alignRatio', 'percIdentity', 'pass.percIdentity', 'pass.allQC', 'clusterTopHit', 'width', 'Position')))
+      x$start <- x$end <- x$clusteredPosition
+      x$clusteredPosition <- NULL    
+      RangedData(x)		
     })
     sampleInfo <- addFeature(sampleInfo,sector=NULL,samplename=names(psl.hits),feature="sites",value=psl.hits)
 
