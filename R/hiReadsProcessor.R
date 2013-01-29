@@ -2021,7 +2021,7 @@ startgfServer <- function(seqDir=NULL, host="localhost", port=5560, gfServerOpts
     cmd <- paste("gfServer start", 
 					host, port, 
 					paste(paste("-",names(gfServerOpts),sep=""), gfServerOpts, collapse=" ", sep="="), 
-					normalizePath(seqDir), "&")
+					normalizePath(seqDir))
     message(cmd)
     system(cmd)        
 
@@ -2931,7 +2931,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
   reads$otuID <- unlist(
     lapply(lapply(with(reads,split(posIDs,grouping)), as.factor), as.numeric)
     ) 
-  sites <- merge(sites, reads[,c("grouping","readID","counts","otuID")], 
+  sites <- merge(arrange(sites,grouping,readID), 
+                 arrange(reads[,c("grouping","readID","counts","otuID")],grouping,readID), 
                  by=c("grouping","readID"), all.x=TRUE)
   sites$posID2 <- NULL
   rm(reads)
@@ -2941,20 +2942,23 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
                                   otuID, newotuID=otuID, check=TRUE))
   mcols(sites.gr)$grouping <- as.character(mcols(sites.gr)$grouping)
   
-  ## see if readID with a unique or single locations matches up to a readID with >1 location, if yes then merge
+  ## see if readID with a unique/single location matches up to a readID with >1 location, if yes then merge
   mcols(sites.gr)$singles <- mcols(sites.gr)$counts==1
   if(any(mcols(sites.gr)$singles)) {
     message('Merging non-singletons with singletons if any...')    
     sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
-    sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .packages="GenomicRanges", .combine=c) %dopar% {
+    sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, 
+                        .packages="GenomicRanges", .combine=c) %dopar% {
       sigs <- subset(x, mcols(x)$singles)
       nonsigs <- subset(x, !mcols(x)$singles)
+      mcols(nonsigs)$readID <- as.character(mcols(nonsigs)$readID)
+      mcols(sigs)$readID <- as.character(mcols(sigs)$readID)
       res <- findOverlaps(nonsigs,sigs,maxgap=1)
       if(length(res)>0) {
         res <- as.data.frame(res)
         res$sigsOTU <- mcols(sigs)$otuID[res$subjectHits]
-        res$sigsReadID <- mcols(sigs)$readID[res$subjectHits]  
-        res$nonsigsReadID <- mcols(nonsigs)$readID[res$queryHits]         
+        res$sigsReadID <- mcols(sigs)$readID[res$subjectHits]
+        res$nonsigsReadID <- mcols(nonsigs)$readID[res$queryHits]
         s.to.q <- with(res,structure(sigsOTU,names=nonsigsReadID))
         rows <- mcols(nonsigs)$readID %in% res$nonsigsReadID
         mcols(nonsigs)[rows,"newotuID"] <- s.to.q[mcols(nonsigs)[rows,"readID"]]
@@ -2974,6 +2978,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
   sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
   sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
   sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .packages="GenomicRanges", .combine=c) %dopar% {		    
+    mcols(x)$readID <- as.character(mcols(x)$readID)
     res <- findOverlaps(x, maxgap=1, ignoreSelf=TRUE,ignoreRedundant=TRUE, select="all")
     if(length(res)>0) {
       res <- as.data.frame(res)
