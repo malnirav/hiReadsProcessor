@@ -2841,6 +2841,9 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parall
   
   ## trickle the OTU ids back to sites frame ##    
   ots.ids <- with(reads,split(newotuID,readID))
+  if(!is.numeric(ots.ids)) {
+    stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
+  }
   sites$otuID <- as.numeric(unlist(ots.ids[sites$readID]))
   
   stopifnot(any(!is.na(sites$otuID)))
@@ -2885,7 +2888,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
     ## find the otuID by clusters ##
     if(!"clusterTopHit" %in% colnames(psl.rd) | 
        !"clusteredPosition" %in% colnames(psl.rd)) {
-          stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
+          stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
+          Did you run clusterSites() on it?")
     }
     
     good.rows <- psl.rd$clusterTopHit
@@ -2932,7 +2936,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
     lapply(lapply(with(reads,split(posIDs,grouping)), as.factor), as.numeric)
     ) 
   sites <- merge(arrange(sites,grouping,readID), 
-                 arrange(reads[,c("grouping","readID","counts","otuID")],grouping,readID), 
+                 arrange(reads[,c("grouping","readID","counts","otuID")],
+                 		 grouping,readID), 
                  by=c("grouping","readID"), all.x=TRUE)
   sites$posID2 <- NULL
   rm(reads)
@@ -2941,6 +2946,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
                                   strand="*", readID, grouping, counts, 
                                   otuID, newotuID=otuID, check=TRUE))
   mcols(sites.gr)$grouping <- as.character(mcols(sites.gr)$grouping)
+  mcols(sites.gr)$readID <- as.character(mcols(sites.gr)$readID)
   
   ## see if readID with a unique/single location matches up to a readID with >1 location, if yes then merge
   mcols(sites.gr)$singles <- mcols(sites.gr)$counts==1
@@ -2951,8 +2957,6 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
                         .packages="GenomicRanges", .combine=c) %dopar% {
       sigs <- subset(x, mcols(x)$singles)
       nonsigs <- subset(x, !mcols(x)$singles)
-      mcols(nonsigs)$readID <- as.character(mcols(nonsigs)$readID)
-      mcols(sigs)$readID <- as.character(mcols(sigs)$readID)
       res <- findOverlaps(nonsigs,sigs,maxgap=1)
       if(length(res)>0) {
         res <- as.data.frame(res)
@@ -2994,9 +2998,10 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
   }
   sites.gr <- c(sites.gr,goods)
   rm("sites.gr.list","goods")
+  cleanit <- gc()
   
   ## trickle the OTU ids back to sites frame ##    
-  ots.ids <- with(mcols(sites.gr),sapply(split(newotuID,readID),unique))
+  ots.ids <- sapply(with(mcols(sites.gr),split(newotuID,readID)),unique)
   if(!is.numeric(ots.ids)) {
     stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
   }
