@@ -3001,7 +3001,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
   cleanit <- gc()
   
   ## trickle the OTU ids back to sites frame ##    
-  ots.ids <- sapply(with(mcols(sites.gr),split(newotuID,readID)),unique)
+  ots.ids <- sapply(split(mcols(sites.gr)$newotuID,mcols(sites.gr)$readID),unique)
   if(!is.numeric(ots.ids)) {
     stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
   }
