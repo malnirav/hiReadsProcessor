@@ -2942,6 +2942,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
   sites$posID2 <- NULL
   rm(reads)
   sites <- arrange(sites, grouping, posID, value)
+  sites$readID <- as.character(sites$readID)
+  sites$grouping <- as.character(sites$grouping)
+  
   sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=value,width=1), 
                                   strand="*", readID, grouping, counts, 
                                   otuID, newotuID=otuID, check=TRUE))
@@ -2966,7 +2969,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
         s.to.q <- with(res,structure(sigsOTU,names=nonsigsReadID))
         rows <- mcols(nonsigs)$readID %in% res$nonsigsReadID
         mcols(nonsigs)[rows,"newotuID"] <- s.to.q[mcols(nonsigs)[rows,"readID"]]
-        mcols(nonsigs)[mcols(nonsigs)$readID %in% c(res$nonsigsReadID,res$sigsReadID),"check"] <- FALSE
+        mcols(nonsigs)[mcols(nonsigs)$readID %in% res$nonsigsReadID,"check"] <- FALSE
+        mcols(sigs)[mcols(sigs)$readID %in% res$sigsReadID,"check"] <- FALSE
       }
       c(sigs,nonsigs)
     }
