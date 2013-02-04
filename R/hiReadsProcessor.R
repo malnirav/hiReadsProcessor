@@ -2021,7 +2021,7 @@ startgfServer <- function(seqDir=NULL, host="localhost", port=5560, gfServerOpts
     cmd <- paste("gfServer start", 
 					host, port, 
 					paste(paste("-",names(gfServerOpts),sep=""), gfServerOpts, collapse=" ", sep="="), 
-					normalizePath(seqDir))
+					normalizePath(seqDir), "&")
     message(cmd)
     system(cmd)        
 
@@ -2578,20 +2578,20 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         clusters <- clusterSites(posIDs[!multis], 
         						 values[!multis], 
         						 grouping=grouping[!multis], 
-        						 weight=ifelse(is.null(weight),NULL,weight[!multis]), 
+        						 weight=weight, 
 								 windowSize=windowSize, 
         						 byQuartile=byQuartile, quartile=quartile)
         
         message("Adding clustered data back to psl.rd.")        
         clusteredValues <- with(clusters,split(clusteredValue,paste0(posID,value,grouping)))
-        groupingVals <- paste0(posIDs, values, grouping)
+        groupingVals <- paste0(posIDs, values, grouping)[!multis]
         psl.rd$clusteredPosition <- psl.rd$Position
-        psl.rd$clusteredPosition <- as.numeric(clusteredValues[groupingVals])
+        psl.rd$clusteredPosition[!multis] <- as.numeric(clusteredValues[groupingVals])
         
         ## add frequency of new clusteredPosition ##
         clusteredValueFreq <- with(clusters, split(clusteredValue.freq, paste0(posID,value,grouping)))
         psl.rd$clonecount <- 0
-        psl.rd$clonecount <- as.numeric(clusteredValueFreq[groupingVals])
+        psl.rd$clonecount[!multis] <- as.numeric(clusteredValueFreq[groupingVals])
         rm("clusteredValueFreq","clusteredValues","clusters")
         cleanit <- gc()
         
