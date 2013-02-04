@@ -2600,8 +2600,13 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         groupingVals <- paste0(space(psl.rd), psl.rd$strand, psl.rd$clusteredPosition, grouping)
         bestScore <- tapply(psl.rd$score, groupingVals, max)
         isBest <- psl.rd$score==bestScore[groupingVals]
+        
+        ## pick the first match for cases where >1 reads with the same coordinate had the same best scores ##
+        tocheck <- which(isBest)
+        res <- tapply(tocheck,names(tocheck),"[[",1) 
+        
         psl.rd$clusterTopHit <- FALSE
-        psl.rd$clusterTopHit[isBest] <- TRUE
+        psl.rd$clusterTopHit[res] <- TRUE
         psl.rd$clusterTopHit[multis] <- TRUE
         
         message("Cleaning up!")
@@ -2777,7 +2782,8 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parall
     message("Adding otuIDs back to psl.rd.")        
     otuIDs <- with(otus,split(otuID,paste(posID,readID,grouping)))
     psl.rd$otuIDs <- NA
-    psl.rd$otuIDs[good.rows] <- as.numeric(otuIDs[paste(posIDs[good.rows], readIDs[good.rows], grouping[good.rows])])
+    psl.rd$otuIDs[good.rows] <- as.numeric(otuIDs[paste(posIDs, readIDs, 
+    													grouping)[good.rows]])
     
     rm("otus","otuIDs","posIDs","readIDs","grouping")
     cleanit <- gc()
@@ -2914,10 +2920,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
                    split(otuID,
                          paste0(posID,value,readID,grouping)))
     psl.rd$otuID <- NA
-    psl.rd$otuID[good.rows] <- as.numeric(otuIDs[paste0(posID[good.rows], 
-                                                        value[good.rows], 
-                                                        readID[good.rows], 
-                                                        grouping[good.rows])])
+    psl.rd$otuID[good.rows] <- as.numeric(otuIDs[paste0(posID, value, readID, 
+    													grouping)[good.row]])
     
     message("Cleaning up!")
     rm("otus","otuIDs","value","posID","readID","grouping","good.rows")
@@ -3057,12 +3061,15 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
     if("clusteredPosition" %in% colnames(psl.rd)) {
       message("Using clusteredPosition column from psl.rd as the value parameter.")
       value <- psl.rd$clusteredPosition
+      good.row <- psl.rd$clusterTopHit & !psl.rd$isMultiHit
     } else if("Position" %in% colnames(psl.rd)) {
       message("Using Position column from psl.rd as the value parameter.")
       value <- psl.rd$Position
+      good.row <- rep(TRUE,length(value))
     } else {
       message("Using start(psl.rd) as the value parameter.")
       value <- start(psl.rd)
+      good.row <- rep(TRUE,length(value))
     }
     
     if(is.null(weight)) { ## see if clonecount column exists
@@ -3070,11 +3077,15 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
       if(any(isthere)) { weight <- psl.rd[[which(isthere)]] } else { weight <- weight }
     }
     grouping <- if(is.null(grouping)) { "" } else { grouping }
-    crossed <- crossOverCheck(posID, value, grouping=grouping, weight=weight)
+    crossed <- crossOverCheck(posID[good.row], value[good.row], grouping=grouping[good.row], weight=weight[good.row])
     
     message("Adding isCrossover data back to psl.rd.")        
     crossedValues <- with(crossed,split(isCrossover,paste0(posID,value,grouping)))
-    psl.rd$isCrossover <- as.logical(crossedValues[paste0(posID,value,grouping)])
+    if(any(sapply(crossedValues,length)>1)) {
+    	stop("Error in crossOverCheck: sampling culprits... ", 
+    		 paste(names(crossedValues[which(sapply(crossedValues,length)>1)]), collapse=", "))
+    }
+    psl.rd$isCrossover <- as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
     
     message("Cleaning up!")
     rm("posID","value","grouping","crossed","crossedValues")
@@ -3104,7 +3115,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
     res$qfreq <- mcols(sites.gr)$freq[res$queryHits]
     res$sfreq <- mcols(sites.gr)$freq[res$subjectHits]
     res <- ddply(res, .(queryHits), summarize, 
-                 FoundIn=paste(sort(c(unique(qgroup),unique(sgroup))),collapse=","),
+                 FoundIn=paste(sort(unique(c(qgroup,sgroup))),collapse=","),
                  isBest=all(qfreq>sfreq))
     sites$isCrossover[subset(res,!isBest)$queryHits] <- TRUE  
     sites$FoundIn[res$queryHits] <- res$FoundIn
