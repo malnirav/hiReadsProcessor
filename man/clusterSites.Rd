@@ -69,6 +69,9 @@
   values within the defined window are merged with the next
   highest frequently occuring value, if freuquencies are
   tied then lowest value is used to represent the cluster.
+  When psl.rd is passed, then multihits are ignored and
+  only unique sites are clustered. All multihits will be
+  tagged as a good 'clusterTopHit'.
 }
 \examples{
 #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))

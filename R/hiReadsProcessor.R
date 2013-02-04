@@ -2545,7 +2545,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #' @param quartile if byQuartile=TRUE, then the quartile which serves as the threshold. Default is 0.70.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
 #'
-#' @note The algorithm for clustering when byQuartile=TRUE is as follows: for all values in each grouping, get a distribution and test if their frequency is >= quartile threshold. For values below the quartile threshold, test if any values overlap with the ones that passed the threshold and is within the defined windowSize. If there is a match, then merge with higher value, else leave it as is. This is only useful if the distribution is wide and polynodal. When byQuartile=FALSE, for each group the values within the defined window are merged with the next highest frequently occuring value, if freuquencies are tied then lowest value is used to represent the cluster.  
+#' @note The algorithm for clustering when byQuartile=TRUE is as follows: for all values in each grouping, get a distribution and test if their frequency is >= quartile threshold. For values below the quartile threshold, test if any values overlap with the ones that passed the threshold and is within the defined windowSize. If there is a match, then merge with higher value, else leave it as is. This is only useful if the distribution is wide and polynodal. When byQuartile=FALSE, for each group the values within the defined window are merged with the next highest frequently occuring value, if freuquencies are tied then lowest value is used to represent the cluster. When psl.rd is passed, then multihits are ignored and only unique sites are clustered. All multihits will be tagged as a good 'clusterTopHit'.
 #'
 #' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a RangedData object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
 #'
@@ -2567,6 +2567,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         if(!"Position" %in% colnames(psl.rd)) {
             stop("The object supplied in psl.rd parameter does not have Position column in it. Did you run getIntegrationSites() on it?")
         }
+        multis <- psl.rd$isMultiHit
         posIDs <- paste0(space(psl.rd),psl.rd$strand)
         values <- psl.rd$Position
         if(is.null(weight)) { ## see if sequences were dereplicated before in the pipeline which adds counts=x identifier to the deflines
@@ -2574,33 +2575,37 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
             if(all(is.na(weight))) { weight <- NULL } else { weight[is.na(weight)] <- 1 }
         }
         grouping <- if(is.null(grouping)) { "" } else { grouping }
-        clusters <- clusterSites(posIDs, values, grouping=grouping, windowSize=windowSize, weight=weight, byQuartile=byQuartile, quartile=quartile)
-        message("Adding clustered data back to psl.rd.")
+        clusters <- clusterSites(posIDs[!multis], 
+        						 values[!multis], 
+        						 grouping=grouping[!multis], 
+        						 weight=ifelse(is.null(weight),NULL,weight[!multis]), 
+								 windowSize=windowSize, 
+        						 byQuartile=byQuartile, quartile=quartile)
         
+        message("Adding clustered data back to psl.rd.")        
         clusteredValues <- with(clusters,split(clusteredValue,paste0(posID,value,grouping)))
-        psl.rd$clusteredPosition <- as.numeric(clusteredValues[paste0(posIDs,values,grouping)])
+        groupingVals <- paste0(posIDs, values, grouping)
+        psl.rd$clusteredPosition <- psl.rd$Position
+        psl.rd$clusteredPosition <- as.numeric(clusteredValues[groupingVals])
         
         ## add frequency of new clusteredPosition ##
         clusteredValueFreq <- with(clusters, split(clusteredValue.freq, paste0(posID,value,grouping)))
-        psl.rd$clonecount <- as.numeric(clusteredValueFreq[paste0(posIDs, values, grouping)])
+        psl.rd$clonecount <- 0
+        psl.rd$clonecount <- as.numeric(clusteredValueFreq[groupingVals])
         rm("clusteredValueFreq","clusteredValues","clusters")
         cleanit <- gc()
         
         ## pick best scoring hit to represent a cluster ##
         message("Picking best scoring hit to represent a cluster.")
-        posIDs <- paste0(space(psl.rd),psl.rd$strand,psl.rd$clusteredPosition,grouping)
-        bestScore <- tapply(psl.rd$score,posIDs,max)
-        isBest <- psl.rd$score==bestScore[posIDs]
-        
-        ## pick the first match for cases where all reads had the same best scores...aka for things like multihit! ##
-        tocheck <- which(isBest)
-        res <- tapply(tocheck,names(tocheck),"[[",1)       
-        
+        groupingVals <- paste0(space(psl.rd), psl.rd$strand, psl.rd$clusteredPosition, grouping)
+        bestScore <- tapply(psl.rd$score, groupingVals, max)
+        isBest <- psl.rd$score==bestScore[groupingVals]
         psl.rd$clusterTopHit <- FALSE
-        psl.rd$clusterTopHit[res] <- TRUE
+        psl.rd$clusterTopHit[isBest] <- TRUE
+        psl.rd$clusterTopHit[multis] <- TRUE
         
         message("Cleaning up!")
-        rm("isBest","bestScore","posIDs","tocheck","res")
+        rm("isBest","bestScore","posIDs","values","groupingVals")
         cleanit <- gc()
         return(psl.rd)
     }
