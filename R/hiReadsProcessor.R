@@ -2851,11 +2851,11 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parall
   }
   
   ## trickle the OTU ids back to sites frame ##    
-  ots.ids <- with(reads,split(newotuID,readID))
+  ots.ids <- with(reads,split(newotuID,paste0(readID,grouping)))
   if(!is.numeric(ots.ids)) {
     stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
   }
-  sites$otuID <- as.numeric(unlist(ots.ids[sites$readID]))
+  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,paste0(readID,grouping))]))
   
   stopifnot(any(!is.na(sites$otuID)))
   rm(reads)
@@ -3014,11 +3014,11 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
   cleanit <- gc()
   
   ## trickle the OTU ids back to sites frame ##    
-  ots.ids <- sapply(split(mcols(sites.gr)$newotuID,mcols(sites.gr)$readID),unique)
+  ots.ids <- sapply(split(mcols(sites.gr)$newotuID,paste0(mcols(sites.gr)$readID, mcols(sites.gr)$grouping)),unique)
   if(!is.numeric(ots.ids)) {
     stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
   }
-  sites$otuID <- as.numeric(unlist(ots.ids[sites$readID],use.names=F))
+  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,paste0(readID,grouping))],use.names=F))
   
   stopifnot(any(!is.na(sites$otuID)))
   cleanit <- gc()
