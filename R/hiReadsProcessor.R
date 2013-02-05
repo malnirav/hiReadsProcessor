@@ -2921,7 +2921,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
                          paste0(posID,value,readID,grouping)))
     psl.rd$otuID <- NA
     psl.rd$otuID[good.rows] <- as.numeric(otuIDs[paste0(posID, value, readID, 
-    													grouping)[good.row]])
+    													grouping)[good.rows]])
     
     message("Cleaning up!")
     rm("otus","otuIDs","value","posID","readID","grouping","good.rows")
@@ -3085,7 +3085,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
     	stop("Error in crossOverCheck: sampling culprits... ", 
     		 paste(names(crossedValues[which(sapply(crossedValues,length)>1)]), collapse=", "))
     }
-    psl.rd$isCrossover <- as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
+    psl.rd$isCrossover[good.row] <- as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
     
     message("Cleaning up!")
     rm("posID","value","grouping","crossed","crossedValues")
