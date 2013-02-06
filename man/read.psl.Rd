@@ -46,7 +46,7 @@
 }
 \examples{
 #read.psl(pslFile="processed.*.psl$")
- #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
+#read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

@@ -27,8 +27,8 @@
 }
 \examples{
 #pslToRangedObject(psl)
- #pslToRangedObject(psl,asGRanges=TRUE)
- #pslToRangedObject(psl,useTargetAsRef=FALSE)
+#pslToRangedObject(psl,asGRanges=TRUE)
+#pslToRangedObject(psl,useTargetAsRef=FALSE)
 }
 \seealso{
   \code{\link{blatListedSet}}

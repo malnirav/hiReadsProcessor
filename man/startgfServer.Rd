@@ -29,7 +29,7 @@
 }
 \examples{
 #startgfServer(seqDir="/usr/local/blatSuite34/hg18.2bit",port=5560)
- #stopgfServer(port=5560)
+#stopgfServer(port=5560)
 }
 \seealso{
   \code{\link{stopgfServer}}, \code{\link{read.psl}},

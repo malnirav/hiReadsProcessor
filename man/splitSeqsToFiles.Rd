@@ -27,7 +27,7 @@
 }
 \examples{
 #splitSeqsToFiles(dnaSeq,10,"tempyQ","myDNAseqs.fa")
- #splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
+#splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
 }
 \seealso{
   \code{\link{blatSeqs}}

@@ -69,7 +69,7 @@
 }
 \examples{
 #findPrimers(sampleInfo,showStats=TRUE)
- #findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
+#findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

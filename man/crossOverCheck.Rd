@@ -40,7 +40,7 @@
 }
 \examples{
 #crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), grouping=c('a','a','b','b','b','b','c','c'))
- #crossOverCheck(psl.rd=test.psl.rd)
+#crossOverCheck(psl.rd=test.psl.rd)
 }
 \seealso{
   \code{\link{clusterSites}}, \code{\link{otuSites}},

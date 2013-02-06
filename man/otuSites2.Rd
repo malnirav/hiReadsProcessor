@@ -59,7 +59,7 @@
 }
 \examples{
 #otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
- #otuSites2(psl.rd=test.psl.rd)
+#otuSites2(psl.rd=test.psl.rd)
 }
 \seealso{
   \code{\link{clusterSites}}, \code{\link{otuSites}},

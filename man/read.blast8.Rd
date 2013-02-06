@@ -41,7 +41,7 @@
 }
 \examples{
 #read.blast8(files="processed.*.blast8$")
- #read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
+#read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

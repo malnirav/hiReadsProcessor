@@ -64,8 +64,8 @@
 }
 \examples{
 #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
- #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
- #blatSeqs("mySeqs.fa","/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
+#blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
+#blatSeqs("mySeqs.fa","/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

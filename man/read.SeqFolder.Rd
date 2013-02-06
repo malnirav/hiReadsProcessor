@@ -48,7 +48,7 @@
 }
 \examples{
 #read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
- #read.SeqFolder(".",seqfilePattern=".+fastq$")
+#read.SeqFolder(".",seqfilePattern=".+fastq$")
 }
 \seealso{
   \code{\link{read.sampleInfo}},

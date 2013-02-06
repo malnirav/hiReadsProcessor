@@ -25,8 +25,8 @@ NULL
 #' @export
 #'
 #' @examples  
-#'  #read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
-#'  #read.SeqFolder(".",seqfilePattern=".+fastq$")
+#' #read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
+#' #read.SeqFolder(".",seqfilePattern=".+fastq$")
 #'
 read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, seqfilePattern="\\.TCA.454Reads.fna$", interactive=TRUE) {
     if(is.null(SequencingFolderPath)) {
@@ -119,7 +119,7 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, s
 #' @export
 #'
 #' @examples  
-#'  #read.sampleInfo("~/sampleInfo.xls")
+#' #read.sampleInfo("~/sampleInfo.xls")
 #'
 read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive=TRUE) {
     ## read file and make sampleInfo object with sample to metadata associations ##
@@ -244,7 +244,7 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, interactive
 #' @export
 #'
 #' @examples  
-#'  #dereplicateReads(dnaSet)
+#' #dereplicateReads(dnaSet)
 #'
 dereplicateReads <- function(dnaSet) {
     stopifnot(class(dnaSet)=="DNAStringSet")
@@ -277,7 +277,7 @@ dereplicateReads <- function(dnaSet) {
 #' @export
 #'
 #' @examples  
-#'  #replicateReads(decoded)
+#' #replicateReads(decoded)
 #'
 replicateReads <- function(dnaSet,counts=NULL) {
     stopifnot(class(dnaSet)=="DNAStringSet")
@@ -316,7 +316,7 @@ replicateReads <- function(dnaSet,counts=NULL) {
 #' @export
 #'
 #' @examples  
-#'  #removeReadsWithNs(dnaSet)
+#' #removeReadsWithNs(dnaSet)
 #'
 removeReadsWithNs <- function(dnaSet,maxNs=5,consecutive=TRUE) {
     if(consecutive) {
@@ -346,7 +346,7 @@ removeReadsWithNs <- function(dnaSet,maxNs=5,consecutive=TRUE) {
 #' @export
 #'
 #' @examples 
-#'  #splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
+#' #splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
 #'
 splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALSE, returnUnmatched=FALSE, dereplicate=FALSE) {
     if(is.null(barcodesSample) | length(barcodesSample)==0) {
@@ -428,9 +428,9 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
 #' @aliases findBarcodes
 #' 
 #' @examples 
-#'  #findBarcodes(sampleInfo,showStats=TRUE)
-#'  #decodeByBarcode(sampleInfo,showStats=TRUE)
-#'  #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
+#' #findBarcodes(sampleInfo,showStats=TRUE)
+#' #decodeByBarcode(sampleInfo,showStats=TRUE)
+#' #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
 #'
 decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALSE, returnUnmatched=FALSE, dereplicate=FALSE, alreadyDecoded=FALSE) {
     ## tried PDict()...and its slower than this awesome code! ##    
@@ -539,8 +539,8 @@ findBarcodes <- decodeByBarcode
 #' @export
 #'
 #' @examples 
-#'  #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#'  #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
+#' #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+#' #pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
 #'
 pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qualityThreshold=1, showStats=FALSE, bufferBases=5, doRC=TRUE, returnUnmatched=FALSE, returnLowScored=FALSE, ...) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
@@ -649,8 +649,8 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qu
 #' @export
 #'
 #' @examples 
-#'  #primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#'  #primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold1=0.5)
+#' #primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+#' #primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold1=0.5)
 #'
 primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold1=0.75, qualityThreshold2=0.50, doAnchored=FALSE, doRC=TRUE, returnUnmatched=FALSE, returnRejected=FALSE, showStats=FALSE, ...) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
@@ -794,8 +794,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshol
 #' @export
 #'
 #' @examples 
-#'  #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#'  #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
+#' #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
+#' #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
 #'
 vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", qualityThreshold=1, showStats=FALSE, bufferBases=5, doRC=TRUE, ...) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
@@ -893,7 +893,7 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", q
 #' @export
 #'
 #' @examples 
-#'  #doRCtest(subjectSeqs,patternSeq)
+#' #doRCtest(subjectSeqs,patternSeq)
 #'
 doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, core.use=2) {
     if(is.null(subjectSeqs) | is.null(patternSeq)) {
@@ -941,8 +941,8 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, qualityThreshold=0.5, co
 #' @export
 #'
 #' @examples 
-#'  #findPrimers(sampleInfo,showStats=TRUE)
-#'  #findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
+#' #findPrimers(sampleInfo,showStats=TRUE)
+#' #findPrimers(sampleInfo,alignWay="slow",showStats=TRUE)
 #'
 findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
@@ -1065,7 +1065,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, doRC=FALSE
 #' @export
 #'
 #' @examples 
-#'  #findLTRs(sampleInfo,showStats=TRUE)
+#' #findLTRs(sampleInfo,showStats=TRUE)
 #'
 findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
@@ -1192,7 +1192,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, sam
 #' @export
 #'
 #' @examples 
-#'  #findLinkers(sampleInfo,showStats=TRUE)
+#' #findLinkers(sampleInfo,showStats=TRUE)
 #'
 findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
@@ -1346,7 +1346,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
 #' @export
 #'
 #' @examples 
-#'  #troubleshootLinkers(sampleInfo,showStats=TRUE)
+#' #troubleshootLinkers(sampleInfo,showStats=TRUE)
 #'
 troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThreshold1=0.75, qualityThreshold2=0.50, doRC=TRUE, parallel=TRUE, samplenames=NULL, ...) {    
     stopifnot(class(sampleInfo)=="SimpleList")
@@ -1439,7 +1439,7 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, qualityThresh
 #' @export
 #'
 #' @examples 
-#'  #findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
+#' #findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
 #'
 findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, alignWay = "slow", ...) {
     
@@ -1480,8 +1480,8 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, al
 #' @export
 #'
 #' @examples 
-#'  #trimSeqs(dnaSet,coords)
-#'  #trimSeqs(dnaSet,coords,side="left",offBy=1)
+#' #trimSeqs(dnaSet,coords)
+#' #trimSeqs(dnaSet,coords,side="left",offBy=1)
 #'
 trimSeqs <- function(dnaSet,coords,side="middle",offBy=0) {
     stopifnot(class(dnaSet) %in% c("DNAStringSet","DNAString"))
@@ -1541,7 +1541,7 @@ trimSeqs <- function(dnaSet,coords,side="middle",offBy=0) {
 #' @export
 #'
 #' @examples 
-#'  #getSectorsForSamples(sampleInfo,samplename="SampleName1")
+#' #getSectorsForSamples(sampleInfo,samplename="SampleName1")
 #'
 getSectorsForSamples <- function(sampleInfo,sector=NULL,samplename=NULL,returnDf=FALSE) {
     stopifnot(class(sampleInfo)=="SimpleList")        
@@ -1592,8 +1592,8 @@ getSectorsForSamples <- function(sampleInfo,sector=NULL,samplename=NULL,returnDf
 #' @export
 #'
 #' @examples 
-#'  #extractSeqs(sampleInfo)
-#'  #extractSeqs(sampleInfo,feature="primed")
+#' #extractSeqs(sampleInfo)
+#' #extractSeqs(sampleInfo,feature="primed")
 #'
 extractSeqs <- function(sampleInfo,sector=NULL,samplename=NULL,feature="genomic",trim=TRUE,minReadLength=1,sideReturn=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")        
@@ -1731,7 +1731,7 @@ extractSeqs <- function(sampleInfo,sector=NULL,samplename=NULL,feature="genomic"
 #' @export
 #'
 #' @examples 
-#'  #extractFeature(sampleInfo,feature="primed")
+#' #extractFeature(sampleInfo,feature="primed")
 #'
 extractFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")        
@@ -1783,7 +1783,7 @@ extractFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL) 
 #' @export
 #'
 #' @examples 
-#'  #addFeature(sampleInfo,"1","Sample1",feature="primerIDed","ACDTDASD")
+#' #addFeature(sampleInfo,"1","Sample1",feature="primerIDed","ACDTDASD")
 #'
 addFeature <- function(sampleInfo,sector=NULL,samplename=NULL,feature=NULL,value=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")        
@@ -1882,7 +1882,7 @@ read.seqsFromSector <- function(seqFilePath=NULL,sector=1) {
 #' @export
 #'
 #' @examples 
-#'  #write.listedDNAStringSet(dnaSet)
+#' #write.listedDNAStringSet(dnaSet)
 #'
 write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed", prependSamplenames=TRUE, format="fasta", parallel=TRUE) {
     stopifnot(class(dnaSet)=="list")
@@ -1925,7 +1925,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
 #' @export
 #'
 #' @examples 
-#'  #summary.simple(sampleInfo)
+#' #summary.simple(sampleInfo)
 #'
 summary.simple <- function(sampleInfo) {
     stopifnot(class(sampleInfo)=="SimpleList")
@@ -1955,7 +1955,7 @@ summary.simple <- function(sampleInfo) {
 #' @export
 #'
 #' @examples 
-#'  #summary.elegant(sampleInfo)
+#' #summary.elegant(sampleInfo)
 #'
 summary.elegant <- function(sampleInfo,samplenames=NULL) {
     stopifnot(class(sampleInfo)=="SimpleList")
@@ -2010,8 +2010,8 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 #' @export
 #'
 #' @examples 
-#'  #startgfServer(seqDir="/usr/local/blatSuite34/hg18.2bit",port=5560)
-#'  #stopgfServer(port=5560)
+#' #startgfServer(seqDir="/usr/local/blatSuite34/hg18.2bit",port=5560)
+#' #stopgfServer(port=5560)
 #' 
 startgfServer <- function(seqDir=NULL, host="localhost", port=5560, gfServerOpts=c(repMatch=112312, stepSize=5, tileSize=10)) {
     if(is.null(seqDir)) {
@@ -2101,9 +2101,9 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #' @export
 #'
 #' @examples 
-#'  #pslToRangedObject(psl)
-#'  #pslToRangedObject(psl,asGRanges=TRUE)
-#'  #pslToRangedObject(psl,useTargetAsRef=FALSE)
+#' #pslToRangedObject(psl)
+#' #pslToRangedObject(psl,asGRanges=TRUE)
+#' #pslToRangedObject(psl,useTargetAsRef=FALSE)
 #'
 pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=FALSE, isblast8=FALSE) {
     if(useTargetAsRef) {
@@ -2136,8 +2136,8 @@ pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=FALSE, isblast8=
 #' @export
 #'
 #' @examples 
-#'  #splitSeqsToFiles(dnaSeq,10,"tempyQ","myDNAseqs.fa")
-#'  #splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
+#' #splitSeqsToFiles(dnaSeq,10,"tempyQ","myDNAseqs.fa")
+#' #splitSeqsToFiles("mySeqs.fa",5,"tempyQ")
 #'
 splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFile.fa") {
     if(is.atomic(x)) {
@@ -2189,9 +2189,9 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy", filename="queryFil
 #' @export
 #'
 #' @examples 
-#'  #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
-#'  #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
-#'  #blatSeqs("mySeqs.fa","/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
+#' #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
+#' #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
+#' #blatSeqs("mySeqs.fa","/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
 #'
 blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, host="localhost", parallel=TRUE, gzipResults=TRUE, blatParameters=c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl")) {
 
@@ -2340,8 +2340,8 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
 #' @export
 #'
 #' @examples 
-#'  #read.psl(pslFile="processed.*.psl$")
-#'  #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
+#' #read.psl(pslFile="processed.*.psl$")
+#' #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
 #'
 read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeFile=TRUE, parallel=FALSE) {
     if(is.null(pslFile)) {
@@ -2417,8 +2417,8 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, removeF
 #' @export
 #'
 #' @examples 
-#'  #read.blast8(files="processed.*.blast8$")
-#'  #read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
+#' #read.blast8(files="processed.*.blast8$")
+#' #read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
 #'
 read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, parallel=FALSE) {
     if(is.null(files)) {
@@ -2485,7 +2485,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, removeFile=TRUE, paralle
 #' @export
 #'
 #' @examples 
-#'  #getIntegrationSites(test.psl.rd)
+#' #getIntegrationSites(test.psl.rd)
 #'
 getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=0.7, genomicpercentidentity=0.98, correctByqStart=TRUE) {
     stopifnot(class(psl.rd)=="RangedData" & !is.null(psl.rd) & !is.null(startWithin) & !is.null(alignRatioThreshold) & !is.null(genomicpercentidentity))
@@ -2554,8 +2554,8 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #' @export
 #'
 #' @examples 
-#'  #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))
-#'  #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
+#' #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))
+#' #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 #'
 clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, weight=NULL, windowSize=5, byQuartile=FALSE, quartile=0.70, parallel=TRUE) {
 	if(!parallel) { registerDoSEQ() }      
@@ -2618,7 +2618,8 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
     # get frequencies of each posID & value combination by grouping #
     groups <- if(is.null(grouping)) { "" } else { grouping }
     weight2 <- if(is.null(weight)) { 1 } else { weight }
-    sites <- count(arrange(data.frame(posID, value, grouping=groups, weight=weight2, posID2=paste0(groups,posID), stringsAsFactors=FALSE), posID2, value), wt_var="weight")
+    sites <- arrange(data.frame(posID, value, grouping=groups, weight=weight2, posID2=paste0(groups,posID), stringsAsFactors=FALSE), posID2, value)
+    sites <- count(sites, c("posID","value","grouping","posID2"), wt_var="weight")    
     rm("groups","weight2")
     
     if(byQuartile) {
@@ -2729,7 +2730,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
     sites <- merge(sites,counts)
     
     if(byQuartile) {
-        sites <- sites[,c("posID","value","freq","clusteredValue","clusteredValue.freq","grouping","weight")]
+        sites <- sites[,c("posID","value","freq","clusteredValue","clusteredValue.freq","grouping")]
     }
     
     sites$posID2<-NULL
@@ -2757,8 +2758,8 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
 #' @export
 #'
 #' @examples 
-#'  #otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#'  #otuSites(psl.rd=test.psl.rd)
+#' #otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
+#' #otuSites(psl.rd=test.psl.rd)
 #'
 otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parallel=TRUE) {
   if(!parallel) { registerDoSEQ() }
@@ -2885,8 +2886,8 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parall
 #' @export
 #'
 #' @examples 
-#'  #otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#'  #otuSites2(psl.rd=test.psl.rd)
+#' #otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
+#' #otuSites2(psl.rd=test.psl.rd)
 #'
 otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, 
                       grouping=NULL, psl.rd=NULL, parallel=TRUE) {
@@ -3044,8 +3045,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
 #' @export
 #'
 #' @examples 
-#'  #crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), grouping=c('a','a','b','b','b','b','c','c'))
-#'  #crossOverCheck(psl.rd=test.psl.rd)
+#' #crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), grouping=c('a','a','b','b','b','b','c','c'))
+#' #crossOverCheck(psl.rd=test.psl.rd)
 #'
 crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, psl.rd=NULL) {
   if(is.null(psl.rd)) {
@@ -3098,7 +3099,8 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
   weight2 <- if(is.null(weight)) { 1 } else { weight }
   sites <- data.frame(posID, value, grouping=groups, weight=weight2, 
                       stringsAsFactors=FALSE)
-  sites <- count(arrange(sites, grouping, posID, value), wt_var="weight")
+  sites <- arrange(sites, grouping, posID, value)
+  sites <- count(sites, c("posID","value","grouping"), wt_var="weight")
   rm("groups","weight2")
   
   sites$isCrossover <- FALSE
@@ -3144,7 +3146,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
 #' @export
 #'
 #' @examples 
-#'  #findIntegrations(sampleInfo)
+#' #findIntegrations(sampleInfo)
 #'
 findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhost", genomeIndices=c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"), parallel=TRUE, samplenames=NULL) {    
     stopifnot(class(sampleInfo)=="SimpleList")

@@ -61,7 +61,7 @@
 }
 \examples{
 #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
- #vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
+#vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

@@ -57,7 +57,7 @@
 }
 \examples{
 #extractSeqs(sampleInfo)
- #extractSeqs(sampleInfo,feature="primed")
+#extractSeqs(sampleInfo,feature="primed")
 }
 \seealso{
   \code{\link{findPrimers}}, \code{\link{findLTRs}},
