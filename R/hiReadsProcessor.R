@@ -2775,7 +2775,13 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, psl.rd=NULL, parall
     
     good.rows <- psl.rd$clusterTopHit
     posIDs <- paste(space(psl.rd),psl.rd$strand,psl.rd$clusteredPosition,sep="")
-    readIDs <- psl.rd$qName
+    if("qName" %in% colnames(psl.rd)) {
+    	readID <- psl.rd$qName
+    } else if ("Sequence" %in% colnames(psl.rd)) {
+    	readID <- psl.rd$Sequence
+    } else {
+    	stop("No readID type column found in psl.rd object.")
+    }
     grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
     
     otus <- otuSites(posIDs[good.rows], readIDs[good.rows], grouping[good.rows])
@@ -2907,7 +2913,14 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
     good.rows <- psl.rd$clusterTopHit
     value <- psl.rd$clusteredPosition
     posID <- paste0(space(psl.rd),psl.rd$strand)
-    readID <- psl.rd$qName
+    if("qName" %in% colnames(psl.rd)) {
+    	readID <- psl.rd$qName
+    } else if ("Sequence" %in% colnames(psl.rd)) {
+    	readID <- psl.rd$Sequence
+    } else {
+    	stop("No readID type column found in psl.rd object.")
+    }
+    
     grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
     
     otus <- otuSites2(posID=posID[good.rows], 
@@ -3062,7 +3075,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
     if("clusteredPosition" %in% colnames(psl.rd)) {
       message("Using clusteredPosition column from psl.rd as the value parameter.")
       value <- psl.rd$clusteredPosition
-      good.row <- psl.rd$clusterTopHit & !psl.rd$isMultiHit
+      good.row <- psl.rd$clusterTopHit
     } else if("Position" %in% colnames(psl.rd)) {
       message("Using Position column from psl.rd as the value parameter.")
       value <- psl.rd$Position
@@ -3071,6 +3084,12 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
       message("Using start(psl.rd) as the value parameter.")
       value <- start(psl.rd)
       good.row <- rep(TRUE,length(value))
+    }
+    
+    isthere <- grepl("isMultiHit",colnames(psl.rd),ignore.case=TRUE)
+    if(any(isthere)) { ## see if multihit column exists
+      message("Found 'isMultiHit' column in the data. These rows will be ignored for the calculation.")
+      good.row <- good.row & !psl.rd[[which(isthere)]]
     }
     
     if(is.null(weight)) { ## see if clonecount column exists
@@ -3086,6 +3105,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, weight=NULL, p
     	stop("Error in crossOverCheck: sampling culprits... ", 
     		 paste(names(crossedValues[which(sapply(crossedValues,length)>1)]), collapse=", "))
     }
+    psl.rd$isCrossover <- FALSE
     psl.rd$isCrossover[good.row] <- as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
     
     message("Cleaning up!")
