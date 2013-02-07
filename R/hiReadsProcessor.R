@@ -2567,7 +2567,14 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         if(!"Position" %in% colnames(psl.rd)) {
             stop("The object supplied in psl.rd parameter does not have Position column in it. Did you run getIntegrationSites() on it?")
         }
-        multis <- psl.rd$isMultiHit
+		
+		good.row <- rep(TRUE,nrow(psl.rd))
+		isthere <- grepl("isMultiHit",colnames(psl.rd),ignore.case=TRUE)		
+		if(any(isthere)) { ## see if multihit column exists
+			message("Found 'isMultiHit' column in the data. These rows will be ignored for the calculation.")
+			good.row <- good.row & !psl.rd[[which(isthere)]]
+		}
+
         posIDs <- paste0(space(psl.rd),psl.rd$strand)
         values <- psl.rd$Position
         if(is.null(weight)) { ## see if sequences were dereplicated before in the pipeline which adds counts=x identifier to the deflines
@@ -2575,31 +2582,39 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
             if(all(is.na(weight))) { weight <- NULL } else { weight[is.na(weight)] <- 1 }
         }
         grouping <- if(is.null(grouping)) { "" } else { grouping }
-        clusters <- clusterSites(posIDs[!multis], 
-        						 values[!multis], 
-        						 grouping=grouping[!multis], 
+        clusters <- clusterSites(posIDs[good.row], 
+        						 values[good.row], 
+        						 grouping=grouping[good.row], 
         						 weight=weight, 
 								 windowSize=windowSize, 
         						 byQuartile=byQuartile, quartile=quartile)
         
         message("Adding clustered data back to psl.rd.")        
         clusteredValues <- with(clusters,split(clusteredValue,paste0(posID,value,grouping)))
-        groupingVals <- paste0(posIDs, values, grouping)[!multis]
+        groupingVals <- paste0(posIDs, values, grouping)[good.row]
         psl.rd$clusteredPosition <- psl.rd$Position
-        psl.rd$clusteredPosition[!multis] <- as.numeric(clusteredValues[groupingVals])
+        psl.rd$clusteredPosition[good.row] <- as.numeric(clusteredValues[groupingVals])
         
         ## add frequency of new clusteredPosition ##
         clusteredValueFreq <- with(clusters, split(clusteredValue.freq, paste0(posID,value,grouping)))
         psl.rd$clonecount <- 0
-        psl.rd$clonecount[!multis] <- as.numeric(clusteredValueFreq[groupingVals])
+        psl.rd$clonecount[good.row] <- as.numeric(clusteredValueFreq[groupingVals])
         rm("clusteredValueFreq","clusteredValues","clusters")
         cleanit <- gc()
         
         ## pick best scoring hit to represent a cluster ##
         message("Picking best scoring hit to represent a cluster.")
+        isthere <- grepl("score",colnames(psl.rd),ignore.case=TRUE)		
+        if(!any(isthere)) {
+            message("No 'score' column found in the data. Using 'qSize' as an alternative.")
+            isthere <- grepl("qSize",colnames(psl.rd),ignore.case=TRUE)		
+            if(!any(isthere)) {
+            	stop("No 'qSize' column found in the data either...can't pick the best hit :(")
+            }            
+        }
         groupingVals <- paste0(space(psl.rd), psl.rd$strand, psl.rd$clusteredPosition, grouping)
-        bestScore <- tapply(psl.rd$score, groupingVals, max)
-        isBest <- psl.rd$score==bestScore[groupingVals]
+        bestScore <- tapply(psl.rd[[which(isthere)]], groupingVals, max)
+        isBest <- psl.rd[[which(isthere)]]==bestScore[groupingVals]
         
         ## pick the first match for cases where >1 reads with the same coordinate had the same best scores ##
         tocheck <- which(isBest)
@@ -2607,7 +2622,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, wei
         
         psl.rd$clusterTopHit <- FALSE
         psl.rd$clusterTopHit[res] <- TRUE
-        psl.rd$clusterTopHit[multis] <- TRUE
+        psl.rd$clusterTopHit[!good.row] <- TRUE
         
         message("Cleaning up!")
         rm("isBest","bestScore","posIDs","values","groupingVals")
