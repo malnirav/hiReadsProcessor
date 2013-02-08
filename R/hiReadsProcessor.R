@@ -1662,8 +1662,12 @@ extractSeqs <- function(sampleInfo,sector=NULL,samplename=NULL,feature="genomic"
                             if(feature=="genomicLinkered") { coords <- coords[names(coords) %in% names(linkered)] }
                             
                             # trim it and return non zero length sequences
-                            seqs <- trimSeqs(decoded,coords)
-                            seqs[width(seqs)>=minReadLength]
+                            if(length(coords)>0) {
+                            	seqs <- trimSeqs(decoded,coords)
+								seqs[width(seqs)>=minReadLength]
+                            } else {
+                            	message("No linkered reads found for sample: ",x,"...skipping.")
+                            }                            
                         } else {
                             # just retuning ranges...simply match names from decoded to the request
                                                         
