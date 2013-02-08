@@ -18,7 +18,8 @@
 
   \item{gfServerOpts}{a character vector of options to be
   passed to gfServer command on top of server defaults.
-  Default: c(repMatch=112312, stepSize=5, tileSize=10)}
+  Default: c(repMatch=112312, stepSize=5, tileSize=10). Set
+  this to NULL to start gfServer with defaults.}
 }
 \value{
   system command status for executing gfServer command.

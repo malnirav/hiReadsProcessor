@@ -2001,7 +2001,7 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 #' @param seqDir absolute or relative path to the genome index (nib/2bit files).
 #' @param host name of the machine to run gfServer on. Default: localhost
 #' @param port a port number to host the gfServer with. Default is 5560.
-#' @param gfServerOpts a character vector of options to be passed to gfServer command on top of server defaults. Default: c(repMatch=112312, stepSize=5, tileSize=10)
+#' @param gfServerOpts a character vector of options to be passed to gfServer command on top of server defaults. Default: c(repMatch=112312, stepSize=5, tileSize=10). Set this to NULL to start gfServer with defaults.
 #'
 #' @return system command status for executing gfServer command.
 #'
@@ -2018,17 +2018,20 @@ startgfServer <- function(seqDir=NULL, host="localhost", port=5560, gfServerOpts
         stop("Please define the path of nib/2bit files containing the indexed reference sequence(s)")
     }
     
-    cmd <- paste("gfServer start", 
+    cmd <- sprintf("gfServer start %s %i %s %s &", 
 					host, port, 
-					paste(paste("-",names(gfServerOpts),sep=""), gfServerOpts, collapse=" ", sep="="), 
-					normalizePath(seqDir), "&")
+					ifelse(!is.null(gfServerOpts),paste(paste("-",names(gfServerOpts),sep=""), gfServerOpts, collapse=" ", sep="="),""), 
+					normalizePath(seqDir))
     message(cmd)
     system(cmd)        
 
     ## wait for server to load & be ready
-    message("Loading BLAT server...")    
-    searchCMD <- sprintf("n=`ps ax | grep '%s' | grep -v 'grep' | awk '{print $3}'`", paste("gfServer start", host, port))
-    system(paste(searchCMD, "; while [ \"$n\" != \"S\" -o \"$n\" != \"S+\" ]; do" ,searchCMD, "; if [ \"$n\" != \"S\" -o \"$n\" != \"S+\" ]; then echo '.'; sleep 30; else n=\"R\"; fi; done"))
+    message("Loading BLAT server...please wait.")    
+    searchCMD <- sprintf("gfServer status %s %s", host, port)
+    while(system(searchCMD,ignore.stderr=TRUE)!=0) {
+    	cat(".")
+    	Sys.sleep(10)
+    }
 }
 
 #' Stop a gfServer instance
