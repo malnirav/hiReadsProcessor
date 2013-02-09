@@ -2223,6 +2223,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
                 if(standaloneBlat) { stop("Standalone BLAT cannot be used when subject is an indexed nib or 2bit file.") }
                 indexFileDir <- dirname(subject)
                 subjectFile <- list.files(path=indexFileDir, pattern=basename(subject), full.names=TRUE)
+                if(length(subjectFile)==0) { stop("The file(s) supplied in subject parameter doesn't exist.") }
             } else {
                 ## change object type if necessary for troubleshooting purpose in later steps
                 subject <- DNAStringSet(subject)
