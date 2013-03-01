@@ -2301,9 +2301,13 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
     } else {
 		# start the gfServer if not started already! #
 		killFlag <- FALSE
-        if(!any(grepl(paste("gfServer start", host, port), system("ps",intern=TRUE)))) {
+		searchCMD <- sprintf("gfServer status %s %s", host, port)
+        if(system(searchCMD,ignore.stderr=TRUE)!=0) {
         	message("Starting gfServer.")        
-            startgfServer(seqDir=subjectFile, host=host, port=port, gfServerOpts=c(repMatch=blatParameters[['repMatch']], stepSize=blatParameters[['stepSize']], tileSize=blatParameters[['tileSize']]))
+            startgfServer(seqDir=subjectFile, host=host, port=port, 
+            			  gfServerOpts=c(repMatch=blatParameters[['repMatch']], 
+            			                 stepSize=blatParameters[['stepSize']], 
+            			                 tileSize=blatParameters[['tileSize']]))
             killFlag <- TRUE
         }         
 
@@ -2311,7 +2315,9 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, h
         stopifnot(length(subjectFile)>0)
         filenames <- foreach(x=iter(queryFiles), .inorder=FALSE, .export=c("gfClientOpts","host","port","indexFileDir","gzipResults")) %dopar% {
             filename.out <- paste(x,gfClientOpts["out"],sep=".")
-            cmd <- paste("gfClient",paste(paste("-",names(gfClientOpts),sep=""), gfClientOpts, collapse=" ", sep="="), "-nohead", host, port, "/", x, filename.out)
+            cmd <- paste("gfClient",
+            			 paste(paste("-",names(gfClientOpts),sep=""), gfClientOpts, collapse=" ", sep="="), 
+            			 "-nohead", host, port, "/", x, filename.out)
             message(cmd)
             system(cmd)
             if(grepl("\\.tempyQ$",x)) { system(paste("rm",x)) } ## no need to save splitted files!
