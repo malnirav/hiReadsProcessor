@@ -16,8 +16,7 @@ Depends:
     GenomicRanges,
     parallel,
     RMySQL,
-    xlsx,
-    dataframe
+    xlsx
 Imports:
     plyr
 License: GPL (>= 2)
