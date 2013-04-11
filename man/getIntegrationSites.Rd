@@ -4,11 +4,12 @@
 \usage{
   getIntegrationSites(psl.rd = NULL, startWithin = 3,
     alignRatioThreshold = 0.7,
-    genomicpercentidentity = 0.98, correctByqStart = TRUE)
+    genomicPercentIdentity = 0.98, correctByqStart = TRUE,
+    oneBased = FALSE)
 }
 \arguments{
-  \item{psl.rd}{a RangedData object reflecting psl format
-  where tName is the spaces.}
+  \item{psl.rd}{a RangedData/GRanges object reflecting psl
+  format where tName is the spaces/seqnames.}
 
   \item{startWithin}{upper bound limit of where the
   alignment should start within the query. Default is 3.}
@@ -16,7 +17,7 @@
   \item{alignRatioThreshold}{cuttoff for (alignment
   span/read length). Default is 0.7.}
 
-  \item{genomicpercentidentity}{cuttoff for
+  \item{genomicPercentIdentity}{cuttoff for
   (1-(misMatches/matches)). Default is 0.98.}
 
   \item{correctByqStart}{use qStart to correct genomic
@@ -24,19 +25,25 @@
   errors.
   Position=ifelse(strand=="+",tStart-qStart,tEnd+qStart).
   Default is TRUE.}
+
+  \item{oneBased}{the coordinates in psl files are "zero
+  based half open". The first base in a sequence is
+  numbered zero rather than one. Enabling this would add +1
+  to the start and leave the end as is. Default is FALSE.}
 }
 \value{
-  a RangedData object with integration sites which passed
-  all filtering criteria. Each filtering parameter creates
-  a new column to flag if a sequence/read passed that
-  filter which follows the scheme: 'pass.FilterName'.
+  a RangedData/GRanges object with integration sites which
+  passed all filtering criteria. Each filtering parameter
+  creates a new column to flag if a sequence/read passed
+  that filter which follows the scheme: 'pass.FilterName'.
 }
 \description{
-  Given a RangedData object from \code{\link{read.psl}},
-  the function uses specified filtering parameters to
-  obtain integration sites and maintain sequence attrition.
-  The function will remove any non-best scoring alignments
-  from the object if not already filtered apriori.
+  Given a RangedData/GRanges object from
+  \code{\link{read.psl}}, the function uses specified
+  filtering parameters to obtain integration sites and
+  maintain sequence attrition. The function will remove any
+  non-best scoring alignments from the object if not
+  already filtered apriori.
 }
 \examples{
 #getIntegrationSites(test.psl.rd)

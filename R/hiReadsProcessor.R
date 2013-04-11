@@ -1736,7 +1736,7 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0,
 #' #trimSeqs(dnaSet,coords,side="left",offBy=1)
 #'
 trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
-  stopifnot(class(dnaSet) %in% c("DNAStringSet","DNAString"))
+  stopifnot(class(dnaSet) %in% c("DNAStringSet", "DNAString"))
   stopifnot(class(coords)=="IRanges")
   
   # check if both dnaSet and coords has 'names' attribute, 
@@ -1762,13 +1762,13 @@ trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
     if(any(test)) {
       message("Following sequences were removed from trimming since their coordinates+offBy were out of sequence length: ", paste(names(dnaSet)[test],collapse=", "))
     }
-    subseq(dnaSet[!test],start=end(coords[!test])+offBy)
+    subseq(dnaSet[!test], start=end(coords[!test])+offBy)
   } else if (tolower(side)=="right") {
     test <- start(coords)-offBy > width(dnaSet) | end(coords)+offBy < 1
     if(any(test)) {
       message("Following sequences were removed from trimming since their coordinates+offBy were out of sequence length: ", paste(names(dnaSet)[test],collapse=", "))
     }
-    subseq(dnaSet[!test],end=start(coords[!test])-offBy)
+    subseq(dnaSet[!test], end=start(coords[!test])-offBy)
   } else {
     test <- start(coords)+offBy > width(dnaSet) | 
       end(coords)-offBy > width(dnaSet) | start(coords)+offBy < 1
@@ -1825,7 +1825,7 @@ getSectorsForSamples <- function(sampleInfo, sector=NULL, samplename=NULL,
   }
   sectors <- names(which(unlist(lapply(lapply(samplenames,"%in%",samplename), any)))) 
   if(returnDf) {
-    return(do.call(rbind,lapply(sectors, function(x) { 
+    return(do.call(rbind, lapply(sectors, function(x) { 
       data.frame(samplename=samplenames[[x]][samplenames[[x]] %in% samplename], 
                  sector=x, stringsAsFactors=FALSE)
     })))
@@ -2418,39 +2418,40 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #' Convert psl dataframe to RangedData or GRanges object using either the query or target as the reference data column. 
 #'
 #' @param x dataframe reflecting psl format
-#' @param useTargetAsRef use target or query as space or the reference data. Default is TRUE.
-#' @param asGRanges make a GRanges object instead of RangedData. Default is FALSE.
+#' @param useTargetAsRef use target(tName) or query(qName) as the chromosome or the reference data. Default is TRUE.
+#' @param asGRanges make a GRanges object instead of RangedData. Default is TRUE.
 #' @param isblast8 the input dataframe blast8 format output from BLAT. Default is FALSE.
 #'
-#' @return a RangedData/GRanges object reflecting psl file type.
+#' @return a GRanges object reflecting psl file type. If asGRanges=FALSE, then RangedData object is returned.
 #'
-#' @seealso \code{\link{blatListedSet}}
+#' @seealso \code{\link{read.psl}}, \code{\link{read.blast8}}, \code{\link{blatListedSet}}
 #'
 #' @export
 #'
 #' @examples 
 #' #pslToRangedObject(psl)
-#' #pslToRangedObject(psl,asGRanges=TRUE)
-#' #pslToRangedObject(psl,useTargetAsRef=FALSE)
+#' #pslToRangedObject(psl, asGRanges=FALSE)
+#' #pslToRangedObject(psl, useTargetAsRef=FALSE)
 #'
-pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=FALSE, isblast8=FALSE) {
+pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=TRUE, isblast8=FALSE) {
   if(useTargetAsRef) {
-    metadataCols <- c(grep("tName|tStart|tEnd|strand",names(x),
-                           invert=TRUE,value=TRUE,fixed=FALSE),
-                      ifelse(isblast8,NA,"tStarts"))
-    out <- RangedData(space=x$tName, IRanges(start=x$tStart, end=x$tEnd),
-                      strand=x$strand, x[,na.omit(metadataCols)])
+    metadataCols <- c(grep("tName|tStart|tEnd|strand", names(x),
+                           invert=TRUE, value=TRUE, fixed=FALSE),
+                      ifelse(isblast8, NA, "tStarts"))
+    out <- GRanges(seqnames=x$tName, IRanges(start=x$tStart, end=x$tEnd),
+                   strand=x$strand, x[,na.omit(metadataCols)])
   } else {
-    metadataCols <- c(grep("qName|qStart|qEnd|strand",names(x),
-                           invert=TRUE,value=TRUE,fixed=FALSE),
+    metadataCols <- c(grep("qName|qStart|qEnd|strand", names(x),
+                           invert=TRUE, value=TRUE, fixed=FALSE),
                       ifelse(isblast8,NA,"qStarts"))
-    out <- RangedData(space=x$qName, IRanges(start=x$qStart,end=x$qEnd),
-                      strand=x$strand, x[,na.omit(metadataCols)])
+    out <- GRanges(seqnames=x$qName, IRanges(start=x$qStart, end=x$qEnd),
+                   strand=x$strand, x[,na.omit(metadataCols)])
   }
   
-  if(asGRanges) {
-    out <- as(out, "GRanges")
+  if(!asGRanges) {
+    out <- as(out, "RangedData")
   }
+  
   out
 }
 
@@ -2532,9 +2533,9 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 #' @export
 #'
 #' @examples 
-#' #blatSeqs(dnaSeqs,subjectSeqs,blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
-#' #blatSeqs(dnaSeqs,"/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
-#' #blatSeqs("mySeqs.fa","/usr/local/blatSuite34/hg18.2bit",standaloneBlat=FALSE)
+#' #blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
+#' #blatSeqs(dnaSeqs, "/usr/local/blatSuite34/hg18.2bit", standaloneBlat=FALSE)
+#' #blatSeqs("mySeqs.fa", "/usr/local/blatSuite34/hg18.2bit", standaloneBlat=FALSE)
 #'
 blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, 
                      host="localhost", parallel=TRUE, gzipResults=TRUE, 
@@ -2561,7 +2562,8 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   
   ## check the subject parameter
   if(is.null(subject)) {
-    stop("The subject parameter is empty. Please supply subject sequences or a path to 2bit or nib files to serve as reference/target")
+    stop("The subject parameter is empty. 
+         Please supply subject sequences or a path to 2bit or nib files to serve as reference/target")
   } else {
     subjectFile <- NULL
     if(is.atomic(subject)) {
@@ -2605,7 +2607,9 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
         if(parallel) {
           ## split the fasta files into smaller chunks for parallel BLATing
           queryFiles <- unlist(sapply(queryFiles,
-                                      function(f) splitSeqsToFiles(f,getDoParWorkers(),"tempyQ")), 
+                                      function(f) splitSeqsToFiles(f, 
+                                                                   getDoParWorkers(),
+                                                                   "tempyQ")), 
                                use.names=FALSE)                    
         }
       } else {
@@ -2617,7 +2621,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
     if(is.null(queryFiles)) {
       ## queryFiles is still null so it means that query is a DNAStringSet           
       if(is.null(names(query))) {  ## fix names of query if not present
-        names(query) <- paste("read", 1:length(query))
+        names(query) <- paste("read", 1:length(query),sep="-")
       }  
       
       ## write out the query sequences into fasta files
@@ -2702,7 +2706,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
 
 #' Read psl file(s) outputted by BLAT
 #'
-#' Given filename(s), the function reads the psl file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
+#' Given filename(s), the function reads the psl file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results. Make sure there is no header row!
 #'
 #' @param pslFile psl filename, or vector of filenames, or a pattern of files to import.
 #' @param bestScoring report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.
@@ -2711,11 +2715,11 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
 #' @param removeFile remove the psl file(s) after importing. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #'
-#' @return a dataframe or RangedData object reflecting psl file type.
+#' @return a dataframe reflecting psl file type. If asGRanges=T or asRangedData=T, then a GRanges object or RangedData object, respectively.  
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
@@ -2870,15 +2874,16 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
 
 #' Obtain integration sites from BLAT output
 #'
-#' Given a RangedData object from \code{\link{read.psl}}, the function uses specified filtering parameters to obtain integration sites and maintain sequence attrition. The function will remove any non-best scoring alignments from the object if not already filtered apriori.
+#' Given a RangedData/GRanges object from \code{\link{read.psl}}, the function uses specified filtering parameters to obtain integration sites and maintain sequence attrition. The function will remove any non-best scoring alignments from the object if not already filtered apriori.
 #'
-#' @param psl.rd a RangedData object reflecting psl format where tName is the spaces.
+#' @param psl.rd a RangedData/GRanges object reflecting psl format where tName is the spaces/seqnames.
 #' @param startWithin upper bound limit of where the alignment should start within the query. Default is 3.
 #' @param alignRatioThreshold cuttoff for (alignment span/read length). Default is 0.7.
-#' @param genomicpercentidentity cuttoff for (1-(misMatches/matches)). Default is 0.98.
+#' @param genomicPercentIdentity cuttoff for (1-(misMatches/matches)). Default is 0.98.
 #' @param correctByqStart use qStart to correct genomic position. This would account for sequencing/trimming errors. Position=ifelse(strand=="+",tStart-qStart,tEnd+qStart). Default is TRUE.
+#' @param oneBased the coordinates in psl files are "zero based half open". The first base in a sequence is numbered zero rather than one. Enabling this would add +1 to the start and leave the end as is. Default is FALSE.
 #'
-#' @return a RangedData object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'.
+#' @return a RangedData/GRanges object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'.
 #'
 #' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 #'
@@ -2888,27 +2893,41 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
 #' #getIntegrationSites(test.psl.rd)
 #'
 getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=0.7, 
-                                genomicpercentidentity=0.98, correctByqStart=TRUE) {
-  stopifnot(class(psl.rd)=="RangedData" & !is.null(psl.rd) & !is.null(startWithin) 
-            & !is.null(alignRatioThreshold) & !is.null(genomicpercentidentity))
+                                genomicPercentIdentity=0.98, correctByqStart=TRUE, 
+                                oneBased=FALSE) {
+  stopifnot((is(psl.rd,"RangedData") | is(psl.rd,"GRanges")) & 
+              !is.null(psl.rd) & !is.null(startWithin) & 
+              !is.null(alignRatioThreshold) & !is.null(genomicpercentidentity))
+  
+  isRangedData <- FALSE
+  if(is(psl.rd, "RangedData")) {
+    isRangedData <- TRUE
+    psl.rd <- as(psl.rd, "GRanges")
+  }
   
   ## get the integration position by correcting for any insertions due to sequencing errors ##    
   if(correctByqStart) {
-    psl.rd$Position <- ifelse(psl.rd$strand=="+",
-                              start(psl.rd)-psl.rd$qStart,
-                              end(psl.rd)+psl.rd$qStart)
+    mcols(psl.rd)$Position <- ifelse(as.character(strand(psl.rd))=="+",
+                                     start(psl.rd)-psl.rd$qStart,
+                                     end(psl.rd)+psl.rd$qStart)
   } else {
-    psl.rd$Position <- ifelse(psl.rd$strand=="+",
-                              start(psl.rd),
-                              end(psl.rd))
+    mcols(psl.rd)$Position <- start(flank(psl.rd, width=-1))
+  }
+  
+  ## get +1 based coordinate ##    
+  if(oneBased) {
+    mcols(psl.rd)$Position <- ifelse(as.character(strand(psl.rd))=="+",
+                                     mcols(psl.rd)$Position+1,
+                                     mcols(psl.rd)$Position)
   }
   
   # get scores for picking best hits and identify multihits later
   # check if scoring filtering hasn't already been applied by blat functions
-  if(!"score" %in% colnames(psl.rd)) {
-    psl.rd$score <- with(psl.rd, matches-misMatches-qBaseInsert-tBaseInsert)
-    bestScore <- tapply(psl.rd$score, space(psl.rd), max)
-    isBest <- with(psl.rd, score==bestScore[space(psl.rd)])
+  if(!"score" %in% colnames(mcols(psl.rd))) {
+    mcols(psl.rd)$score <- with(mcols(psl.rd), 
+                                matches-misMatches-qBaseInsert-tBaseInsert)
+    bestScore <- tapply(mcols(psl.rd)$score, as.character(seqnames(psl.rd)), max)
+    isBest <- mcols(psl.rd)$score==bestScore[as.character(seqnames(psl.rd))]
     psl.rd <- psl.rd[isBest,]
     rm("isBest","bestScore")
     cleanit <- gc()
@@ -2916,24 +2935,28 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
   
   message("Performing QC checks.")
   # remove rows where the best hit dont start within first X bp
-  psl.rd$pass.startWithin <- psl.rd$qStart<=startWithin
+  mcols(psl.rd)$pass.startWithin <- mcols(psl.rd)$qStart<=startWithin
   
   # check if aligned ratio matches the threshold
-  psl.rd$alignRatio <- with(psl.rd,score/qSize)
-  psl.rd$pass.alignRatio <- psl.rd$alignRatio >= alignRatioThreshold
+  mcols(psl.rd)$alignRatio <- with(mcols(psl.rd), score/qSize)
+  mcols(psl.rd)$pass.alignRatio <- mcols(psl.rd)$alignRatio >= alignRatioThreshold
   
   # check for %identity    
-  psl.rd$percIdentity <- with(psl.rd, 1-(misMatches/matches))  
-  psl.rd$pass.percIdentity <- psl.rd$percIdentity >= genomicpercentidentity
+  mcols(psl.rd)$percIdentity <- with(mcols(psl.rd), 1-(misMatches/matches))  
+  mcols(psl.rd)$pass.percIdentity <- mcols(psl.rd)$percIdentity >= genomicPercentIdentity
   
   ## find which query aligned to multiple places with equally good score aka...multihits
-  cloneHits <- table(psl.rd$qName)
-  psl.rd$isMultiHit <- as.logical(cloneHits[as.character(psl.rd$qName)]>1)
+  cloneHits <- table(mcols(psl.rd)$qName)
+  mcols(psl.rd)$isMultiHit <- as.logical(cloneHits[as.character(mcols(psl.rd)$qName)]>1)
   rm(cloneHits)    
   cleanit <- gc()
   
-  psl.rd$pass.allQC <- with(psl.rd,
-                            pass.percIdentity & pass.alignRatio & pass.startWithin)
+  mcols(psl.rd)$pass.allQC <- with(mcols(psl.rd),
+                                   pass.percIdentity & pass.alignRatio & pass.startWithin)
+  
+  if(isRangedData) {
+    psl.rd <- as(psl.rd, "RangedData")
+  }
   
   return(psl.rd)
 }
@@ -2945,7 +2968,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined. 
 #' @param value a vector of integer with values that needs to corrected/clustered (i.e. Positions). Required if psl.rd parameter is not defined. 
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData object returned from \code{\link{getIntegrationSites}}. Default is NULL. 
+#' @param psl.rd a RangedData/GRanges object returned from \code{\link{getIntegrationSites}}. Default is NULL. 
 #' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
 #' @param windowSize size of window for which values should be corrected/clustered. Default is 5.
 #' @param byQuartile flag denoting whether quartile based technique should be employed. See notes for details. Default is TRUE.
@@ -2954,7 +2977,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #'
 #' @note The algorithm for clustering when byQuartile=TRUE is as follows: for all values in each grouping, get a distribution and test if their frequency is >= quartile threshold. For values below the quartile threshold, test if any values overlap with the ones that passed the threshold and is within the defined windowSize. If there is a match, then merge with higher value, else leave it as is. This is only useful if the distribution is wide and polynodal. When byQuartile=FALSE, for each group the values within the defined window are merged with the next highest frequently occuring value, if freuquencies are tied then lowest value is used to represent the cluster. When psl.rd is passed, then multihits are ignored and only unique sites are clustered. All multihits will be tagged as a good 'clusterTopHit'.
 #'
-#' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a RangedData object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
+#' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a RangedData/GRanges object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
 #'
 #' @seealso \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{pslToRangedObject}}
 #'
@@ -2972,24 +2995,32 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
   } else {
+    
+    isRangedData <- FALSE
+    if(is(psl.rd, "RangedData")) {
+      isRangedData <- TRUE
+      psl.rd <- as(psl.rd, "GRanges")
+    }
+    
     ## dereplicate & converge sites! ##
-    if(!"Position" %in% colnames(psl.rd)) {
+    if(!"Position" %in% colnames(mcols(psl.rd))) {
       stop("The object supplied in psl.rd parameter does not have Position column in it. 
            Did you run getIntegrationSites() on it?")
     }
     
-    good.row <- rep(TRUE, nrow(psl.rd))
-    isthere <- grepl("isMultiHit", colnames(psl.rd), ignore.case=TRUE)		
+    good.row <- rep(TRUE, length(psl.rd))
+    isthere <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)		
     if(any(isthere)) { ## see if multihit column exists
       message("Found 'isMultiHit' column in the data. 
               These rows will be ignored for the calculation.")
-      good.row <- good.row & !psl.rd[[which(isthere)]]
+      good.row <- good.row & !mcols(psl.rd)[[which(isthere)]]
     }
     
-    posIDs <- paste0(space(psl.rd), psl.rd$strand)
-    values <- psl.rd$Position
+    posIDs <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
+    values <- mcols(psl.rd)$Position
     if(is.null(weight)) { ## see if sequences were dereplicated before in the pipeline which adds counts=x identifier to the deflines
-      weight <- suppressWarnings(as.numeric(sub(".+counts=(\\d+)", "\\1", psl.rd$qName)))
+      weight <- suppressWarnings(as.numeric(sub(".+counts=(\\d+)", "\\1",
+                                                mcols(psl.rd)$qName)))
       if(all(is.na(weight))) { weight <- NULL } else { weight[is.na(weight)] <- 1 }
     }
     grouping <- if(is.null(grouping)) { "" } else { grouping }
@@ -3004,43 +3035,49 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     clusteredValues <- with(clusters,
                             split(clusteredValue, paste0(posID,value,grouping)))
     groupingVals <- paste0(posIDs, values, grouping)[good.row]
-    psl.rd$clusteredPosition <- psl.rd$Position
-    psl.rd$clusteredPosition[good.row] <- as.numeric(clusteredValues[groupingVals])
+    mcols(psl.rd)$clusteredPosition <- mcols(psl.rd)$Position
+    mcols(psl.rd)$clusteredPosition[good.row] <- as.numeric(clusteredValues[groupingVals])
     
     ## add frequency of new clusteredPosition ##
     clusteredValueFreq <- with(clusters, 
                                split(clusteredValue.freq, paste0(posID,value,grouping)))
-    psl.rd$clonecount <- 0
-    psl.rd$clonecount[good.row] <- as.numeric(clusteredValueFreq[groupingVals])
+    mcols(psl.rd)$clonecount <- 0
+    mcols(psl.rd)$clonecount[good.row] <- as.numeric(clusteredValueFreq[groupingVals])
     rm("clusteredValueFreq","clusteredValues","clusters")
     cleanit <- gc()
     
     ## pick best scoring hit to represent a cluster ##
     message("Picking best scoring hit to represent a cluster.")
-    isthere <- grepl("score", colnames(psl.rd), ignore.case=TRUE)		
+    isthere <- grepl("score", colnames(mcols(psl.rd)), ignore.case=TRUE)		
     if(!any(isthere)) {
       message("No 'score' column found in the data. Using 'qSize' as an alternative.")
-      isthere <- grepl("qSize", colnames(psl.rd), ignore.case=TRUE)		
+      isthere <- grepl("qSize", colnames(mcols(psl.rd)), ignore.case=TRUE)		
       if(!any(isthere)) {
         stop("No 'qSize' column found in the data either...can't pick the best hit :(")
       }            
     }
-    groupingVals <- paste0(space(psl.rd), psl.rd$strand, 
-                           psl.rd$clusteredPosition, grouping)
-    bestScore <- tapply(psl.rd[[which(isthere)]], groupingVals, max)
-    isBest <- psl.rd[[which(isthere)]]==bestScore[groupingVals]
+    groupingVals <- paste0(as.character(seqnames(psl.rd)), 
+                           as.character(strand(psl.rd)), 
+                           mcols(psl.rd)$clusteredPosition, grouping)
+    bestScore <- tapply(mcols(psl.rd)[[which(isthere)]], groupingVals, max)
+    isBest <- mcols(psl.rd)[[which(isthere)]]==bestScore[groupingVals]
     
     ## pick the first match for cases where >1 reads with the same coordinate had the same best scores ##
     tocheck <- which(isBest)
     res <- tapply(tocheck, names(tocheck), "[[", 1) 
     
-    psl.rd$clusterTopHit <- FALSE
-    psl.rd$clusterTopHit[res] <- TRUE
-    psl.rd$clusterTopHit[!good.row] <- TRUE
+    mcols(psl.rd)$clusterTopHit <- FALSE
+    mcols(psl.rd)$clusterTopHit[res] <- TRUE
+    mcols(psl.rd)$clusterTopHit[!good.row] <- TRUE
     
     message("Cleaning up!")
     rm("isBest","bestScore","posIDs","values","groupingVals")
     cleanit <- gc()
+    
+    if(isRangedData) {
+      psl.rd <- as(psl.rd, "RangedData")
+    }
+    
     return(psl.rd)
   }
   
@@ -3048,7 +3085,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
   groups <- if(is.null(grouping)) { "" } else { grouping }
   weight2 <- if(is.null(weight)) { 1 } else { weight }
   sites <- arrange(data.frame(posID, value, grouping=groups, 
-                              weight=weight2, posID2=paste0(groups,posID), 
+                              weight=weight2, posID2=paste0(groups, posID), 
                               stringsAsFactors=FALSE), posID2, value)
   sites <- count(sites, c("posID","value","grouping","posID2"), wt_var="weight")    
   rm("groups","weight2")
@@ -3112,7 +3149,8 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
                             byQuartile=FALSE)
       }
       pos.overlap <- rbind(pos.overlap[,c("queryHits","clusteredValue")], 
-                           data.frame(queryHits=rows, clusteredValue=as.numeric(res$clusteredValue)))
+                           data.frame(queryHits=rows, 
+                                      clusteredValue=as.numeric(res$clusteredValue)))
       
       sites$clusteredValue <- sites$value
       sites$clusteredValue[sites$belowQuartile][pos.overlap[,"queryHits"]] <- pos.overlap$clusteredValue
@@ -3125,21 +3163,25 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     
     sites <- split(sites, sites$grouping)
     
-    sites <- foreach(x=iter(sites), .inorder=FALSE, .packages="IRanges", .combine=rbind) %dopar% {
+    sites <- foreach(x=iter(sites), .inorder=FALSE, .packages="IRanges", 
+                     .combine=rbind) %dopar% {
       
       ## find overlapping positions using findOverlaps() using maxgap adjusted by windowSize! ##
-      sites.rl <- with(x,RangedData(space=posID2, IRanges(start=value,width=1),freq))
+      sites.gr <- with(x, GRanges(seqnames=posID2, IRanges(start=value, width=1), freq))
       
       # the key part is ignoreSelf=TRUE,ignoreRedundant=FALSE...helps overwrite values at later step
-      res <- as.data.frame(as.matrix(findOverlaps(sites.rl,ignoreSelf=TRUE, ignoreRedundant=FALSE,
+      res <- as.data.frame(as.matrix(findOverlaps(sites.gr, ignoreSelf=TRUE, 
+                                                  ignoreRedundant=FALSE,
                                                   select="all", maxgap=windowSize))) 
       
       # add accessory columns to dictate decision making!
       # q = query, s = subject, val = value, freq = frequency of query/subject
-      res$q.val <- start(sites.rl)[res$queryHits]; res$s.val <- start(sites.rl)[res$subjectHits]
-      res$q.freq <- sites.rl$freq[res$queryHits]; res$s.freq <- sites.rl$freq[res$subjectHits]
+      res$q.val <- start(sites.gr)[res$queryHits]
+      res$s.val <- start(sites.gr)[res$subjectHits]
+      res$q.freq <- sites.gr$freq[res$queryHits]
+      res$s.freq <- sites.gr$freq[res$subjectHits]
       res$dist <- with(res,abs(q.val-s.val))
-      stopifnot(!any(res$dist>5)) ## do safety checking!
+      stopifnot(!any(res$dist>windowSize)) ## do safety checking!
       
       # favor a lower value where frequence/cloneCount is tied, else use the value of the highest frequency!
       res$val <- with(res,ifelse(q.freq==s.freq, 
@@ -3194,11 +3236,11 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
 #' @param posID a vector of discrete positions, i.e. Chr,strand,Position.
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param psl.rd a RangedData/GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
 #'
 #' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions. 
 #'
-#' @return a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
+#' @return a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData/GRanges object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -3215,38 +3257,51 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
     stopifnot(!is.null(posID))
     stopifnot(!is.null(readID))
   } else {
-    ## find the otuID by clusters ##
-    if(!"clusterTopHit" %in% colnames(psl.rd) | !"clusteredPosition" %in% colnames(psl.rd)) {
-      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
-            	  Did you run clusterSites() on it?")
+    
+    isRangedData <- FALSE
+    if(is(psl.rd, "RangedData")) {
+      isRangedData <- TRUE
+      psl.rd <- as(psl.rd, "GRanges")
     }
     
-    good.rows <- psl.rd$clusterTopHit
-    posIDs <- paste0(space(psl.rd),psl.rd$strand,psl.rd$clusteredPosition)
-    if("qName" %in% colnames(psl.rd)) {
-      readID <- psl.rd$qName
-    } else if ("Sequence" %in% colnames(psl.rd)) {
-      readID <- psl.rd$Sequence
+    ## find the otuID by clusters ##
+    if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
+         !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
+      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
+    }
+    
+    good.rows <- mcols(psl.rd)$clusterTopHit
+    posIDs <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)), 
+                     mcols(psl.rd)$clusteredPosition)
+    if("qName" %in% colnames(mcols(psl.rd))) {
+      readID <- mcols(psl.rd)$qName
+    } else if ("Sequence" %in% colnames(mcols(psl.rd))) {
+      readID <- mcols(psl.rd)$Sequence
     } else {
       stop("No readID type column found in psl.rd object.")
     }
-    grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
+    grouping <- if(is.null(grouping)) { rep("A",length(psl.rd)) } else { grouping }
     
     otus <- otuSites(posIDs[good.rows], readIDs[good.rows], grouping[good.rows])
     
     message("Adding otuIDs back to psl.rd.")        
-    otuIDs <- with(otus,split(otuID,paste(posID,readID,grouping)))
-    psl.rd$otuIDs <- NA
-    psl.rd$otuIDs[good.rows] <- as.numeric(otuIDs[paste(posIDs, readIDs, 
-                                                        grouping)[good.rows]])
+    otuIDs <- with(otus, split(otuID, paste(posID, readID, grouping)))
+    mcols(psl.rd)$otuIDs <- NA
+    mcols(psl.rd)$otuIDs[good.rows] <- as.numeric(otuIDs[paste(posIDs, readIDs, 
+                                                               grouping)[good.rows]])
     
     rm("otus","otuIDs","posIDs","readIDs","grouping")
     cleanit <- gc()
+    
+    if(isRangedData) {
+      psl.rd <- as(psl.rd, "RangedData")
+    }
+    
     return(psl.rd)
   }
   
   groups <- if(is.null(grouping)) { "A" } else { grouping }
-  sites <- data.frame(posID, readID, grouping=groups,stringsAsFactors=FALSE)
+  sites <- data.frame(posID, readID, grouping=groups, stringsAsFactors=FALSE)
   rm(groups)
   
   ## get unique posIDs per readID by grouping 
@@ -3256,7 +3311,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
   reads <- arrange(reads, grouping, posIDs)
   
   # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
-  reads$otuID <- unlist(lapply(lapply(with(reads,split(posIDs,grouping)),
+  reads$otuID <- unlist(lapply(lapply(with(reads, split(posIDs,grouping)),
                                       as.factor),
                                as.numeric)) 
   reads$newotuID <- reads$otuID 
@@ -3277,9 +3332,11 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
     allposIDs <- with(reads[!singles,],split(posIDs,grouping))
     
     for(f in intersect(names(toCheck), names(allposIDs))) {
+      # this is crucial to avoid matching things like xyzABC to xyz
       query <- structure(paste0(toCheck[[f]],","), 
-                         names=names(toCheck[[f]])) # this is crucial to avoid matching things like xyzABC to xyz
-      subject <- paste0(allposIDs[[f]],",") # this is crucial to avoid matching things like xyzABC to xyz
+                         names=names(toCheck[[f]])) 
+      subject <- paste0(allposIDs[[f]],",") 
+      
       res <- sapply(query, grep, x=subject, fixed=TRUE)
       res <- res[sapply(res,length)>0]                    
       res <- structure(unlist(res,use.names=F),
@@ -3316,11 +3373,11 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
   }
   
   ## trickle the OTU ids back to sites frame ##    
-  ots.ids <- with(reads,split(newotuID, paste0(readID,grouping)))
+  ots.ids <- with(reads, split(newotuID, paste0(readID,grouping)))
   if(!is.numeric(ots.ids)) {
     stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
   }
-  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,paste0(readID,grouping))]))
+  sites$otuID <- as.numeric(unlist(ots.ids[with(sites, paste0(readID,grouping))]))
   
   stopifnot(any(!is.na(sites$otuID)))
   rm(reads)
@@ -3338,12 +3395,12 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param psl.rd a RangedData/GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
 #'
 #' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions.
 #'
-#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
+#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData/GRanges object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -3361,25 +3418,32 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
     stopifnot(!is.null(value))
     stopifnot(!is.null(readID))
   } else {
+    
+    isRangedData <- FALSE
+    if(is(psl.rd, "RangedData")) {
+      isRangedData <- TRUE
+      psl.rd <- as(psl.rd, "GRanges")
+    }
+    
     ## find the otuID by clusters ##
-    if(!"clusterTopHit" %in% colnames(psl.rd) | 
-         !"clusteredPosition" %in% colnames(psl.rd)) {
+    if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
+         !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
       stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
           Did you run clusterSites() on it?")
     }
     
-    good.rows <- psl.rd$clusterTopHit
-    value <- psl.rd$clusteredPosition
-    posID <- paste0(space(psl.rd),psl.rd$strand)
-    if("qName" %in% colnames(psl.rd)) {
-      readID <- psl.rd$qName
-    } else if ("Sequence" %in% colnames(psl.rd)) {
-      readID <- psl.rd$Sequence
+    good.rows <- mcols(psl.rd)$clusterTopHit
+    value <- mcols(psl.rd)$clusteredPosition
+    posID <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
+    if("qName" %in% colnames(mcols(psl.rd))) {
+      readID <- mcols(psl.rd)$qName
+    } else if ("Sequence" %in% colnames(mcols(psl.rd))) {
+      readID <- mcols(psl.rd)$Sequence
     } else {
       stop("No readID type column found in psl.rd object.")
     }
     
-    grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
+    grouping <- if(is.null(grouping)) { rep("A",length(psl.rd)) } else { grouping }
     
     otus <- otuSites2(posID=posID[good.rows], 
                       value=value[good.rows], 
@@ -3391,13 +3455,18 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
     otuIDs <- with(otus,
                    split(otuID,
                          paste0(posID,value,readID,grouping)))
-    psl.rd$otuID <- NA
-    psl.rd$otuID[good.rows] <- as.numeric(otuIDs[paste0(posID, value, readID, 
-                                                        grouping)[good.rows]])
+    mcols(psl.rd)$otuID <- NA
+    mcols(psl.rd)$otuID[good.rows] <- as.numeric(otuIDs[paste0(posID, value, readID, 
+                                                               grouping)[good.rows]])
     
     message("Cleaning up!")
     rm("otus","otuIDs","value","posID","readID","grouping","good.rows")
     cleanit <- gc()
+    
+    if(isRangedData) {
+      psl.rd <- as(psl.rd, "RangedData")
+    }
+    
     return(psl.rd)
   }
   
@@ -3486,11 +3555,17 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
   cleanit <- gc()
   
   ## trickle the OTU ids back to sites frame ##    
-  ots.ids <- sapply(split(mcols(sites.gr)$newotuID,paste0(mcols(sites.gr)$readID, mcols(sites.gr)$grouping)),unique)
+  ots.ids <- sapply(split(mcols(sites.gr)$newotuID,
+                          paste0(mcols(sites.gr)$readID, 
+                                 mcols(sites.gr)$grouping)),
+                    unique)
+  
   if(!is.numeric(ots.ids)) {
     stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
   }
-  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,paste0(readID,grouping))],use.names=F))
+  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,
+                                                paste0(readID,grouping))],
+                                   use.names=F))
   
   stopifnot(any(!is.na(sites$otuID)))
   cleanit <- gc()
@@ -3507,12 +3582,12 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL,
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param psl.rd a RangedData/GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
 #'
 #' @note The algorithm for assigning an ISU ID is as follows: for each readID check how many posIDs are present. Separate readIDs with only one posID from the rest. If any readID with >1 posID match to any readID with only one posID, then tag both readIDs with the same ID. For rest of the untagged readIDs, if any posID from a readID with >1 posID matches to any other readIDs with >1 posID, then tag the same ID to all readIDs under that collection. Repeat the last step until all readIDs have been tagged.
 #'
-#' @return a data frame with binned values and isuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData object where object is first filtered by clusterTopHit column and the isuID column appended at the end.
+#' @return a data frame with binned values and isuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData/GRanges object where object is first filtered by clusterTopHit column and the isuID column appended at the end.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -3530,43 +3605,54 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL,
     stopifnot(!is.null(value))
     stopifnot(!is.null(readID))
   } else {
-    ## find the isuID by clusters ##
-    if(!"clusterTopHit" %in% colnames(psl.rd) | 
-         !"clusteredPosition" %in% colnames(psl.rd)) {
-      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
-          Did you run clusterSites() on it?")
+    
+    isRangedData <- FALSE
+    if(is(psl.rd, "RangedData")) {
+      isRangedData <- TRUE
+      psl.rd <- as(psl.rd, "GRanges")
     }
     
-    good.rows <- psl.rd$clusterTopHit
-    value <- psl.rd$clusteredPosition
-    posID <- paste0(space(psl.rd),psl.rd$strand)
-    if("qName" %in% colnames(psl.rd)) {
-      readID <- psl.rd$qName
-    } else if ("Sequence" %in% colnames(psl.rd)) {
-      readID <- psl.rd$Sequence
+    ## find the isuID by clusters ##
+    if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
+         !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
+      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
+    }
+    
+    good.rows <- mcols(psl.rd)$clusterTopHit
+    value <- mcols(psl.rd)$clusteredPosition
+    posID <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
+    if("qName" %in% colnames(mcols(psl.rd))) {
+      readID <- mcols(psl.rd)$qName
+    } else if ("Sequence" %in% colnames(mcols(psl.rd))) {
+      readID <- mcols(psl.rd)$Sequence
     } else {
       stop("No readID type column found in psl.rd object.")
     }
     
-    grouping <- if(is.null(grouping)) { rep("A",nrow(psl.rd)) } else { grouping }
+    grouping <- if(is.null(grouping)) { rep("A",length(psl.rd)) } else { grouping }
     
-    isus <- isuSites2(posID=posID[good.rows], 
-                      value=value[good.rows], 
-                      readID=readID[good.rows], 
-                      grouping=grouping[good.rows], 
-                      parallel=parallel)
+    isus <- isuSites(posID=posID[good.rows], 
+                     value=value[good.rows], 
+                     readID=readID[good.rows], 
+                     grouping=grouping[good.rows], 
+                     parallel=parallel)
     
     message("Adding isuIDs back to psl.rd.")        
     isuIDs <- with(isus,
                    split(isuID,
-                         paste0(posID,value,readID,grouping)))
-    psl.rd$isuID <- NA
-    psl.rd$isuID[good.rows] <- as.numeric(isuIDs[paste0(posID, value, readID, 
-                                                        grouping)[good.rows]])
+                         paste0(posID, value, readID, grouping)))
+    mcols(psl.rd)$isuID <- NA
+    mcols(psl.rd)$isuID[good.rows] <- as.numeric(isuIDs[paste0(posID, value, readID, 
+                                                               grouping)[good.rows]])
     
     message("Cleaning up!")
     rm("isus","isuIDs","value","posID","readID","grouping","good.rows")
     cleanit <- gc()
+    
+    if(isRangedData) {
+      psl.rd <- as(psl.rd, "RangedData")
+    }
+    
     return(psl.rd)
   }
   
@@ -3583,12 +3669,15 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL,
   
   # create initial isuID by assigning a numeric ID to each collection of posIDs per grouping
   reads$isuID <- unlist(
-    lapply(lapply(with(reads,split(posIDs,grouping)), as.factor), as.numeric)
+    lapply(lapply(with(reads,
+                       split(posIDs,grouping)), 
+                  as.factor), 
+           as.numeric)
   ) 
-  sites <- merge(arrange(sites,grouping,readID), 
+  sites <- merge(arrange(sites, grouping, readID), 
                  arrange(reads[,c("grouping","readID","counts","isuID")],
-                         grouping,readID), 
-                 by=c("grouping","readID"), all.x=TRUE)
+                         grouping, readID), 
+                 by=c("grouping", "readID"), all.x=TRUE)
   sites$posID2 <- NULL
   rm(reads)
   sites <- arrange(sites, grouping, posID, value)
@@ -3635,9 +3724,11 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL,
   goods <- subset(sites.gr, !mcols(sites.gr)$check)
   sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
   sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
-  sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .packages="GenomicRanges", .combine=c) %dopar% {		    
+  sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, 
+                      .packages="GenomicRanges", .combine=c) %dopar% {		    
     mcols(x)$readID <- as.character(mcols(x)$readID)
-    res <- findOverlaps(x, maxgap=1, ignoreSelf=TRUE,ignoreRedundant=TRUE, select="all")
+    res <- findOverlaps(x, maxgap=1, ignoreSelf=TRUE,
+                        ignoreRedundant=TRUE, select="all")
     if(length(res)>0) {
       res <- as.data.frame(res)
       res$queryISU <- mcols(x)$isuID[res$queryHits]
@@ -3655,11 +3746,16 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL,
   cleanit <- gc()
   
   ## trickle the ISU ids back to sites frame ##    
-  ots.ids <- sapply(split(mcols(sites.gr)$newisuID,paste0(mcols(sites.gr)$readID, mcols(sites.gr)$grouping)),unique)
+  ots.ids <- sapply(split(mcols(sites.gr)$newisuID,
+                          paste0(mcols(sites.gr)$readID, mcols(sites.gr)$grouping)),
+                    unique)
+  
   if(!is.numeric(ots.ids)) {
     stop("Something went wrong merging non-singletons. Multiple ISUs assigned to one readID most likely!")
   }
-  sites$isuID <- as.numeric(unlist(ots.ids[with(sites,paste0(readID,grouping))],use.names=F))
+  sites$isuID <- as.numeric(unlist(ots.ids[with(sites,
+                                                paste0(readID,grouping))],
+                                   use.names=F))
   
   stopifnot(any(!is.na(sites$isuID)))
   cleanit <- gc()
@@ -3676,9 +3772,9 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL,
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
 #' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
-#' @param psl.rd a RangedData object. Default is NULL. 
+#' @param psl.rd a RangedData/GRanges object. Default is NULL. 
 #'
-#' @return a data frame of the original input with columns denoting whether a given row is crossover or not. If psl.rd parameter is defined, then a RangedData object with 'isCrossover' column appended at the end.
+#' @return a data frame of the original input with columns denoting whether a given row is crossover or not. If psl.rd parameter is defined, then a RangedData/GRanges object with 'isCrossover' column appended at the end.
 #'
 #' @seealso  \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -3694,53 +3790,65 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
   } else {     
-    if(!"clusterTopHit" %in% colnames(psl.rd) | 
-         !"clusteredPosition" %in% colnames(psl.rd)) {
+    
+    isRangedData <- FALSE
+    if(is(psl.rd, "RangedData")) {
+      isRangedData <- TRUE
+      psl.rd <- as(psl.rd, "GRanges")
+    }
+    
+    if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
+         !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
       stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
     }
     
-    posID <- paste0(space(psl.rd),psl.rd$strand)
-    if("clusteredPosition" %in% colnames(psl.rd)) {
+    posID <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
+    if("clusteredPosition" %in% colnames(mcols(psl.rd))) {
       message("Using clusteredPosition column from psl.rd as the value parameter.")
-      value <- psl.rd$clusteredPosition
-      good.row <- psl.rd$clusterTopHit
-    } else if("Position" %in% colnames(psl.rd)) {
+      value <- mcols(psl.rd)$clusteredPosition
+      good.row <- mcols(psl.rd)$clusterTopHit
+    } else if("Position" %in% colnames(mcols(psl.rd))) {
       message("Using Position column from psl.rd as the value parameter.")
-      value <- psl.rd$Position
-      good.row <- rep(TRUE,length(value))
+      value <- mcols(psl.rd)$Position
+      good.row <- rep(TRUE, length(value))
     } else {
       message("Using start(psl.rd) as the value parameter.")
       value <- start(psl.rd)
-      good.row <- rep(TRUE,length(value))
+      good.row <- rep(TRUE, length(value))
     }
     
-    isthere <- grepl("isMultiHit", colnames(psl.rd), ignore.case=TRUE)
+    isthere <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)
     if(any(isthere)) { ## see if multihit column exists
       message("Found 'isMultiHit' column in the data. These rows will be ignored for the calculation.")
-      good.row <- good.row & !psl.rd[[which(isthere)]]
+      good.row <- good.row & !mcols(psl.rd)[[which(isthere)]]
     }
     
     if(is.null(weight)) { ## see if clonecount column exists
-      isthere <- grepl("clonecount", colnames(psl.rd))
-      if(any(isthere)) { weight <- psl.rd[[which(isthere)]] } else { weight <- weight }
+      isthere <- grepl("clonecount", colnames(mcols(psl.rd)))
+      if(any(isthere)) { weight <- mcols(psl.rd)[[which(isthere)]] } else { weight <- weight }
     }
     grouping <- if(is.null(grouping)) { "" } else { grouping }
     crossed <- crossOverCheck(posID[good.row], value[good.row], 
                               grouping=grouping[good.row], weight=weight[good.row])
     
     message("Adding isCrossover data back to psl.rd.")        
-    crossedValues <- with(crossed, split(isCrossover,paste0(posID,value,grouping)))
-    if(any(sapply(crossedValues,length)>1)) {
+    crossedValues <- with(crossed, split(isCrossover, paste0(posID,value,grouping)))
+    if(any(sapply(crossedValues, length)>1)) {
       stop("Error in crossOverCheck: sampling culprits... ", 
-           paste(names(crossedValues[which(sapply(crossedValues,length)>1)]), 
+           paste(names(crossedValues[which(sapply(crossedValues, length)>1)]), 
                  collapse=", "))
     }
-    psl.rd$isCrossover <- FALSE
-    psl.rd$isCrossover[good.row] <- as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
+    mcols(psl.rd)$isCrossover <- FALSE
+    mcols(psl.rd)$isCrossover[good.row] <- as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
     
     message("Cleaning up!")
     rm("posID","value","grouping","crossed","crossedValues")
     cleanit <- gc()
+    
+    if(isRangedData) {
+      psl.rd <- as(psl.rd, "RangedData")
+    }
+    
     return(psl.rd)
   }
   
@@ -3759,7 +3867,8 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
   # find overlapping positions & pick the winner based on frequencies #
   sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=value,width=1), 
                                   strand="*", grouping, freq))
-  res <- findOverlaps(sites.gr, maxgap=1, ignoreSelf=TRUE, ignoreRedundant=FALSE, select="all")
+  res <- findOverlaps(sites.gr, maxgap=1, ignoreSelf=TRUE, 
+                      ignoreRedundant=FALSE, select="all")
   if(length(res)>0) {
     res <- as.data.frame(res)
     res$qgroup <- mcols(sites.gr)$grouping[res$queryHits]
@@ -3901,7 +4010,7 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     # add qc info for bestscoring hits #
     psl.x <- getIntegrationSites(psl[[x]], startWithin=startwithin[[x]], 
                                  alignRatioThreshold=alignratiothreshold[[x]], 
-                                 genomicpercentidentity=genomicpercentidentity[[x]])
+                                 genomicPercentIdentity=genomicpercentidentity[[x]])
     
     # filter multihits if applicable #
     if(!as.logical(keepmultihits[[x]])) {

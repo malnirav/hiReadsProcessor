@@ -21,13 +21,14 @@
   calculating frequency of value by posID and grouping if
   specified. Default is NULL.}
 
-  \item{psl.rd}{a RangedData object. Default is NULL.}
+  \item{psl.rd}{a RangedData/GRanges object. Default is
+  NULL.}
 }
 \value{
   a data frame of the original input with columns denoting
   whether a given row is crossover or not. If psl.rd
-  parameter is defined, then a RangedData object with
-  'isCrossover' column appended at the end.
+  parameter is defined, then a RangedData/GRanges object
+  with 'isCrossover' column appended at the end.
 }
 \description{
   Given a group of discrete factors (i.e. position ids) and

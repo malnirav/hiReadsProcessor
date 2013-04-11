@@ -30,14 +30,16 @@
   \code{\link{registerDoSEQ()}}.}
 }
 \value{
-  a dataframe or RangedData object reflecting psl file
-  type.
+  a dataframe reflecting psl file type. If asGRanges=T or
+  asRangedData=T, then a GRanges object or RangedData
+  object, respectively.
 }
 \description{
   Given filename(s), the function reads the psl file format
   from BLAT as a data frame and performs basic score
   filtering if indicated. Any other file format will yield
-  errors or erroneous results.
+  errors or erroneous results. Make sure there is no header
+  row!
 }
 \note{
   If parallel=TRUE, then be sure to have a paralle backend
@@ -54,6 +56,7 @@
   \code{\link{pairwiseAlignSeqs}},
   \code{\link{vpairwiseAlignSeqs}},
   \code{\link{startgfServer}}, \code{\link{blatSeqs}},
-  \code{\link{read.blast8}}
+  \code{\link{read.blast8}},
+  \code{\link{pslToRangedObject}}
 }
 

@@ -18,7 +18,7 @@
   \item{grouping}{additional vector of grouping by which to
   pool the rows (i.e. samplenames). Default is NULL.}
 
-  \item{psl.rd}{a RangedData object returned from
+  \item{psl.rd}{a RangedData/GRanges object returned from
   \code{\link{getIntegrationSites}}. Default is NULL.}
 
   \item{weight}{a numeric vector of weights to use when
@@ -45,8 +45,8 @@
 \value{
   a data frame with clusteredValues and frequency shown
   alongside with the original input. If psl.rd parameter is
-  defined then a RangedData object is returned with three
-  new columns appended at the end: clusteredPosition,
+  defined then a RangedData/GRanges object is returned with
+  three new columns appended at the end: clusteredPosition,
   clonecount, and clusterTopHit (a representative for a
   given cluster chosen by best scoring hit!).
 }

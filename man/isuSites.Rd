@@ -20,7 +20,7 @@
   \item{grouping}{additional vector of grouping by which to
   pool the rows (i.e. samplenames). Default is NULL.}
 
-  \item{psl.rd}{a RangedData object returned from
+  \item{psl.rd}{a RangedData/GRanges object returned from
   \code{\link{clusterSites}}. Default is NULL.}
 
   \item{parallel}{use parallel backend to perform
@@ -33,9 +33,9 @@
 \value{
   a data frame with binned values and isuID shown alongside
   the original input. If psl.rd parameter is defined, then
-  a RangedData object where object is first filtered by
-  clusterTopHit column and the isuID column appended at the
-  end.
+  a RangedData/GRanges object where object is first
+  filtered by clusterTopHit column and the isuID column
+  appended at the end.
 }
 \description{
   Given a group of values or genomic positions per
