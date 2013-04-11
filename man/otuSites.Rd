@@ -26,11 +26,12 @@
 }
 \description{
   Given a group of discrete positions per read/clone, the
-  function tries to yield a unique OTU ID for the
-  collection based on overlap of discrete positions to
-  other reads/clones by grouping. This is mainly useful
-  when each readID has many posID which needs to be
-  considered as one single group of sites.
+  function tries to yield a unique OTU (operation
+  taxinomical unit) ID for the collection based on overlap
+  of discrete positions to other reads/clones by grouping.
+  This is mainly useful when each readID has many posID
+  which needs to be considered as one single group of
+  sites.
 }
 \note{
   The algorithm for making OTUs of sites is as follows: for

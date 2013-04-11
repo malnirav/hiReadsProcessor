@@ -74,8 +74,7 @@
   registered before running the function. One can use any
   of the following libraries compatible with
   \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doSMP); w <- startWorkers(2);
-  registerDoSMP(w)
+  example: library(doMC); registerDoMC(2)
 }
 \examples{
 #findIntegrations(sampleInfo)

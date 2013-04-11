@@ -3,8 +3,8 @@
 \title{Read psl file(s) outputted by BLAT}
 \usage{
   read.psl(pslFile = NULL, bestScoring = TRUE,
-    asRangedData = FALSE, removeFile = TRUE,
-    parallel = FALSE)
+    asRangedData = FALSE, asGRanges = FALSE,
+    removeFile = TRUE, parallel = FALSE)
 }
 \arguments{
   \item{pslFile}{psl filename, or vector of filenames, or a
@@ -15,7 +15,10 @@
   matches-misMatches-qBaseInsert-tBaseInsert.}
 
   \item{asRangedData}{return a RangedData object instead of
-  a dataframe. Default is TRUE. Saves memory!}
+  a dataframe. Default is FALSE}
+
+  \item{asGRanges}{return a GRanges object instead of a
+  dataframe. Default is FALSE}
 
   \item{removeFile}{remove the psl file(s) after importing.
   Default is FALSE.}
@@ -41,8 +44,7 @@
   registered before running the function. One can use any
   of the following libraries compatible with
   \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doSMP); w <- startWorkers(2);
-  registerDoSMP(w)
+  example: library(doMC); registerDoMC(2)
 }
 \examples{
 #read.psl(pslFile="processed.*.psl$")

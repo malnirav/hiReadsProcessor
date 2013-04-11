@@ -54,14 +54,22 @@
   vector sequence to subjects, then please use BLAT.
 }
 \note{
-  Beware, this function only searches for the pattern
-  sequence in one orientation. If you are expecting to find
-  the pattern in both orientation, you might be better off
-  using BLAST!
+  \itemize{ \item For qualityThreshold, the alignment score
+  is calculated by (matches*2)-(mismatches+gaps) which
+  programatically translates to
+  round(nchar(patternSeq)*qualityThreshold)*2.  \item No
+  indels are allowed in the function, if expecting indels
+  then use \code{\link{pairwiseAlignSeqs}}.  \item If
+  qualityThreshold is 1, then it is a full match, if 0,
+  then any match is accepted which is useful in searching
+  linker sequences at 3' end. Beware, this function only
+  searches for the pattern sequence in one orientation. If
+  you are expecting to find the pattern in both
+  orientation, you might be better off using BLAST/BLAT! }
 }
 \examples{
-#vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#vpairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
+#vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
+#vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
 }
 \seealso{
   \code{\link{pairwiseAlignSeqs}},

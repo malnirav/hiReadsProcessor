@@ -42,7 +42,7 @@
   \code{\link{findBarcodes}}
 }
 \examples{
-#splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"),dnaSet,showStats=TRUE,returnUnmatched=TRUE)
+#splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
 }
 \seealso{
   \code{\link{decodeByBarcode}},

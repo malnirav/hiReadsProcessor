@@ -44,19 +44,20 @@
   \code{\link{pairwiseAlignment}}}
 }
 \value{
-  A CompressedIRangesList of length two, where x[["hits"]]
-  is hits covering the entire patternSeq, and
-  x[["primerIDs"]] is the potential primerID region. If
-  returnUnmatched = T, then x[["Absent"]] is appended which
-  includes reads not matching the first part of patternSeq.
-  If returnRejected=TRUE, then x[["Rejected"]] includes
-  reads that only matched one part of patternSeq or places
-  where no primerID was found in between two part of
-  patternSeq, and x[["RejectedprimerIDs"]] includes
-  primerIDs that didn't match the correct length. If
-  doAnchored=TRUE, then x[["unAnchoredprimerIDs"]] includes
-  reads that didn't match the base before and after primer
-  ID on patternSeq.
+  \itemize{ \item A CompressedIRangesList of length two,
+  where x[["hits"]] is hits covering the entire patternSeq,
+  and x[["primerIDs"]] is the potential primerID region.
+  \item If returnUnmatched = T, then x[["Absent"]] is
+  appended which includes reads not matching the first part
+  of patternSeq.  \item If returnRejected=TRUE, then
+  x[["Rejected"]] includes reads that only matched one part
+  of patternSeq or places where no primerID was found in
+  between two part of patternSeq, and
+  x[["RejectedprimerIDs"]] includes primerIDs that didn't
+  match the correct length.  \item If doAnchored=TRUE, then
+  x[["unAnchoredprimerIDs"]] includes reads that didn't
+  match the base before and after primer ID on patternSeq.
+  }
 }
 \description{
   Align a fixed length short pattern sequence containing
@@ -76,21 +77,23 @@
   length of primerID(s) wont the same as you expected!
 }
 \note{
-  For qualityThreshold1 & qualityThreshold2, the alignment
-  score is calculated by (matches*2)-(mismatches+gaps)
-  which programatically translates to
-  round(nchar(patternSeq)*qualityThreshold)*2. Gaps and
-  mismatches are weighed equally with value of -1. If
-  qualityThreshold is 1, then its is a full match, if 0,
-  then any match is accepted which is useful in searching
-  linkers at 3' end. Beware, this function only searches
-  for the pattern sequence in one orientation. If you are
-  expecting to find the pattern in both orientation, you
-  might be better off using BLAST!
+  \itemize{ \item For qualityThreshold1 &
+  qualityThreshold2, the alignment score is calculated by
+  (matches*2)-(mismatches+gaps) which programatically
+  translates to round(nchar(patternSeq)*qualityThreshold)*2
+  \item Gaps and mismatches are weighed equally with value
+  of -1 which can be overriden by defining extra parameters
+  'gapOpening' & 'gapExtension'.  \item If qualityThreshold
+  is 1, then it is a full match, if 0, then any match is
+  accepted which is useful in searching linker sequences at
+  3' end. Beware, this function only searches for the
+  pattern sequence in one orientation. If you are expecting
+  to find the pattern in both orientation, you might be
+  better off using BLAST/BLAT! }
 }
 \examples{
-#primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#primerIDAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold1=0.5)
+#primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
+#primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold1=0.5)
 }
 \seealso{
   \code{\link{vpairwiseAlignSeqs}},

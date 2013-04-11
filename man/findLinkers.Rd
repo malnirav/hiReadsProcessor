@@ -59,8 +59,7 @@
   paralle backend registered before running the function.
   One can use any of the following libraries compatible
   with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI.
-  For example: library(doSMP); w <- startWorkers(2);
-  registerDoSMP(w)
+  For example: library(doMC); registerDoMC(2)
 }
 \examples{
 #findLinkers(sampleInfo,showStats=TRUE)

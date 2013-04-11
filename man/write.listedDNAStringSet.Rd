@@ -4,7 +4,7 @@
 \usage{
   write.listedDNAStringSet(dnaSet, filePath = ".",
     filePrefix = "processed", prependSamplenames = TRUE,
-    format = "fasta", parallel = TRUE)
+    format = "fasta", parallel = FALSE)
 }
 \arguments{
   \item{dnaSet}{listed DNAStringSet object containing
@@ -41,8 +41,7 @@
   registered before running the function. One can use any
   of the following libraries compatible with
   \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doSMP); w <- startWorkers(2);
-  registerDoSMP(w)
+  example: library(doMC); registerDoMC(2)
 }
 \examples{
 #write.listedDNAStringSet(dnaSet)

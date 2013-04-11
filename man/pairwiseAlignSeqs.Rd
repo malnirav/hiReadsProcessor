@@ -47,13 +47,13 @@
   \code{\link{pairwiseAlignment}}}
 }
 \value{
-  IRanges object with starts, stops, and names of the
-  aligned sequences. If returnLowScored or returnUnmatched
-  = T, then a CompressedIRangesList where x[["hits"]] has
-  the good scoring hits, x[["Rejected"]] has the failed to
-  match qualityThreshold hits, and x[["Absent"]] has the
-  hits where the aligned bit is <=10\% match to the
-  patternSeq.
+  \itemize{ \item IRanges object with starts, stops, and
+  names of the aligned sequences.  \item If returnLowScored
+  or returnUnmatched = T, then a CompressedIRangesList
+  where x[["hits"]] has the good scoring hits,
+  x[["Rejected"]] has the failed to match qualityThreshold
+  hits, and x[["Absent"]] has the hits where the aligned
+  bit is <=10\% match to the patternSeq. }
 }
 \description{
   Align a fixed length short pattern sequence (i.e. primers
@@ -68,21 +68,23 @@
   please use BLAT.
 }
 \note{
-  For qualityThreshold, the alignment score is calculated
-  by (matches*2)-(mismatches+gaps) which programatically
-  translates to
-  round(nchar(patternSeq)*qualityThreshold)*2. Gaps and
-  mismatches are weighed equally with value of -1. If
-  qualityThreshold is 1, then its is a full match, if 0,
-  then any match is accepted which is useful in searching
-  linker sequences at 3' end. Beware, this function only
-  searches for the pattern sequence in one orientation. If
-  you are expecting to find the pattern in both
-  orientation, you might be better off using BLAST!
+  \itemize{ \item For qualityThreshold, the alignment score
+  is calculated by (matches*2)-(mismatches+gaps) which
+  programatically translates to
+  round(nchar(patternSeq)*qualityThreshold)*2.  \item Gaps
+  and mismatches are weighed equally with value of -1 which
+  can be overriden by defining extra parameters
+  'gapOpening' & 'gapExtension'.  \item If qualityThreshold
+  is 1, then it is a full match, if 0, then any match is
+  accepted which is useful in searching linker sequences at
+  3' end. Beware, this function only searches for the
+  pattern sequence in one orientation. If you are expecting
+  to find the pattern in both orientation, you might be
+  better off using BLAST/BLAT! }
 }
 \examples{
-#pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE)
-#pairwiseAlignSeqs(subjectSeqs,patternSeq,showStats=TRUE,qualityThreshold=0.5)
+#pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
+#pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
 }
 \seealso{
   \code{\link{primerIDAlignSeqs}},

@@ -54,8 +54,7 @@
   registered before running the function. One can use any
   of the following libraries compatible with
   \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doSMP); w <- startWorkers(2);
-  registerDoSMP(w)
+  example: library(doMC); registerDoMC(2)
 }
 \examples{
 #findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")

@@ -3,7 +3,7 @@
 \title{Read blast8 file(s) outputted by BLAT}
 \usage{
   read.blast8(files = NULL, asRangedData = FALSE,
-    removeFile = TRUE, parallel = FALSE)
+    asGRanges = FALSE, removeFile = TRUE, parallel = FALSE)
 }
 \arguments{
   \item{files}{blast8 filename, or vector of filenames, or
@@ -11,6 +11,9 @@
 
   \item{asRangedData}{return a RangedData object instead of
   a dataframe. Default is TRUE. Saves memory!}
+
+  \item{asGRanges}{return a GRanges object instead of a
+  dataframe. Default is FALSE}
 
   \item{removeFile}{remove the blast8 file(s) after
   importing. Default is FALSE.}
@@ -36,8 +39,7 @@
   registered before running the function. One can use any
   of the following libraries compatible with
   \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doSMP); w <- startWorkers(2);
-  registerDoSMP(w)
+  example: library(doMC); registerDoMC(2)
 }
 \examples{
 #read.blast8(files="processed.*.blast8$")
