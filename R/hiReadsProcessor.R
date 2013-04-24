@@ -1,4 +1,4 @@
-#' Functions for process LM-PCR reads with hiReadsProcessor.
+#' Functions to process LM-PCR reads with hiReadsProcessor.
 #'
 #' hiReadsProcessor contains set of functions which allow users to process single-end LM-PCR sequence data coming out of the 454/Solexa sequencer. Given an excel file containing parameters for demultiplexing and sample metadata, the functions automate trimming of adaptors and identification of the genomic product. In addition, if IntSites MySQL database is setup, the sequence attrition is loaded into respective tables for post processing setup and analysis.
 #'
@@ -3008,6 +3008,16 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
            Did you run getIntegrationSites() on it?")
     }
     
+    ## make sure column(s) for picking best hits are there! ##
+    isthere <- grepl("score", colnames(mcols(psl.rd)), ignore.case=TRUE)  	
+    if(!any(isthere)) {
+      message("No 'score' column found in the data. Using 'qEnd' as an alternative to pick the best hit!")
+      isthere <- grepl("qEnd", colnames(mcols(psl.rd)), ignore.case=TRUE)		
+      if(!any(isthere)) {
+        stop("No 'qEnd' column found in the data either...can't pick the cluster best hit without 'qEnd' or 'score' column present in the object supplied in psl.rd :(")
+      }            
+    }
+    
     good.row <- rep(TRUE, length(psl.rd))
     isthere <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)		
     if(any(isthere)) { ## see if multihit column exists
@@ -3047,27 +3057,20 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     cleanit <- gc()
     
     ## pick best scoring hit to represent a cluster ##
-    message("Picking best scoring hit to represent a cluster.")
-    isthere <- grepl("score", colnames(mcols(psl.rd)), ignore.case=TRUE)		
-    if(!any(isthere)) {
-      message("No 'score' column found in the data. Using 'qSize' as an alternative.")
-      isthere <- grepl("qSize", colnames(mcols(psl.rd)), ignore.case=TRUE)		
-      if(!any(isthere)) {
-        stop("No 'qSize' column found in the data either...can't pick the best hit :(")
-      }            
-    }
+    ## make sure to avoid multihit rows! ##
+    message("Picking best scoring hit to represent a cluster.")   
     groupingVals <- paste0(as.character(seqnames(psl.rd)), 
                            as.character(strand(psl.rd)), 
                            mcols(psl.rd)$clusteredPosition, grouping)
-    bestScore <- tapply(mcols(psl.rd)[[which(isthere)]], groupingVals, max)
-    isBest <- mcols(psl.rd)[[which(isthere)]]==bestScore[groupingVals]
+    bestScore <- tapply(mcols(psl.rd)[[which(isthere)]][good.row], groupingVals[good.row], max)
+    isBest <- mcols(psl.rd)[[which(isthere)]][good.row]==bestScore[groupingVals[good.row]]
     
     ## pick the first match for cases where >1 reads with the same coordinate had the same best scores ##
     tocheck <- which(isBest)
     res <- tapply(tocheck, names(tocheck), "[[", 1) 
     
     mcols(psl.rd)$clusterTopHit <- FALSE
-    mcols(psl.rd)$clusterTopHit[res] <- TRUE
+    mcols(psl.rd)$clusterTopHit[good.row][res] <- TRUE
     mcols(psl.rd)$clusterTopHit[!good.row] <- TRUE
     
     message("Cleaning up!")
@@ -3409,16 +3412,27 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #' @param maxgap max distance allowed between two non-overlapping position to trigger the merging. Default is 5.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
 #'
-#' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions.
-#'
-#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData/GRanges object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
+#' @note The algorithm for making OTUs of sites is as follows: 
+#' \itemize{
+#'  \item for each grouping & posID, fix values off by maxgap parameter
+#'  \item create bins of fixed values per readID
+#'  \item assign arbitrary numeric ID to each distinct bins above & obtain its frequency
+#'  \item perform overlap b/w readIDs with only one value (singletons) to readIDs with >1 value (non-singletons)
+#'  \item   - for any overlapping values, tag non-singleton readID with the ID of singleton readID
+#'  \item   - if non-singleton readID matched with more than one singleton readID, then pick on at random
+#'  \item for any non-tagged & non-singleton readIDs, perform an overlap of values within themselves using the maxgap parameter
+#'  \item   - tag any overlapping positions across any readID with the ID of most frequently occuring bin
+#'  \item positions with no overlap are left as is with the original arbitrary ID
+#' }
+#' 
+#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData/GRanges object.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
 #' @examples 
-#' #otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
+#' #otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(1000,1003,5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
 #' #otuSites2(psl.rd=test.psl.rd)
 #'
 otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL, 
@@ -3436,15 +3450,18 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
       psl.rd <- as(psl.rd, "GRanges")
     }
     
-    ## find the otuID by clusters ##
-    if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
-         !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
-      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. 
-          Did you run clusterSites() on it?")
+    ## find the otuID by Positions ##
+    isthere <- grepl("clusteredPosition", colnames(mcols(psl.rd)), ignore.case=TRUE)
+    if(!any(isthere)) {
+      message("No 'clusteredPosition' column found in the data. Using 'Position' as an alternative to use as values.")
+      isthere <- grepl("Position", colnames(mcols(psl.rd)), ignore.case=TRUE)  
+      if(!any(isthere)) {
+        stop("The object supplied in psl.rd parameter does not have 'clusteredPosition' or 'Position' column in it. Did you run getIntegrationSites() or clusterSites() on it?")
+      }
     }
-    
-    good.rows <- mcols(psl.rd)$clusterTopHit
-    value <- mcols(psl.rd)$clusteredPosition
+
+    good.rows <- TRUE
+    value <- mcols(psl.rd)[[which(isthere)]]
     posID <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
     if("qName" %in% colnames(mcols(psl.rd))) {
       readID <- mcols(psl.rd)$qName
@@ -3482,11 +3499,15 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   }
   
   groups <- if(is.null(grouping)) { "A" } else { grouping }
-  sites.clustered <- clusterSites(posID, value, groups, windowSize=maxgap)
+  
+  ## fix values off by maxgap parameter for sanity! ##
+  sites.clustered <- clusterSites(posID, value, groups, windowSize=maxgap, 
+                                  parallel=parallel)
+  
   sites <- data.frame(posID, value, readID,                      
                       grouping=groups, stringsAsFactors=FALSE)
   sites <- merge(sites, sites.clustered)
-  sites$posID2 <- with(sites, paste0(posID,value))
+  sites$posID2 <- with(sites, paste0(posID,clusteredValue))
   rm("groups","sites.clustered")
   
   ## get unique positions per readID by grouping 
@@ -3504,15 +3525,18 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                  by=c("grouping","readID"), all.x=TRUE)
   sites$posID2 <- NULL
   rm(reads)
-  sites <- arrange(sites, grouping, posID, value)
+  sites <- arrange(sites, grouping, posID, clusteredValue)
   sites$readID <- as.character(sites$readID)
   sites$grouping <- as.character(sites$grouping)
   
-  sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=value,width=1), 
+  sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=clusteredValue,
+                                                          width=1), 
                                   strand="*", readID, grouping, counts, 
-                                  otuID, newotuID=otuID, check=TRUE))
+                                  otuID, newotuID=otuID))
   mcols(sites.gr)$grouping <- as.character(mcols(sites.gr)$grouping)
   mcols(sites.gr)$readID <- as.character(mcols(sites.gr)$readID)
+  mcols(sites.gr)$check <- TRUE
+  sites.gr <- sort(sites.gr)
   
   ## see if readID with a unique/single location matches up to a readID with >1 location, if yes then merge
   mcols(sites.gr)$singles <- mcols(sites.gr)$counts==1
@@ -3523,22 +3547,54 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                         .packages="GenomicRanges", .combine=c) %dopar% {
                           sigs <- subset(x, mcols(x)$singles)
                           nonsigs <- subset(x, !mcols(x)$singles)
-                          res <- findOverlaps(nonsigs, sigs, maxgap=maxgap)
-                          if(length(res)>0) {
-                            res <- as.data.frame(res)
+                          res <- findOverlaps(nonsigs, sigs, maxgap=maxgap, 
+                                              select="first")
+                          rows <- !is.na(res)
+                          if(any(rows)) {
+                            res <- data.frame(queryHits=which(rows), 
+                                              subjectHits=res[rows])
                             res$sigsOTU <- mcols(sigs)$otuID[res$subjectHits]
+                            
                             res$sigsReadID <- mcols(sigs)$readID[res$subjectHits]
                             res$nonsigsReadID <- mcols(nonsigs)$readID[res$queryHits]
+
+                            res$sigPosID <- paste0(as.character(seqnames(sigs)),
+                                                       start(sigs))[res$subjectHits]
+                            res$nonsigPosID <- paste0(as.character(seqnames(nonsigs)),
+                                                     start(nonsigs))[res$queryHits]
                             
-                            ## there will be some duplicates in table(names(s.to.q))
-                            ## but that's fine since we only care about one of them 
-                            ## which nonsigsReadID is getting merged with! ##                          
-                            s.to.q <- with(res, structure(sigsOTU, names=nonsigsReadID))
+                            ## if >1 OTU found per nonsigsReadID...choose lowest ID ## 
+                            bore <- with(res, split(sigsOTU, nonsigsReadID))
+                            bore <- sapply(sapply(sapply(bore, unique, simplify=FALSE), 
+                                                  sort, simplify=FALSE), 
+                                           "[[", 1)
+                            res$OTU <- bore[res$nonsigsReadID]                                                        
                             
-                            rows <- mcols(nonsigs)$readID %in% res$nonsigsReadID
-                            mcols(nonsigs)[rows,"newotuID"] <- s.to.q[mcols(nonsigs)[rows,"readID"]]
-                            mcols(nonsigs)[mcols(nonsigs)$readID %in% res$nonsigsReadID,"check"] <- FALSE
-                            mcols(sigs)[mcols(sigs)$readID %in% res$sigsReadID,"check"] <- FALSE
+                            ## if >1 OTU found per nonsigPosID...choose lowest ID ##                          
+                            res$OTU2 <- res$OTU
+                            counts <- ddply(res, .(nonsigPosID), summarize,                                             
+                                            freq=length(unique(OTU2)))
+                            totest <- subset(counts, freq>1)$nonsigPosID
+                            while(length(totest)>0) { 
+                              #print(length(totest))
+                              for(i in totest) {
+                                rows <- res$nonsigPosID == i
+                                rows <- res$nonsigsReadID %in% res$nonsigsReadID[rows]
+                                rows <- rows | res$nonsigPosID %in% res$nonsigPosID[rows]
+                                res$OTU2[rows] <- min(res[rows,"OTU"])
+                              }
+                              counts <- ddply(res, .(nonsigPosID), summarize,                                             
+                                              freq=length(unique(OTU2)))
+                              totest <- subset(counts, freq>1)$nonsigPosID
+                            }
+
+                            bore <- sapply(with(res, split(OTU2, nonsigsReadID)),
+                                           unique)
+                            stopifnot(is.numeric(bore)) ## safety check incase >1 OTU found per readID
+                            rows <- mcols(nonsigs)$readID %in% names(bore)
+                            mcols(nonsigs)[rows,"newotuID"] <- bore[mcols(nonsigs)[rows,"readID"]]
+                            mcols(nonsigs)[rows,"check"] <- FALSE
+                            mcols(sigs)[mcols(sigs)$readID %in% res$sigsReadID, "check"] <- FALSE
                           }
                           c(sigs,nonsigs)
                         }
@@ -3546,48 +3602,73 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   }
   mcols(sites.gr)$singles <- NULL
   
-  ## see if readIDs with >1 locations overlap with other readIDs of the same type ##
-  ## this is useful when no readIDs were found with a unique or single locations ##
+  ## perform non-singletons overlap of values within maxgap ##
   ## merge OTUs with overlapping positions within same grouping ##
-  message('Merging non-singletons...')
+  message('Performing non-singletons overlap...')
   goods <- subset(sites.gr, !mcols(sites.gr)$check)
   sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
   sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
   sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
                       .packages="GenomicRanges", .combine=c) %dopar% {		    
-                        mcols(x)$readID <- as.character(mcols(x)$readID)
                         res <- findOverlaps(x, maxgap=maxgap, ignoreSelf=TRUE,
-                                            ignoreRedundant=FALSE, select="all")
-                        if(length(res)>0) {
-                          res <- as.data.frame(res)
+                                            ignoreRedundant=FALSE, select="first")
+                        rows <- !is.na(res)
+                        if(any(rows)) {
+                          res <- data.frame(queryHits=which(rows), 
+                                            subjectHits=res[rows])
                           res$queryOTU <- mcols(x)$otuID[res$queryHits]
                           res$subjectOTU <- mcols(x)$otuID[res$subjectHits]
-
+                          res$subjectReadID <- mcols(x)$readID[res$subjectHits]
                           res$subjectPosID <- paste0(as.character(seqnames(x)),
                                                      start(x))[res$subjectHits]
                           res$queryPosID <- paste0(as.character(seqnames(x)),
-                                                     start(x))[res$queryHits]
-                          ## since there many positions can potentially share >1 OTU
-                          ## pick the one with the lowest ID to repesent the entire
-                          ## cluster of positions ##
-                          bore <- with(unique(res[,c("queryOTU", "subjectPosID")]), 
-                                       split(queryOTU, subjectPosID))                          
-                          bore <- sapply(sapply(sapply(bore, unique), sort), "[[", 1)                          
-                          res$OTU <- bore[res$subjectPosID]
-
-                          s.to.q <- c(with(unique(res[,c("OTU", "subjectOTU")]), 
-                                           split(OTU, subjectOTU)),
-                                      with(unique(res[,c("OTU", "queryOTU")]), 
-                                           split(OTU, queryOTU)))
-                          stopifnot(all(table(sapply(s.to.q,length)==1)))
-                          s.to.q <- unlist(s.to.q)
-                          rows <- mcols(x)$otuID %in% as.numeric(names(s.to.q))
-                          mcols(x)[rows,"newotuID"] <- s.to.q[as.character(mcols(x)[rows,"otuID"])]
-                          mcols(x)[mcols(x)$otuID %in% as.numeric(names(s.to.q)), "check"] <- FALSE
+                                                   start(x))[res$queryHits]
+                          
+                          ## if >1 OTU found per subjectReadID...choose lowest ID ## 
+                          bore <- with(res, split(queryOTU, subjectReadID))
+                          bore <- sapply(sapply(sapply(bore, unique, simplify=FALSE), 
+                                                sort, simplify=FALSE), 
+                                         "[[", 1)
+                          res$OTU <- bore[as.character(res$subjectReadID)]                                                    
+                          
+                          ## if >1 OTU found per subjectPosID...choose lowest ID ##                          
+                          res$OTU2 <- res$OTU
+                          counts <- ddply(res, .(subjectPosID), summarize,                                             
+                                          freq=length(unique(OTU2)))
+                          totest <- subset(counts, freq>1)$subjectPosID
+                          while(length(totest)>0) {
+                            #print(length(totest))
+                            for(i in totest) {
+                              rows <- res$subjectPosID == i 
+                              rows <- rows | res$subjectReadID %in% res$subjectReadID[rows]                               
+                              rows <- rows | res$subjectOTU %in% res$subjectOTU[rows]
+                              rows <- rows | res$subjectPosID %in% res$subjectPosID[rows]
+                              rows <- rows | res$queryOTU %in% res$subjectOTU[rows]
+                              
+                              res$OTU2[rows] <- min(res[rows,"OTU2"])
+                            }                            
+                            counts <- ddply(res, .(subjectPosID), summarize,                                             
+                                            freq=length(unique(OTU2)))
+                            totest <- subset(counts, freq>1)$subjectPosID
+                          }
+                          
+                          bore <- sapply(with(res, split(OTU2, subjectHits)),
+                                         unique)
+                          stopifnot(is.numeric(bore)) ## safety check incase >1 OTU found per subjectHits
+                          rows <- as.numeric(names(bore))
+                          mcols(x)[rows,"newotuID"] <- as.numeric(bore)
+                          mcols(x)[rows, "check"] <- FALSE
+                          
+                          bore <- sapply(with(res, split(OTU2, subjectReadID)),
+                                         unique)
+                          stopifnot(is.numeric(bore)) ## safety check incase >1 OTU found per readID
+                          rows <- mcols(x)$readID %in% names(bore)
+                          mcols(x)[rows,"newotuID"] <- bore[mcols(x)[rows,"readID"]]
+                          mcols(x)[rows,"check"] <- FALSE
                         }
                         x
                       }
-  sites.gr <- c(sites.gr,goods)
+  sites.gr <- c(sites.gr, goods)
   rm("sites.gr.list","goods")
   cleanit <- gc()
   
@@ -3641,196 +3722,19 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #'
 isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL, 
                       psl.rd=NULL, maxgap=5, parallel=TRUE) {
-  if(!parallel) { registerDoSEQ() }
-  if(is.null(psl.rd)) {
-    stopifnot(!is.null(posID))
-    stopifnot(!is.null(value))
-    stopifnot(!is.null(readID))
+  
+  res <- otuSites2(posID=posID, value=value, readID=readID, grouping=grouping, 
+                   psl.rd=psl.rd, maxgap=maxgap, parallel=parallel)
+  
+  if(is(res,"GRanges")) {
+    cols <- grep('otu',colnames(mcols(res)))
+    colnames(mcols(res))[cols] <- gsub("otu","isu",colnames(mcols(res))[cols])
   } else {
-    
-    isRangedData <- FALSE
-    if(is(psl.rd, "RangedData")) {
-      isRangedData <- TRUE
-      psl.rd <- as(psl.rd, "GRanges")
-    }
-    
-    ## find the isuID by clusters ##
-    if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
-         !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
-      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
-    }
-    
-    good.rows <- mcols(psl.rd)$clusterTopHit
-    value <- mcols(psl.rd)$clusteredPosition
-    posID <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
-    if("qName" %in% colnames(mcols(psl.rd))) {
-      readID <- mcols(psl.rd)$qName
-    } else if ("Sequence" %in% colnames(mcols(psl.rd))) {
-      readID <- mcols(psl.rd)$Sequence
-    } else {
-      stop("No readID type column found in psl.rd object.")
-    }
-    
-    grouping <- if(is.null(grouping)) { rep("A",length(psl.rd)) } else { grouping }
-    
-    isus <- isuSites(posID=posID[good.rows], 
-                     value=value[good.rows], 
-                     readID=readID[good.rows], 
-                     grouping=grouping[good.rows], 
-                     parallel=parallel)
-    
-    message("Adding isuIDs back to psl.rd.")        
-    isuIDs <- with(isus,
-                   split(isuID,
-                         paste0(posID,value,readID,grouping)))
-    mcols(psl.rd)$isuID <- NA
-    mcols(psl.rd)$isuID[good.rows] <- as.numeric(isuIDs[paste0(posID, value, readID, 
-                                                               grouping)[good.rows]])
-    
-    message("Cleaning up!")
-    rm("isus","isuIDs","value","posID","readID","grouping","good.rows")
-    cleanit <- gc()
-    
-    if(isRangedData) {
-      psl.rd <- as(psl.rd, "RangedData")
-    }
-    
-    return(psl.rd)
-    }
-  
-  ## cluster sites within maxgap to streamline 1bp off sites merging later
-  groups <- if(is.null(grouping)) { "A" } else { grouping }
-  sites.clustered <- clusterSites(posID, value, groups, windowSize=maxgap)
-  sites <- data.frame(posID, value, readID,                      
-                      grouping=groups, stringsAsFactors=FALSE)
-  sites <- merge(sites, sites.clustered)
-  sites$posID2 <- with(sites, paste0(posID,value))
-  rm("groups","sites.clustered")
-  
-  ## get unique positions per readID by grouping 
-  reads <- ddply(sites, .(grouping,readID), summarise, 
-                 posIDs=paste(unique(posID2),collapse=","), 
-                 counts=length(unique(posID2)), .parallel=parallel)
-  
-  # create initial isuID by assigning a numeric ID to each collection of posIDs per grouping
-  reads$isuID <- unlist(
-    lapply(lapply(with(reads,split(posIDs,grouping)), as.factor), as.numeric)
-  ) 
-  sites <- merge(arrange(sites,grouping,readID), 
-                 arrange(reads[,c("grouping","readID","counts","isuID")],
-                         grouping,readID), 
-                 by=c("grouping","readID"), all.x=TRUE)
-  sites$posID2 <- NULL
-  rm(reads)
-  sites <- arrange(sites, grouping, posID, value)
-  sites$readID <- as.character(sites$readID)
-  sites$grouping <- as.character(sites$grouping)
-  
-  sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=value,width=1), 
-                                  strand="*", readID, grouping, counts, 
-                                  isuID, newisuID=isuID, check=TRUE))
-  mcols(sites.gr)$grouping <- as.character(mcols(sites.gr)$grouping)
-  mcols(sites.gr)$readID <- as.character(mcols(sites.gr)$readID)
-  
-  ## see if readID with a unique/single location matches up to a readID with >1 location, if yes then merge
-  mcols(sites.gr)$singles <- mcols(sites.gr)$counts==1
-  if(any(mcols(sites.gr)$singles)) {
-    message('Merging non-singletons with singletons if any...')    
-    sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
-    sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                        .packages="GenomicRanges", .combine=c) %dopar% {
-                          sigs <- subset(x, mcols(x)$singles)
-                          nonsigs <- subset(x, !mcols(x)$singles)
-                          res <- findOverlaps(nonsigs, sigs, maxgap=maxgap)
-                          if(length(res)>0) {
-                            res <- as.data.frame(res)
-                            res$sigsisu <- mcols(sigs)$isuID[res$subjectHits]
-                            res$sigsReadID <- mcols(sigs)$readID[res$subjectHits]
-                            res$nonsigsReadID <- mcols(nonsigs)$readID[res$queryHits]
-                                                        
-                            ## there will be some duplicates in table(names(s.to.q))
-                            ## but that's fine since we only care about one of them 
-                            ## which nonsigsReadID is getting merged with! ##
-                            s.to.q <- with(res, structure(sigsisu,names=nonsigsReadID))                                                        
-                            
-                            rows <- mcols(nonsigs)$readID %in% res$nonsigsReadID
-                            mcols(nonsigs)[rows,"newisuID"] <- s.to.q[mcols(nonsigs)[rows,"readID"]]
-                            mcols(nonsigs)[mcols(nonsigs)$readID %in% res$nonsigsReadID,"check"] <- FALSE
-                            mcols(sigs)[mcols(sigs)$readID %in% res$sigsReadID,"check"] <- FALSE
-                          }
-                          c(sigs,nonsigs)
-                        }
-    rm(sites.gr.list)
+    cols <- grep('otu',colnames(res))
+    colnames(res)[cols] <- gsub("otu","isu",colnames(res)[cols])
   }
-  mcols(sites.gr)$singles <- NULL
   
-  ## see if readIDs with >1 locations overlap with other readIDs of the same type ##
-  ## this is useful when no readIDs were found with a unique or single locations ##
-  ## merge isus with overlapping positions within same grouping ##
-  message('Merging non-singletons...')
-  goods <- subset(sites.gr, !mcols(sites.gr)$check)
-  sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
-  sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
-  sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                      .packages="GenomicRanges", .combine=c) %dopar% {  	    
-                        mcols(x)$readID <- as.character(mcols(x)$readID)
-                        res <- findOverlaps(x, maxgap=maxgap, ignoreSelf=TRUE,
-                                            ignoreRedundant=FALSE, select="all")
-                        if(length(res)>0) {
-                          res <- as.data.frame(res)
-                          res$queryISU <- mcols(x)$isuID[res$queryHits]
-                          res$subjectISU <- mcols(x)$isuID[res$subjectHits]
-                          
-                          res$subjectPosID <- paste0(as.character(seqnames(x)),
-                                                     start(x))[res$subjectHits]
-                          res$queryPosID <- paste0(as.character(seqnames(x)),
-                                                   start(x))[res$queryHits]
-                          ## since there many positions can potentially share >1 ISU
-                          ## pick the one with the lowest ID to repesent the entire
-                          ## cluster of positions ##
-                          bore <- with(unique(res[,c("queryISU", "subjectPosID")]), 
-                                       split(queryISU, subjectPosID))                          
-                          bore <- sapply(sapply(sapply(bore, unique), sort), "[[", 1)                          
-                          res$ISU <- bore[res$subjectPosID]
-                          
-                          s.to.q <- c(with(unique(res[,c("ISU", "subjectISU")]), 
-                                           split(ISU, subjectISU)),
-                                      with(unique(res[,c("ISU", "queryISU")]), 
-                                           split(ISU, queryISU)))
-                          stopifnot(all(table(sapply(s.to.q,length)==1)))
-                          s.to.q <- unlist(s.to.q)
-                          rows <- mcols(x)$isuID %in% as.numeric(names(s.to.q))
-                          mcols(x)[rows,"newisuID"] <- s.to.q[as.character(mcols(x)[rows,"isuID"])]
-                          mcols(x)[mcols(x)$isuID %in% as.numeric(names(s.to.q)), "check"] <- FALSE
-                        }
-                        x
-                      }
-  sites.gr <- c(sites.gr,goods)
-  rm("sites.gr.list","goods")
-  cleanit <- gc()
-  
-  ## trickle the isu ids back to sites frame ##    
-  ots.ids <- sapply(split(mcols(sites.gr)$newisuID,
-                          paste0(mcols(sites.gr)$readID, 
-                                 mcols(sites.gr)$grouping)),
-                    unique)
-  
-  if(!is.numeric(ots.ids) | any(sapply(ots.ids, length)>1)) {
-    stop("Something went wrong merging non-singletons. Multiple isus assigned to one readID most likely!")
-  }
-  sites$isuID <- as.numeric(unlist(ots.ids[with(sites,
-                                                paste0(readID,grouping))],
-                                   use.names=F))
-  
-  stopifnot(any(!is.na(sites$isuID)))
-  cleanit <- gc()
-  
-  if(is.null(grouping)) { sites$grouping <- NULL }
-  
-  sites$clusteredValue <- NULL; sites$clusteredValue.freq <- NULL
-  sites$freq <- NULL; sites$counts <- NULL
-  
-  return(sites)
+  res
 }
 
 #' Remove values/positions which are overlapping between discrete groups based on their frequency.
