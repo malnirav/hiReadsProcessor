@@ -58,7 +58,7 @@
   adds the results back to the object. This is an
   all-in-one function which BLATs, parses PSL files, finds
   best hit per read per sample, cluster sites, and assign
-  OTU IDs. It calls \code{\link{blatSeqs}},
+  ISU IDs. It calls \code{\link{blatSeqs}},
   \code{\link{read.psl}},
   \code{\link{getIntegrationSites}},
   \code{\link{clusterSites}}, \code{\link{otuSites}}. There

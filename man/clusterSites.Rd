@@ -25,8 +25,8 @@
   calculating frequency of value by posID and grouping if
   specified. Default is NULL.}
 
-  \item{windowSize}{size of window for which values should
-  be corrected/clustered. Default is 5.}
+  \item{windowSize}{size of window within which values
+  should be corrected/clustered. Default is 5.}
 
   \item{byQuartile}{flag denoting whether quartile based
   technique should be employed. See notes for details.
