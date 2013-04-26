@@ -3019,11 +3019,11 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     }
     
     good.row <- rep(TRUE, length(psl.rd))
-    isthere <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)		
-    if(any(isthere)) { ## see if multihit column exists
+    multi.there <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)		
+    if(any(multi.there)) { ## see if multihit column exists
       message("Found 'isMultiHit' column in the data. 
               These rows will be ignored for the calculation.")
-      good.row <- good.row & !mcols(psl.rd)[[which(isthere)]]
+      good.row <- good.row & !mcols(psl.rd)[[which(multi.there)]]
     }
     
     posIDs <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
