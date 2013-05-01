@@ -3166,7 +3166,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     
     sites <- split(sites, sites$grouping)
     
-    sites <- foreach(x=iter(sites), .inorder=FALSE, .packages="GenomicRanges", 
+    sites <- foreach(x=iter(sites), .inorder=FALSE, .packages=c("GenomicRanges","plyr"), 
                      .combine=rbind) %dopar% {
       
       ## find overlapping positions using findOverlaps() using maxgap adjusted by windowSize! ##
@@ -3544,7 +3544,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
     message('Merging non-singletons with singletons if any...')    
     sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
     sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                        .packages="GenomicRanges", .combine=c) %dopar% {
+                        .packages=c("GenomicRanges","plyr"), .combine=c) %dopar% {
                           sigs <- subset(x, mcols(x)$singles)
                           nonsigs <- subset(x, !mcols(x)$singles)
                           res <- findOverlaps(nonsigs, sigs, maxgap=maxgap, 
@@ -3609,7 +3609,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
   sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
   sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                      .packages="GenomicRanges", .combine=c) %dopar% {		    
+                      .packages=c("GenomicRanges","plyr"), .combine=c) %dopar% {		    
                         res <- findOverlaps(x, maxgap=maxgap, ignoreSelf=TRUE,
                                             ignoreRedundant=FALSE, select="first")
                         rows <- !is.na(res)
@@ -3980,7 +3980,7 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
                                 "clustersiteswithin", "keepmultihits",
                                 "getIntegrationSites", "clusterSites", 
                                 "isuSites"),
-                      .packages="GenomicRanges") %dopar% {
+                      .packages=c("GenomicRanges","plyr")) %dopar% {
     message("Processing ",x)
     
     # add qc info for bestscoring hits #
