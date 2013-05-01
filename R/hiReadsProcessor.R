@@ -3166,7 +3166,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     
     sites <- split(sites, sites$grouping)
     
-    sites <- foreach(x=iter(sites), .inorder=FALSE, .packages="IRanges", 
+    sites <- foreach(x=iter(sites), .inorder=FALSE, .packages="GenomicRanges", 
                      .combine=rbind) %dopar% {
       
       ## find overlapping positions using findOverlaps() using maxgap adjusted by windowSize! ##
@@ -3977,7 +3977,10 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
   psl.hits <- foreach(x=iter(names(psl)), .inorder=TRUE,
                       .export=c("psl", "sampleInfo", "startwithin", 
                                 "alignratiothreshold", "genomicpercentidentity", 
-                                "clustersiteswithin", "keepmultihits")) %dopar% {
+                                "clustersiteswithin", "keepmultihits",
+                                "getIntegrationSites", "clusterSites", 
+                                "isuSites"),
+                      .packages="GenomicRanges") %dopar% {
     message("Processing ",x)
     
     # add qc info for bestscoring hits #
