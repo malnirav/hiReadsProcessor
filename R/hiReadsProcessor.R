@@ -3318,9 +3318,15 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
   rm(groups)
   
   ## get unique posIDs per readID by grouping 
-  reads <- ddply(sites, .(grouping,readID), summarise,
-                 posIDs=paste(sort(unique(posID)),collapse=","), 
-                 counts=length(unique(posID)), .parallel=parallel)
+  # use tapply instead of ddply() or by() because it's a lot faster on larger datasets #
+  counts <- with(sites, tapply(posID, paste0(grouping,readID), 
+                               function(x) {
+                                 uniques <- sort(unique(x))
+                                 list(paste(uniques,collapse=","), length(uniques))
+                               }))
+  reads <- unique(sites[,c("grouping","readID")])
+  reads$posIDs <- sapply(counts[with(reads,paste0(grouping,readID))],"[[", 1)
+  reads$counts <- sapply(counts[with(reads,paste0(grouping,readID))],"[[", 2)
   reads <- arrange(reads, grouping, posIDs)
   
   # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
@@ -3511,9 +3517,15 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   rm("groups","sites.clustered")
   
   ## get unique positions per readID by grouping 
-  reads <- ddply(sites, .(grouping,readID), summarise, 
-                 posIDs=paste(unique(posID2),collapse=","), 
-                 counts=length(unique(posID2)), .parallel=parallel)
+  # use tapply instead of ddply() or by() because it's a lot faster on larger datasets #
+  counts <- with(sites, tapply(posID2, paste0(grouping,readID), 
+                               function(x) {
+                                 uniques <- sort(unique(x))
+                                 list(paste(uniques,collapse=","), length(uniques))
+                               }))
+  reads <- unique(sites[,c("grouping","readID")])
+  reads$posIDs <- sapply(counts[with(reads,paste0(grouping,readID))],"[[", 1)
+  reads$counts <- sapply(counts[with(reads,paste0(grouping,readID))],"[[", 2)
   
   # create initial otuID by assigning a numeric ID to each collection of posIDs per grouping
   reads$otuID <- unlist(
@@ -3537,6 +3549,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   mcols(sites.gr)$readID <- as.character(mcols(sites.gr)$readID)
   mcols(sites.gr)$check <- TRUE
   sites.gr <- sort(sites.gr)
+  cleanit <- gc()
   
   ## see if readID with a unique/single location matches up to a readID with >1 location, if yes then merge
   mcols(sites.gr)$singles <- mcols(sites.gr)$counts==1
@@ -3544,7 +3557,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
     message('Merging non-singletons with singletons if any...')    
     sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
     sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                        .packages=c("GenomicRanges","plyr"), .combine=c) %dopar% {
+                        .packages="GenomicRanges", .combine=c) %dopar% {
                           sigs <- subset(x, mcols(x)$singles)
                           nonsigs <- subset(x, !mcols(x)$singles)
                           res <- findOverlaps(nonsigs, sigs, maxgap=maxgap, 
@@ -3572,9 +3585,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                             
                             ## if >1 OTU found per nonsigPosID...choose lowest ID ##                          
                             res$OTU2 <- res$OTU
-                            counts <- ddply(res, .(nonsigPosID), summarize,                                             
-                                            freq=length(unique(OTU2)))
-                            totest <- subset(counts, freq>1)$nonsigPosID
+                            counts <- with(res, tapply(OTU2, nonsigPosID, 
+                                                       function(x) length(unique(x))))                              
+                            totest <- names(which(counts>1))
                             while(length(totest)>0) { 
                               #print(length(totest))
                               for(i in totest) {
@@ -3583,9 +3596,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                                 rows <- rows | res$nonsigPosID %in% res$nonsigPosID[rows]
                                 res$OTU2[rows] <- min(res[rows,"OTU"])
                               }
-                              counts <- ddply(res, .(nonsigPosID), summarize,                                             
-                                              freq=length(unique(OTU2)))
-                              totest <- subset(counts, freq>1)$nonsigPosID
+                              counts <- with(res, tapply(OTU2, nonsigPosID, 
+                                                         function(x) length(unique(x))))                              
+                              totest <- names(which(counts>1))
                             }
 
                             bore <- sapply(with(res, split(OTU2, nonsigsReadID)),
@@ -3609,7 +3622,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
   sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
   sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                      .packages=c("GenomicRanges","plyr"), .combine=c) %dopar% {		    
+                      .packages="GenomicRanges", .combine=c) %dopar% {		    
                         res <- findOverlaps(x, maxgap=maxgap, ignoreSelf=TRUE,
                                             ignoreRedundant=FALSE, select="first")
                         rows <- !is.na(res)
@@ -3632,10 +3645,11 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                           res$OTU <- bore[as.character(res$subjectReadID)]                                                    
                           
                           ## if >1 OTU found per subjectPosID...choose lowest ID ##                          
-                          res$OTU2 <- res$OTU
-                          counts <- ddply(res, .(subjectPosID), summarize,                                             
-                                          freq=length(unique(OTU2)))
-                          totest <- subset(counts, freq>1)$subjectPosID
+                          res$OTU2 <- res$OTU                        
+                          counts <- with(res, tapply(OTU2, subjectPosID, 
+                                                     function(x) length(unique(x))))                          
+                          totest <- names(which(counts>1))
+                          
                           while(length(totest)>0) {
                             #print(length(totest))
                             for(i in totest) {
@@ -3647,9 +3661,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                               
                               res$OTU2[rows] <- min(res[rows,"OTU2"])
                             }                            
-                            counts <- ddply(res, .(subjectPosID), summarize,                                             
-                                            freq=length(unique(OTU2)))
-                            totest <- subset(counts, freq>1)$subjectPosID
+                            counts <- with(res, tapply(OTU2, subjectPosID, 
+                                                       function(x) length(unique(x))))                          
+                            totest <- names(which(counts>1))
                           }
                           
                           bore <- sapply(with(res, split(OTU2, subjectHits)),
