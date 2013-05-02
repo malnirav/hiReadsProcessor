@@ -3603,7 +3603,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 
                             bore <- sapply(with(res, split(OTU2, nonsigsReadID)),
                                            unique)
-                            stopifnot(is.numeric(bore)) ## safety check incase >1 OTU found per readID
+                            if(!is.numeric(bore)) { ## safety check incase >1 OTU found per readID
+                              bore <- sapply(bore, min)
+                            }
                             rows <- mcols(nonsigs)$readID %in% names(bore)
                             mcols(nonsigs)[rows,"newotuID"] <- bore[mcols(nonsigs)[rows,"readID"]]
                             mcols(nonsigs)[rows,"check"] <- FALSE
@@ -3675,7 +3677,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                           
                           bore <- sapply(with(res, split(OTU2, subjectReadID)),
                                          unique)
-                          stopifnot(is.numeric(bore)) ## safety check incase >1 OTU found per readID
+                          if(!is.numeric(bore)) { ## safety check incase >1 OTU found per readID
+                            bore <- sapply(bore, min)
+                          }
                           rows <- mcols(x)$readID %in% names(bore)
                           mcols(x)[rows,"newotuID"] <- bore[mcols(x)[rows,"readID"]]
                           mcols(x)[rows,"check"] <- FALSE
