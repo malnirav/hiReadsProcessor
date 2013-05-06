@@ -3626,11 +3626,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
                       .packages="GenomicRanges", .combine=c) %dopar% {		    
                         res <- findOverlaps(x, maxgap=maxgap, ignoreSelf=TRUE,
-                                            ignoreRedundant=FALSE, select="first")
-                        rows <- !is.na(res)
-                        if(any(rows)) {
-                          res <- data.frame(queryHits=which(rows), 
-                                            subjectHits=res[rows])
+                                            ignoreRedundant=TRUE, select="all")
+                        if(length(res)>0) {
+                          res <- as.data.frame(res)
                           res$queryOTU <- mcols(x)$otuID[res$queryHits]
                           res$subjectOTU <- mcols(x)$otuID[res$subjectHits]
                           res$subjectReadID <- mcols(x)$readID[res$subjectHits]
