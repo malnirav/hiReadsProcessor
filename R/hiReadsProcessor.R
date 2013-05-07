@@ -2439,14 +2439,16 @@ pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=TRUE, isblast8=F
                            invert=TRUE, value=TRUE, fixed=FALSE),
                       ifelse(isblast8, NA, "tStarts"))
     out <- GRanges(seqnames=x$tName, IRanges(start=x$tStart, end=x$tEnd),
-                   strand=x$strand, x[,na.omit(metadataCols)])
+                   strand=x$strand)     
   } else {
     metadataCols <- c(grep("qName|qStart|qEnd|strand", names(x),
                            invert=TRUE, value=TRUE, fixed=FALSE),
                       ifelse(isblast8,NA,"qStarts"))
-    out <- GRanges(seqnames=x$qName, IRanges(start=x$qStart, end=x$qEnd),
-                   strand=x$strand, x[,na.omit(metadataCols)])
   }
+  
+  for(f in na.omit(metadataCols)) {
+    mcols(out)[[f]] <- x[,f]
+  } 
   
   if(!asGRanges) {
     out <- as(out, "RangedData")
