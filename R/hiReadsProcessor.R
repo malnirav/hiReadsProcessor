@@ -534,13 +534,25 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
                                                   sector=sector,
                                                   feature="primerltrsequence")[[sector]])
           newBarcodes <- toupper(paste(sampleBarcodes,
-                                       substr(samplePrimers,1,howmany),sep=""))                                                    
-          if (any(table(newBarcodes)>1)) {
-            stop("Tiebreaking failed...try choosing high number of bases from primer possibly?
+                                       substr(samplePrimers,1,howmany),sep="")) 
+          counts <- table(newBarcodes)
+          rows <- newBarcodes %in% names(which(counts==1)) ## only take 1 to 1 associations!
+          if (any(counts>1)) {            
+            message("Tiebreaking failed...try choosing high number of bases from primer possibly?
 							  Here are the failed barcodes: ",
-                 paste(names(which(table(newBarcodes)>1)),collapse=", "))
+                 paste(names(which(counts>1)),collapse=", "))
+            message("Ignore samples associated with those barcodes and continue processing? (y/n)")
+            whatsup <- scan(what=character(0), n=1, quiet=TRUE, multi.line=FALSE)            
+            if(whatsup=='n') {
+              stop("Aborting processing due to ambiguous barcode association for samples: ",
+                   paste(names(sampleBarcodes[!rows]),collapse=", "))
+            } else {              
+              message("Ignoring following samples due to duplicate barcodes: ",
+                      paste(names(sampleBarcodes[!rows]),collapse=", "))
+            }
           }
-          barcodesSample <- structure(names(sampleBarcodes), names=newBarcodes)
+          barcodesSample <- structure(names(sampleBarcodes[rows]), 
+                                      names=newBarcodes[rows])
         } else if(choice==2) {
           message("Overwriting duplicate samples associated with the same barcode...")
         } else {
