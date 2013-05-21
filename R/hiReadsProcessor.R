@@ -2447,15 +2447,13 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #'
 pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=TRUE, isblast8=FALSE) {
   if(useTargetAsRef) {
-    metadataCols <- c(grep("tName|tStart|tEnd|strand", names(x),
-                           invert=TRUE, value=TRUE, fixed=FALSE),
+    metadataCols <- c(setdiff(names(x), c("tName","tStart","tEnd","strand")),
                       ifelse(isblast8, NA, "tStarts"))
     out <- GRanges(seqnames=x$tName, IRanges(start=x$tStart, end=x$tEnd),
                    strand=x$strand)     
   } else {
-    metadataCols <- c(grep("qName|qStart|qEnd|strand", names(x),
-                           invert=TRUE, value=TRUE, fixed=FALSE),
-                      ifelse(isblast8,NA,"qStarts"))
+    metadataCols <- c(setdiff(names(x), c("qName","qStart","qEnd","strand")),
+                      ifelse(isblast8, NA, "qStarts"))
   }
   
   for(f in na.omit(metadataCols)) {
@@ -2911,7 +2909,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
                                 oneBased=FALSE) {
   stopifnot((is(psl.rd,"RangedData") | is(psl.rd,"GRanges")) & 
               !is.null(psl.rd) & !is.null(startWithin) & 
-              !is.null(alignRatioThreshold) & !is.null(genomicpercentidentity))
+              !is.null(alignRatioThreshold) & !is.null(genomicPercentIdentity))
   
   isRangedData <- FALSE
   if(is(psl.rd, "RangedData")) {
