@@ -1109,6 +1109,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' @param doRC perform reverse complement search of the defined pattern/primer. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
 #' @param ... extra parameters to be passed to either \code{\link{vpatternMatch}} or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: primed
@@ -1124,7 +1125,8 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' #findPrimers(sampleInfo, alignWay="slow", showStats=TRUE)
 #'
 findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, 
-                        doRC=FALSE, parallel=TRUE, samplenames=NULL, ...) {    
+                        doRC=FALSE, parallel=TRUE, samplenames=NULL, bypassChecks=FALSE,
+                        ...) {    
   stopifnot(is(sampleInfo,"SimpleList"))
   
   if(!parallel) { registerDoSEQ() }
@@ -1228,7 +1230,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       }
       
       ## if <= 5% of sequences found primers...then something is wrong with the primer sequences provided???
-      if(mean(toprint$PercOfDecoded)<=5) {
+      if(mean(toprint$PercOfDecoded)<=5 & !bypassChecks) {
         stop("Something seems to be wrong with the primers provided for each sample. On average <= 5% of sequences found primer match for the entire run!!!")
       }
       
@@ -1253,6 +1255,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' @param doRC perform reverse complement search of the defined pattern/LTR sequence. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: LTRed
@@ -1267,7 +1270,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' #findLTRs(sampleInfo,showStats=TRUE)
 #'
 findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, 
-                     parallel=TRUE, samplenames=NULL, ...) {    
+                     parallel=TRUE, samplenames=NULL, bypassChecks=FALSE, ...) {    
   stopifnot(is(sampleInfo,"SimpleList"))
   
   if(!parallel) { registerDoSEQ() }
@@ -1364,7 +1367,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       }
       
       ## if <= 5% of sequences found LTRs...then something is wrong with the LTR sequences provided???
-      if(mean(toprint$PercOfPrimed)<=5) {
+      if(mean(toprint$PercOfPrimed)<=5 & !bypassChecks) {
         stop("Something seems to be wrong with the LTRs provided for each sample. 
              On average <= 5% of sequences found LTR match for the entire run!!!")
       }
@@ -1398,6 +1401,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #' @param doRC perform reverse complement search of the defined pattern/linker sequence. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: linkered. If linkers have primerID then, primerIDs attribute is appended as well. 
@@ -1412,7 +1416,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #' #findLinkers(sampleInfo,showStats=TRUE)
 #'
 findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
-                        samplenames=NULL, ...) {    
+                        samplenames=NULL, bypassChecks=FALSE, ...) {    
   stopifnot(is(sampleInfo,"SimpleList"))
   
   if(!parallel) { registerDoSEQ() }
@@ -1536,7 +1540,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       }
       
       ## if <= 5% of sequences found linkers...then something is wrong with the linker sequences provided???
-      if(mean(toprint$PercOfPrimedOrLTRed)<=5) {
+      if(mean(toprint$PercOfPrimedOrLTRed)<=5 & !bypassChecks) {
         stop("Something seems to be wrong with the linkers provided for each sample. 
              On average <= 5% of sequences found linker match for the entire run!!!")
       }

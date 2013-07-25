@@ -3,7 +3,8 @@
 \title{Find the 3' linkers and add results to SampleInfo object.}
 \usage{
   findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE,
-    parallel = TRUE, samplenames = NULL, ...)
+    parallel = TRUE, samplenames = NULL,
+    bypassChecks = FALSE, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -27,6 +28,9 @@
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
   sampleInfo object.}
+
+  \item{bypassChecks}{skip checkpoints which detect if
+  something was odd with the data? Default is FALSE.}
 
   \item{...}{extra parameters to be passed to
   \code{\link{pairwiseAlignment}}.}
