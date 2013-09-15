@@ -90,9 +90,9 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL,
 #' \itemize{
 #'  \item Required Column Description:
 #'    \itemize{
-#'  	\item sector => region/quadrant of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed.
+#'  	\item sector => region/quadrant/lane of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed.
 #'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample. If providing filename as sector, then leave this blank.
-#'  	\item primerltrsequence => DNA sequence of the viral LTR primer with viral LTR sequence following the primer landing site. If already trimmed, then mark this as SKIP.
+#'  	\item primerltrsequence => DNA sequence of the viral LTR primer with/without the viral LTR sequence following the primer landing site. If already trimmed, then mark this as SKIP.
 #'  	\item samplename => Name of the sample associated with the barcode
 #'  	\item sampledescription => Detailed description of the sample
 #'  	\item gender => sex of the sample: male or female
@@ -103,7 +103,7 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL,
 #' 		}
 #'  \item Metadata Parameter Column Description:
 #'   \itemize{
-#'  	\item ltrbitsequence => DNA sequence of the viral LTR following the primer landing site.
+#'  	\item ltrbitsequence => DNA sequence of the viral LTR following the primer landing site. Default is last 7bps of the primerltrsequence.
 #'  	\item ltrbitidentity => percent of LTR bit sequence to match during the alignment. Default is 1.
 #'  	\item primerltridentity => percent of primer to match during the alignment. Default is .85
 #'  	\item linkeridentity => percent of linker sequence to match during the alignment. Default is 0.55. Only applies to non-primerID/random tag based linker search.
@@ -233,7 +233,8 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
   }
   
   # check for sectors and their usage
-  sectortest <- nchar(sampleInfo$sector)==0 | sampleInfo$sector=="" | is.na(sampleInfo$sector)
+  sectortest <- nchar(sampleInfo$sector)==0 | sampleInfo$sector=="" | 
+                is.na(sampleInfo$sector)
   if(any(sectortest)) {
     tofix <- which(sectortest)
     if(interactive) {
@@ -2359,7 +2360,8 @@ startgfServer <- function(seqDir=NULL, host="localhost", port=5560,
   cmd <- sprintf("gfServer start %s %i %s %s &", 
                  host, port, 
                  ifelse(!is.null(gfServerOpts),
-                        paste(paste("-",names(gfServerOpts),sep=""), gfServerOpts, collapse=" ", sep="="),
+                        paste(paste("-",names(gfServerOpts),sep=""), 
+                              gfServerOpts, collapse=" ", sep="="),
                         ""), 
                  normalizePath(seqDir))
   message(cmd)
@@ -2533,7 +2535,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 #'
 #' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for alignment against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution. 
 #'
-#' @param query an object of DNAStringSet, a character vector, or a path/pattern of fasta files to BLAT. Default is NULL.
+#' @param query an object of DNAStringSet, a character vector of filename(s), or a path/pattern of fasta files to BLAT. Default is NULL.
 #' @param subject an object of DNAStringSet, a character vector, or a path to an indexed genome (nibs,2bits) to serve as a reference or target to the query. Default is NULL. If the subject is a path to a nib or 2bit file, then standaloneBlat will not work!
 #' @param standaloneBlat use standalone BLAT as suppose to gfServer/gfClient protocol. Default is TRUE.
 #' @param port the same number you started the gfServer with. Required if standaloneBlat=FALSE. Default is 5560.
@@ -2564,10 +2566,15 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
                                           grep("\\s+-.+=", 
                                                system("blat",intern=TRUE), 
                                                value=TRUE))))
+  
   suppressWarnings(gfClientOpts <- unique(sub("\\s+-(\\S+)=\\S+.+", "\\1", 
                                               grep("\\s+-.+=", 
                                                    system("gfClient", intern=TRUE), 
                                                    value=TRUE))))
+                                                   
+  gfServerOpts <- c("tileSize","stepSize","minMatch","maxGap", "trans","log",
+                    "seqLog","syslog","logFacility","mask","repMatch","maxDnaHits",
+                    "maxTransHits","maxNtSize","maxAsSize","canStop")                                               
   
   if(!standaloneBlat) { 
     message("Using gfClient protocol to perform BLAT.")
@@ -2618,8 +2625,14 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
     queryFiles <- NULL
     if(is.atomic(query)) {
       if (any(grepl("\\.fna$|\\.fa$|\\*", query))) {
-        queryFiles <- list.files(path=dirname(query), pattern=basename(query), 
-                                 full.names=TRUE)            
+        ## detect whether query paramter is a regex or list of files
+        if(any(grepl("\\*|\\$|\\+|\\^",query))) {
+          queryFiles <- list.files(path=dirname(query), pattern=basename(query), 
+                                   full.names=TRUE)            
+        } else {
+          queryFiles <- query
+        }
+        
         if(parallel) {
           ## split the fasta files into smaller chunks for parallel BLATing
           queryFiles <- unlist(sapply(queryFiles,
@@ -2684,9 +2697,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
     if(system(searchCMD,ignore.stderr=TRUE)!=0) {
       message("Starting gfServer.")        
       startgfServer(seqDir=subjectFile, host=host, port=port, 
-                    gfServerOpts=c(repMatch=blatParameters[['repMatch']], 
-                                   stepSize=blatParameters[['stepSize']], 
-                                   tileSize=blatParameters[['tileSize']]))
+                    gfServerOpts=blatParameters[names(blatParameters) %in% gfServerOpts])
       killFlag <- TRUE
     }         
     

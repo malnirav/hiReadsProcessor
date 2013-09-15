@@ -9,8 +9,8 @@
 }
 \arguments{
   \item{query}{an object of DNAStringSet, a character
-  vector, or a path/pattern of fasta files to BLAT. Default
-  is NULL.}
+  vector of filename(s), or a path/pattern of fasta files
+  to BLAT. Default is NULL.}
 
   \item{subject}{an object of DNAStringSet, a character
   vector, or a path to an indexed genome (nibs,2bits) to
