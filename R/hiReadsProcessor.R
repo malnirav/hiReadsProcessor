@@ -2460,6 +2460,8 @@ pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=TRUE, isblast8=F
   } else {
     metadataCols <- c(setdiff(names(x), c("qName","qStart","qEnd","strand")),
                       ifelse(isblast8, NA, "qStarts"))
+    out <- GRanges(seqnames=x$qName, IRanges(start=x$qStart, end=x$qEnd),
+                   strand=x$strand)
   }
   
   for(f in na.omit(metadataCols)) {
