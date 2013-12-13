@@ -2,7 +2,7 @@
 \alias{summary.elegant}
 \title{Elegant summary of a sampleInfo object.}
 \usage{
-  summary.elegant(sampleInfo, samplenames = NULL)
+summary.elegant(sampleInfo, samplenames = NULL)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object,
@@ -14,8 +14,8 @@
   sampleInfo object.}
 }
 \description{
-  Give an elegant summary of all the attributes in
-  sampleInfo/SimpleList object.
+Give an elegant summary of all the attributes in
+sampleInfo/SimpleList object.
 }
 \examples{
 #summary.elegant(sampleInfo)

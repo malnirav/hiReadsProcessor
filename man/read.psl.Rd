@@ -2,9 +2,8 @@
 \alias{read.psl}
 \title{Read psl file(s) outputted by BLAT}
 \usage{
-  read.psl(pslFile = NULL, bestScoring = TRUE,
-    asRangedData = FALSE, asGRanges = FALSE,
-    removeFile = TRUE, parallel = FALSE)
+read.psl(pslFile = NULL, bestScoring = TRUE, asRangedData = FALSE,
+  asGRanges = FALSE, removeFile = TRUE, parallel = FALSE)
 }
 \arguments{
   \item{pslFile}{psl filename, or vector of filenames, or a
@@ -30,33 +29,32 @@
   \code{\link{registerDoSEQ()}}.}
 }
 \value{
-  a dataframe reflecting psl file type. If asGRanges=T or
-  asRangedData=T, then a GRanges object or RangedData
-  object, respectively.
+a dataframe reflecting psl file type. If asGRanges=T or
+asRangedData=T, then a GRanges object or RangedData object,
+respectively.
 }
 \description{
-  Given filename(s), the function reads the psl file format
-  from BLAT as a data frame and performs basic score
-  filtering if indicated. Any other file format will yield
-  errors or erroneous results. Make sure there is no header
-  row!
+Given filename(s), the function reads the psl file format
+from BLAT as a data frame and performs basic score
+filtering if indicated. Any other file format will yield
+errors or erroneous results. Make sure there is no header
+row!
 }
 \note{
-  If parallel=TRUE, then be sure to have a paralle backend
-  registered before running the function. One can use any
-  of the following libraries compatible with
-  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doMC); registerDoMC(2)
+If parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2)
 }
 \examples{
 #read.psl(pslFile="processed.*.psl$")
 #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
 }
 \seealso{
-  \code{\link{pairwiseAlignSeqs}},
-  \code{\link{vpairwiseAlignSeqs}},
-  \code{\link{startgfServer}}, \code{\link{blatSeqs}},
-  \code{\link{read.blast8}},
-  \code{\link{pslToRangedObject}}
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}},
+\code{\link{startgfServer}}, \code{\link{blatSeqs}},
+\code{\link{read.blast8}}, \code{\link{pslToRangedObject}}
 }
 

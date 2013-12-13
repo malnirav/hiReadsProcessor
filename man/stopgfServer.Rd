@@ -2,7 +2,7 @@
 \alias{stopgfServer}
 \title{Stop a gfServer instance}
 \usage{
-  stopgfServer(host = "localhost", port = NULL)
+stopgfServer(host = "localhost", port = NULL)
 }
 \arguments{
   \item{host}{name of the machine running gfServer.
@@ -12,15 +12,15 @@
   with.}
 }
 \value{
-  system command status for executing kill command.
+system command status for executing kill command.
 }
 \description{
-  Take down the gfServer instance.
+Take down the gfServer instance.
 }
 \examples{
 #stopgfServer(port=5560)
 }
 \seealso{
-  \code{\link{startgfServer}}
+\code{\link{startgfServer}}
 }
 

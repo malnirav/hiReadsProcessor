@@ -2,9 +2,8 @@
 \alias{write.listedDNAStringSet}
 \title{Write a fasta file per sample in parallel}
 \usage{
-  write.listedDNAStringSet(dnaSet, filePath = ".",
-    filePrefix = "processed", prependSamplenames = TRUE,
-    format = "fasta", parallel = FALSE)
+write.listedDNAStringSet(dnaSet, filePath = ".", filePrefix = "processed",
+  prependSamplenames = TRUE, format = "fasta", parallel = FALSE)
 }
 \arguments{
   \item{dnaSet}{listed DNAStringSet object containing
@@ -30,24 +29,24 @@
   \code{\link{registerDoSEQ()}}.}
 }
 \description{
-  Given a listed DNAStringSet object return from
-  \code{\link{extractSeqs}}, the function writes a fasta
-  file for each sample as defined in filePath parameter.
+Given a listed DNAStringSet object return from
+\code{\link{extractSeqs}}, the function writes a fasta file
+for each sample as defined in filePath parameter.
 }
 \note{
-  Writing of the files is done using
-  \code{\link{writeXStringSet}} with parameter append=TRUE.
-  If parallel=TRUE, then be sure to have a paralle backend
-  registered before running the function. One can use any
-  of the following libraries compatible with
-  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doMC); registerDoMC(2)
+Writing of the files is done using
+\code{\link{writeXStringSet}} with parameter append=TRUE.
+If parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2)
 }
 \examples{
 #write.listedDNAStringSet(dnaSet)
 }
 \seealso{
-  \code{\link{decodeByBarcode}},
-  \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
+\code{\link{decodeByBarcode}},
+\code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
 }
 

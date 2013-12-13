@@ -2,10 +2,10 @@
 \alias{findIntegrations}
 \title{Find the integration sites and add results to SampleInfo object.}
 \usage{
-  findIntegrations(sampleInfo, seqType = NULL, port = 5560,
-    host = "localhost",
-    genomeIndices = c(hg18 = "/usr/local/blatSuite34/hg18.2bit", mm8 = "/usr/local/blatSuite34/mm8.2bit"),
-    parallel = TRUE, samplenames = NULL)
+findIntegrations(sampleInfo, seqType = NULL, port = 5560,
+  host = "localhost", genomeIndices = c(hg18 =
+  "/usr/local/blatSuite34/hg18.2bit", mm8 = "/usr/local/blatSuite34/mm8.2bit"),
+  parallel = TRUE, samplenames = NULL)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -43,50 +43,48 @@
   sampleInfo object.}
 }
 \value{
-  a SimpleList object similar to sampleInfo paramter
-  supplied with new data added under each sector and
-  sample. New data attributes include: psl, and sites. The
-  psl attributes holds the BLAT hits per read along with QC
-  information. The sites attribute holds the condensed
-  integration sites where BLAT hits have been clustered by
-  the Position column and cherry picked to have each site
-  pass all the QC steps.
+a SimpleList object similar to sampleInfo paramter supplied
+with new data added under each sector and sample. New data
+attributes include: psl, and sites. The psl attributes
+holds the BLAT hits per read along with QC information. The
+sites attribute holds the condensed integration sites where
+BLAT hits have been clustered by the Position column and
+cherry picked to have each site pass all the QC steps.
 }
 \description{
-  Given a SampleInfo object, the function finds integration
-  sites for each sample using their respective settings and
-  adds the results back to the object. This is an
-  all-in-one function which BLATs, parses PSL files, finds
-  best hit per read per sample, cluster sites, and assign
-  ISU IDs. It calls \code{\link{blatSeqs}},
-  \code{\link{read.psl}},
-  \code{\link{getIntegrationSites}},
-  \code{\link{clusterSites}}, \code{\link{otuSites}}. There
-  must be linkered reads within the sampleInfo object in
-  order to use this function using the default parameters.
-  If you are planning on BLATing non-linkered reads, then
-  change the seqType to one of accepted options for the
-  'feature' parameter of \code{\link{extractSeqs}}, except
-  for '!' based features.
+Given a SampleInfo object, the function finds integration
+sites for each sample using their respective settings and
+adds the results back to the object. This is an all-in-one
+function which BLATs, parses PSL files, finds best hit per
+read per sample, cluster sites, and assign ISU IDs. It
+calls \code{\link{blatSeqs}}, \code{\link{read.psl}},
+\code{\link{getIntegrationSites}},
+\code{\link{clusterSites}}, \code{\link{otuSites}}. There
+must be linkered reads within the sampleInfo object in
+order to use this function using the default parameters. If
+you are planning on BLATing non-linkered reads, then change
+the seqType to one of accepted options for the 'feature'
+parameter of \code{\link{extractSeqs}}, except for '!'
+based features.
 }
 \note{
-  If parallel=TRUE, then be sure to have a paralle backend
-  registered before running the function. One can use any
-  of the following libraries compatible with
-  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doMC); registerDoMC(2)
+If parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2)
 }
 \examples{
 #findIntegrations(sampleInfo)
 }
 \seealso{
-  \code{\link{findPrimers}}, \code{\link{findLTRs}},
-  \code{\link{findLinkers}}, \code{\link{startgfServer}},
-  \code{\link{read.psl}}, \code{\link{blatSeqs}},
-  \code{\link{blatListedSet}},
-  \code{\link{pslToRangedObject}},
-  \code{\link{clusterSites}}, \code{\link{otuSites2}},
-  \code{\link{crossOverCheck}},
-  \code{\link{getIntegrationSites}}
+\code{\link{findPrimers}}, \code{\link{findLTRs}},
+\code{\link{findLinkers}}, \code{\link{startgfServer}},
+\code{\link{read.psl}}, \code{\link{blatSeqs}},
+\code{\link{blatListedSet}},
+\code{\link{pslToRangedObject}},
+\code{\link{clusterSites}}, \code{\link{otuSites2}},
+\code{\link{crossOverCheck}},
+\code{\link{getIntegrationSites}}
 }
 

@@ -2,10 +2,9 @@
 \alias{pairwiseAlignSeqs}
 \title{Align a short pattern to variable length target sequences.}
 \usage{
-  pairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
-    side = "left", qualityThreshold = 1, showStats = FALSE,
-    bufferBases = 5, doRC = TRUE, returnUnmatched = FALSE,
-    returnLowScored = FALSE, ...)
+pairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL, side = "left",
+  qualityThreshold = 1, showStats = FALSE, bufferBases = 5, doRC = TRUE,
+  returnUnmatched = FALSE, returnLowScored = FALSE, parallel = FALSE, ...)
 }
 \arguments{
   \item{subjectSeqs}{DNAStringSet object containing
@@ -43,52 +42,61 @@
   score less than the defined qualityThreshold. Default is
   FALSE.}
 
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to
+  FALSE. If no parallel backend is registered, then a
+  serial version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
+
   \item{...}{extra parameters for
   \code{\link{pairwiseAlignment}}}
 }
 \value{
-  \itemize{ \item IRanges object with starts, stops, and
-  names of the aligned sequences.  \item If returnLowScored
-  or returnUnmatched = T, then a CompressedIRangesList
-  where x[["hits"]] has the good scoring hits,
-  x[["Rejected"]] has the failed to match qualityThreshold
-  hits, and x[["Absent"]] has the hits where the aligned
-  bit is <=10\% match to the patternSeq. }
+\itemize{ \item IRanges object with starts, stops, and
+names of the aligned sequences.  \item If returnLowScored
+or returnUnmatched = T, then a CompressedIRangesList where
+x[["hits"]] has the good scoring hits, x[["Rejected"]] has
+the failed to match qualityThreshold hits, and
+x[["Absent"]] has the hits where the aligned bit is <=10\%
+match to the patternSeq. }
 }
 \description{
-  Align a fixed length short pattern sequence (i.e. primers
-  or adaptors) to subject sequences using
-  \code{\link{pairwiseAlignment}}. This function uses
-  default of type="overlap", gapOpening=-1, and
-  gapExtension=-1 to align the patternSeq against
-  subjectSeqs. One can adjust these parameters if prefered,
-  but not recommended. This function is meant for aligning
-  a short pattern onto large collection of subjects. If you
-  are looking to align a vector sequence to subjects, then
-  please use BLAT.
+Align a fixed length short pattern sequence (i.e. primers
+or adaptors) to subject sequences using
+\code{\link{pairwiseAlignment}}. This function uses default
+of type="overlap", gapOpening=-1, and gapExtension=-1 to
+align the patternSeq against subjectSeqs. One can adjust
+these parameters if prefered, but not recommended. This
+function is meant for aligning a short pattern onto large
+collection of subjects. If you are looking to align a
+vector sequence to subjects, then please use BLAT.
 }
 \note{
-  \itemize{ \item For qualityThreshold, the alignment score
-  is calculated by (matches*2)-(mismatches+gaps) which
-  programatically translates to
-  round(nchar(patternSeq)*qualityThreshold)*2.  \item Gaps
-  and mismatches are weighed equally with value of -1 which
-  can be overriden by defining extra parameters
-  'gapOpening' & 'gapExtension'.  \item If qualityThreshold
-  is 1, then it is a full match, if 0, then any match is
-  accepted which is useful in searching linker sequences at
-  3' end. Beware, this function only searches for the
-  pattern sequence in one orientation. If you are expecting
-  to find the pattern in both orientation, you might be
-  better off using BLAST/BLAT! }
+\itemize{ \item For qualityThreshold, the alignment score
+is calculated by (matches*2)-(mismatches+gaps) which
+programatically translates to
+round(nchar(patternSeq)*qualityThreshold)*2.  \item Gaps
+and mismatches are weighed equally with value of -1 which
+can be overriden by defining extra parameters 'gapOpening'
+& 'gapExtension'.  \item If qualityThreshold is 1, then it
+is a full match, if 0, then any match is accepted which is
+useful in searching linker sequences at 3' end. Beware,
+this function only searches for the pattern sequence in one
+orientation. If you are expecting to find the pattern in
+both orientation, you might be better off using BLAST/BLAT!
+\item If parallel=TRUE, then be sure to have a paralle
+backend registered before running the function. One can use
+any of the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2) }
 }
 \examples{
 #pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
 #pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
 }
 \seealso{
-  \code{\link{primerIDAlignSeqs}},
-  \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}},
-  \code{\link{findAndTrimSeq}}
+\code{\link{primerIDAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}},
+\code{\link{findAndTrimSeq}}
 }
 

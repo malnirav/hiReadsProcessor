@@ -2,10 +2,8 @@
 \alias{read.SeqFolder}
 \title{Read contents of a sequencing folder and make a SimpleList object}
 \usage{
-  read.SeqFolder(SequencingFolderPath = NULL,
-    sampleInfoFilePath = NULL,
-    seqfilePattern = "\\.TCA.454Reads.fna$",
-    interactive = TRUE)
+read.SeqFolder(SequencingFolderPath = NULL, sampleInfoFilePath = NULL,
+  seqfilePattern = "\\\\.TCA.454Reads.fna$", interactive = TRUE)
 }
 \arguments{
   \item{SequencingFolderPath}{full or relative path to the
@@ -29,30 +27,29 @@
   Default is TRUE.}
 }
 \value{
-  a SimpleList list which is used by other functions to
-  process and decode the data.
+a SimpleList list which is used by other functions to
+process and decode the data.
 }
 \description{
-  Given a sequencing folder path, sample information file
-  path, and sequence file extension pattern, the function
-  returns a list of variables required to process the data.
-  The function also calls \code{\link{read.sampleInfo}}
-  which reads in sample processing metadata and formats it
-  if needed.
+Given a sequencing folder path, sample information file
+path, and sequence file extension pattern, the function
+returns a list of variables required to process the data.
+The function also calls \code{\link{read.sampleInfo}} which
+reads in sample processing metadata and formats it if
+needed.
 }
 \note{
-  one must make sure that each sequencing file has sector
-  name/number prefixed at the beginning, else
-  \code{\link{decodeByBarcode}} will fail trying to find
-  the filename.
+one must make sure that each sequencing file has sector
+name/number prefixed at the beginning, else
+\code{\link{decodeByBarcode}} will fail trying to find the
+filename.
 }
 \examples{
 #read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
 #read.SeqFolder(".",seqfilePattern=".+fastq$")
 }
 \seealso{
-  \code{\link{read.sampleInfo}},
-  \code{\link{decodeByBarcode}},
-  \code{\link{splitByBarcode}}
+\code{\link{read.sampleInfo}},
+\code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
 }
 

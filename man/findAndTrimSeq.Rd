@@ -2,8 +2,8 @@
 \alias{findAndTrimSeq}
 \title{Find and trim a short pattern sequence from the subject.}
 \usage{
-  findAndTrimSeq(patternSeq, subjectSeqs, side = "left",
-    offBy = 0, alignWay = "slow", ...)
+findAndTrimSeq(patternSeq, subjectSeqs, side = "left", offBy = 0,
+  alignWay = "slow", ...)
 }
 \arguments{
   \item{patternSeq}{DNAString object or a sequence
@@ -20,50 +20,52 @@
   should be offset by X number of bases. Default is 0.}
 
   \item{alignWay}{method to utilize for detecting the
-  primers. One of following: "slow" (Default), or "fast".
-  Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses
-  \code{\link{vpatternMatch}} at its core, which is less
-  accurate with indels and mismatches but much faster.
+  primers. One of following: "slow" (Default), "fast", or
+  "blat". Fast, calls \code{\link{vpairwiseAlignSeqs}} and
+  uses \code{\link{vpatternMatch}} at its core, which is
+  less accurate with indels and mismatches but much faster.
   Slow, calls \code{\link{pairwiseAlignSeqs}} and uses
   \code{\link{pairwiseAlignment}} at its core, which is
-  accurate with indels and mismatches but slower.}
+  accurate with indels and mismatches but slower. Blat will
+  use \code{\link{blatSeqs}}.}
 
   \item{...}{parameters to be passed to
-  \code{\link{pairwiseAlignment}} or
-  \code{\link{vpairwiseAlignSeqs}} depending on which
-  method is defined in 'alignWay' parameter.}
+  \code{\link{pairwiseAlignment}},
+  \code{\link{vpairwiseAlignSeqs}} or
+  \code{\link{blatSeqs}} depending on which method is
+  defined in 'alignWay' parameter.}
 }
 \value{
-  DNAStringSet object with pattern sequence removed from
-  the subject sequences.
+DNAStringSet object with pattern sequence removed from the
+subject sequences.
 }
 \description{
-  This function facilitates finding and trimming of a short
-  pattern sequence from a collection of subject sequences.
-  The trimming is dictated by side parameter. For more
-  information on the trimming process see the 'side'
-  parameter documentation in \code{\link{trimSeqs}}. For
-  information regarding the pattern alignment see the
-  documentation for \code{\link{pairwiseAlignSeqs}}. This
-  function is meant for aligning a short pattern onto large
-  collection of subjects. If you are looking to align a
-  vector sequence to subjects, then please use BLAT.
+This function facilitates finding and trimming of a short
+pattern sequence from a collection of subject sequences.
+The trimming is dictated by side parameter. For more
+information on the trimming process see the 'side'
+parameter documentation in \code{\link{trimSeqs}}. For
+information regarding the pattern alignment see the
+documentation for \code{\link{pairwiseAlignSeqs}}. This
+function is meant for aligning a short pattern onto large
+collection of subjects. If you are looking to align a
+vector sequence to subjects, then please use BLAT.
 }
 \note{
-  If parallel=TRUE, then be sure to have a paralle backend
-  registered before running the function. One can use any
-  of the following libraries compatible with
-  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doMC); registerDoMC(2)
+If parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2)
 }
 \examples{
 #findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
 }
 \seealso{
-  \code{\link{pairwiseAlignSeqs}},
-  \code{\link{vpairwiseAlignSeqs}},
-  \code{\link{extractFeature}}, \code{\link{extractSeqs}},
-  \code{\link{primerIDAlignSeqs}},
-  \code{\link{findPrimers}}, \code{\link{findLinkers}}
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}},
+\code{\link{extractFeature}}, \code{\link{extractSeqs}},
+\code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}},
+\code{\link{findLinkers}}
 }
 

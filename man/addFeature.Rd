@@ -2,8 +2,8 @@
 \alias{addFeature}
 \title{Add a specific feature/attribute to the sampleInfo object.}
 \usage{
-  addFeature(sampleInfo, sector = NULL, samplename = NULL,
-    feature = NULL, value = NULL)
+addFeature(sampleInfo, sector = NULL, samplename = NULL, feature = NULL,
+  value = NULL)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object,
@@ -26,18 +26,18 @@
   list("Sample1"="ACDTDASD")}
 }
 \value{
-  modified sampleInfo object with new feature(s) added.
+modified sampleInfo object with new feature(s) added.
 }
 \description{
-  Given a sampleInfo object, the function adds a new
-  feature for the given samples & sectors.
+Given a sampleInfo object, the function adds a new feature
+for the given samples & sectors.
 }
 \examples{
 #addFeature(sampleInfo,"1","Sample1",feature="primerIDed","ACDTDASD")
 }
 \seealso{
-  \code{\link{findPrimers}}, \code{\link{extractSeqs}},
-  \code{\link{trimSeqs}}, \code{\link{extractFeature}},
-  \code{\link{getSectorsForSamples}}
+\code{\link{findPrimers}}, \code{\link{extractSeqs}},
+\code{\link{trimSeqs}}, \code{\link{extractFeature}},
+\code{\link{getSectorsForSamples}}
 }
 

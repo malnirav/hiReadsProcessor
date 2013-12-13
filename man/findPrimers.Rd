@@ -2,9 +2,9 @@
 \alias{findPrimers}
 \title{Find the 5' primers and add results to SampleInfo object.}
 \usage{
-  findPrimers(sampleInfo, alignWay = "slow",
-    showStats = FALSE, doRC = FALSE, parallel = TRUE,
-    samplenames = NULL, bypassChecks = FALSE, ...)
+findPrimers(sampleInfo, alignWay = "slow", showStats = FALSE,
+  doRC = FALSE, parallel = TRUE, samplenames = NULL,
+  bypassChecks = FALSE, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -46,38 +46,37 @@
   parameter.}
 }
 \value{
-  a SimpleList object similar to sampleInfo paramter
-  supplied with new data added under each sector and
-  sample. New data attributes include: primed
+a SimpleList object similar to sampleInfo paramter supplied
+with new data added under each sector and sample. New data
+attributes include: primed
 }
 \description{
-  Given a sampleInfo object, the function finds 5' primers
-  for each sample per sector and adds the results back to
-  the object. This is a specialized function which depends
-  on many other functions shown in 'see also section' to
-  perform specialized trimming of 5' primer/adaptor found
-  in the sampleInfo object. The sequence itself is never
-  trimmed but rather coordinates of primer portion is
-  recorded back to the object and used subsequently by
-  \code{\link{extractSeqs}} function to perform the
-  trimming.
+Given a sampleInfo object, the function finds 5' primers
+for each sample per sector and adds the results back to the
+object. This is a specialized function which depends on
+many other functions shown in 'see also section' to perform
+specialized trimming of 5' primer/adaptor found in the
+sampleInfo object. The sequence itself is never trimmed but
+rather coordinates of primer portion is recorded back to
+the object and used subsequently by
+\code{\link{extractSeqs}} function to perform the trimming.
 }
 \note{
-  If parallel=TRUE, then be sure to have a paralle backend
-  registered before running the function. One can use any
-  of the following libraries compatible with
-  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doMC); registerDoMC(2)
+If parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2)
 }
 \examples{
 #findPrimers(sampleInfo, showStats=TRUE)
 #findPrimers(sampleInfo, alignWay="slow", showStats=TRUE)
 }
 \seealso{
-  \code{\link{pairwiseAlignSeqs}},
-  \code{\link{vpairwiseAlignSeqs}},
-  \code{\link{extractFeature}}, \code{\link{extractSeqs}},
-  \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}},
-  \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}},
+\code{\link{extractFeature}}, \code{\link{extractSeqs}},
+\code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}},
+\code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 }
 

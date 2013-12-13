@@ -2,8 +2,8 @@
 \alias{doRCtest}
 \title{Test if pattern aligns better in +/- orientation.}
 \usage{
-  doRCtest(subjectSeqs = NULL, patternSeq = NULL,
-    qualityThreshold = 0.5, core.use = 2)
+doRCtest(subjectSeqs = NULL, patternSeq = NULL, qualityThreshold = 0.5,
+  core.use = 2)
 }
 \arguments{
   \item{subjectSeqs}{DNAStringSet object containing
@@ -23,22 +23,22 @@
   using \code{\link{registerDoSEQ()}}.}
 }
 \value{
-  patternSeq that aligned the best.
+patternSeq that aligned the best.
 }
 \description{
-  Given a fixed length pattern sequence and variable length
-  subject sequences, the function roughly finds which
-  orientation of pattern yields the most hits. The function
-  doing the heavylifting is \code{\link{vcountPattern}}.
-  This is an accessory function used in function listed
-  under See Also section below.
+Given a fixed length pattern sequence and variable length
+subject sequences, the function roughly finds which
+orientation of pattern yields the most hits. The function
+doing the heavylifting is \code{\link{vcountPattern}}. This
+is an accessory function used in function listed under See
+Also section below.
 }
 \examples{
 #doRCtest(subjectSeqs,patternSeq)
 }
 \seealso{
-  \code{\link{pairwiseAlignSeqs}},
-  \code{\link{vpairwiseAlignSeqs}},
-  \code{\link{primerIDAlignSeqs}}
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}},
+\code{\link{primerIDAlignSeqs}}
 }
 

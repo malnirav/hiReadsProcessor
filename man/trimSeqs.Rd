@@ -2,7 +2,7 @@
 \alias{trimSeqs}
 \title{Trim sequences from a specific side.}
 \usage{
-  trimSeqs(dnaSet, coords, side = "middle", offBy = 0)
+trimSeqs(dnaSet, coords, side = "middle", offBy = 0)
 }
 \arguments{
   \item{dnaSet}{DNAStringSet object containing sequences to
@@ -18,31 +18,28 @@
   Default is 0.}
 }
 \value{
-  a DNAStringSet object with trimmed sequences.
+a DNAStringSet object with trimmed sequences.
 }
 \description{
-  This function trims a DNAStringSet object using the
-  ranges from left, right, or middle of the sequence. This
-  is a helper function utilized in
-  \code{\link{primerIDAlignSeqs}} and
-  \code{\link{extractSeqs}}. If dnaSet and coords are not
-  the same length, then they are required to have a names
-  attribute to perform the matched trimming.
+This function trims a DNAStringSet object using the ranges
+from left, right, or middle of the sequence. This is a
+helper function utilized in \code{\link{primerIDAlignSeqs}}
+and \code{\link{extractSeqs}}. If dnaSet and coords are not
+the same length, then they are required to have a names
+attribute to perform the matched trimming.
 }
 \note{
-  If side is left, then any sequence following end of
-  coords+offBy is returned. If side is right, then sequence
-  preceding start of coords-offBy is returned. If side is
-  middle, then sequence contained in coords is returned
-  where offBy is added to start and subtracted from end in
-  coords.
+If side is left, then any sequence following end of
+coords+offBy is returned. If side is right, then sequence
+preceding start of coords-offBy is returned. If side is
+middle, then sequence contained in coords is returned where
+offBy is added to start and subtracted from end in coords.
 }
 \examples{
 #trimSeqs(dnaSet,coords)
 #trimSeqs(dnaSet,coords,side="left",offBy=1)
 }
 \seealso{
-  \code{\link{extractSeqs}},
-  \code{\link{primerIDAlignSeqs}}
+\code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}
 }
 

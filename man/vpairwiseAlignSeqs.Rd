@@ -2,9 +2,9 @@
 \alias{vpairwiseAlignSeqs}
 \title{Align a short pattern to variable length target sequences.}
 \usage{
-  vpairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
-    side = "left", qualityThreshold = 1, showStats = FALSE,
-    bufferBases = 5, doRC = TRUE, ...)
+vpairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL, side = "left",
+  qualityThreshold = 1, showStats = FALSE, bufferBases = 5, doRC = TRUE,
+  parallel = FALSE, ...)
 }
 \arguments{
   \item{subjectSeqs}{DNAStringSet object containing
@@ -37,43 +37,54 @@
   \item{doRC}{perform reverse complement search of the
   defined pattern. Default is TRUE.}
 
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to
+  FALSE. If no parallel backend is registered, then a
+  serial version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
+
   \item{...}{extra parameters for
   \code{\link{vmatchPattern}} except for 'max.mismatch'
   since it's calculated internally using the
   'qualityThreshold' parameter.}
 }
 \value{
-  IRanges object with starts, stops, and names of the
-  aligned sequences.
+IRanges object with starts, stops, and names of the aligned
+sequences.
 }
 \description{
-  Align a fixed length short pattern sequence to subject
-  sequences using \code{\link{vmatchPattern}}. This
-  function is meant for aligning a short pattern onto large
-  collection of subjects. If you are looking to align a
-  vector sequence to subjects, then please use BLAT.
+Align a fixed length short pattern sequence to subject
+sequences using \code{\link{vmatchPattern}}. This function
+is meant for aligning a short pattern onto large collection
+of subjects. If you are looking to align a vector sequence
+to subjects, then please use BLAT.
 }
 \note{
-  \itemize{ \item For qualityThreshold, the alignment score
-  is calculated by (matches*2)-(mismatches+gaps) which
-  programatically translates to
-  round(nchar(patternSeq)*qualityThreshold)*2.  \item No
-  indels are allowed in the function, if expecting indels
-  then use \code{\link{pairwiseAlignSeqs}}.  \item If
-  qualityThreshold is 1, then it is a full match, if 0,
-  then any match is accepted which is useful in searching
-  linker sequences at 3' end. Beware, this function only
-  searches for the pattern sequence in one orientation. If
-  you are expecting to find the pattern in both
-  orientation, you might be better off using BLAST/BLAT! }
+\itemize{ \item For qualityThreshold, the alignment score
+is calculated by (matches*2)-(mismatches+gaps) which
+programatically translates to
+round(nchar(patternSeq)*qualityThreshold)*2.  \item No
+indels are allowed in the function, if expecting indels
+then use \code{\link{pairwiseAlignSeqs}}.  \item If
+qualityThreshold is 1, then it is a full match, if 0, then
+any match is accepted which is useful in searching linker
+sequences at 3' end. Beware, this function only searches
+for the pattern sequence in one orientation. If you are
+expecting to find the pattern in both orientation, you
+might be better off using BLAST/BLAT!  \item If
+parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2) }
 }
 \examples{
 #vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
 #vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
 }
 \seealso{
-  \code{\link{pairwiseAlignSeqs}},
-  \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}},
-  \code{\link{findAndTrimSeq}}
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}},
+\code{\link{findAndTrimSeq}}
 }
 

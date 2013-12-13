@@ -2,7 +2,7 @@
 \alias{read.seqsFromSector}
 \title{Read fasta/fastq given the path or sampleInfo object.}
 \usage{
-  read.seqsFromSector(seqFilePath = NULL, sector = 1)
+read.seqsFromSector(seqFilePath = NULL, sector = 1)
 }
 \arguments{
   \item{seqFilePath}{a path to fasta/fastq reads file or a
@@ -14,14 +14,14 @@
   file path rather than sampleInfo object.}
 }
 \value{
-  a DNAStringSet object.
+a DNAStringSet object.
 }
 \description{
-  Given a sequence reads file path, the function returns a
-  DNAStringSet object.
+Given a sequence reads file path, the function returns a
+DNAStringSet object.
 }
 \seealso{
-  \code{\link{decodeByBarcode}},
-  \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
+\code{\link{decodeByBarcode}},
+\code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
 }
 

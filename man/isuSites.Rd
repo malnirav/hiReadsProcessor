@@ -2,9 +2,8 @@
 \alias{isuSites}
 \title{Bin values or make ISUs by assigning a unique ID to them within discrete factors.}
 \usage{
-  isuSites(posID = NULL, value = NULL, readID = NULL,
-    grouping = NULL, psl.rd = NULL, maxgap = 5,
-    parallel = TRUE)
+isuSites(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
+  psl.rd = NULL, maxgap = 5, parallel = TRUE)
 }
 \arguments{
   \item{posID}{a vector of groupings for the value
@@ -36,41 +35,40 @@
   grouping the column.}
 }
 \value{
-  a data frame with binned values and isuID shown alongside
-  the original input. If psl.rd parameter is defined, then
-  a RangedData/GRanges object where object is first
-  filtered by clusterTopHit column and the isuID column
-  appended at the end.
+a data frame with binned values and isuID shown alongside
+the original input. If psl.rd parameter is defined, then a
+RangedData/GRanges object where object is first filtered by
+clusterTopHit column and the isuID column appended at the
+end.
 }
 \description{
-  Given a group of values or genomic positions per
-  read/clone, the function tries to yield a unique ISU
-  (Integration Site Unit) ID for the collection based on
-  overlap of locations to other reads/clones by grouping.
-  This is mainly useful when each read has many locations
-  which needs to be considered as one single group of
-  sites.
+Given a group of values or genomic positions per
+read/clone, the function tries to yield a unique ISU
+(Integration Site Unit) ID for the collection based on
+overlap of locations to other reads/clones by grouping.
+This is mainly useful when each read has many locations
+which needs to be considered as one single group of sites.
 }
 \note{
-  The algorithm for making isus of sites is as follows: for
-  each readID check how many positions are there. Separate
-  readIDs with only position from the rest. Check if any
-  readIDs with >1 position match to any readIDs with only
-  one position. If there is a match, then assign both
-  readIDs with the same ISU ID. Check if any positions from
-  readIDs with >1 position match any other readIDs with >1
-  position. If yes, then assign same ISU ID to all readIDs
-  sharing 1 or more positions.
+The algorithm for making isus of sites is as follows: for
+each readID check how many positions are there. Separate
+readIDs with only position from the rest. Check if any
+readIDs with >1 position match to any readIDs with only one
+position. If there is a match, then assign both readIDs
+with the same ISU ID. Check if any positions from readIDs
+with >1 position match any other readIDs with >1 position.
+If yes, then assign same ISU ID to all readIDs sharing 1 or
+more positions.
 }
 \examples{
 #isuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
 #isuSites2(psl.rd=test.psl.rd)
 }
 \seealso{
-  \code{\link{clusterSites}}, \code{\link{isuSites}},
-  \code{\link{crossOverCheck}},
-  \code{\link{findIntegrations}},
-  \code{\link{getIntegrationSites}},
-  \code{\link{pslToRangedObject}}
+\code{\link{clusterSites}}, \code{\link{isuSites}},
+\code{\link{crossOverCheck}},
+\code{\link{findIntegrations}},
+\code{\link{getIntegrationSites}},
+\code{\link{pslToRangedObject}}
 }
 

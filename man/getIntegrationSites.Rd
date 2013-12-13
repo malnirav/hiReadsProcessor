@@ -2,10 +2,9 @@
 \alias{getIntegrationSites}
 \title{Obtain integration sites from BLAT output}
 \usage{
-  getIntegrationSites(psl.rd = NULL, startWithin = 3,
-    alignRatioThreshold = 0.7,
-    genomicPercentIdentity = 0.98, correctByqStart = TRUE,
-    oneBased = FALSE)
+getIntegrationSites(psl.rd = NULL, startWithin = 3,
+  alignRatioThreshold = 0.7, genomicPercentIdentity = 0.98,
+  correctByqStart = TRUE, oneBased = FALSE)
 }
 \arguments{
   \item{psl.rd}{a RangedData/GRanges object reflecting psl
@@ -32,28 +31,28 @@
   to the start and leave the end as is. Default is FALSE.}
 }
 \value{
-  a RangedData/GRanges object with integration sites which
-  passed all filtering criteria. Each filtering parameter
-  creates a new column to flag if a sequence/read passed
-  that filter which follows the scheme: 'pass.FilterName'.
+a RangedData/GRanges object with integration sites which
+passed all filtering criteria. Each filtering parameter
+creates a new column to flag if a sequence/read passed that
+filter which follows the scheme: 'pass.FilterName'.
 }
 \description{
-  Given a RangedData/GRanges object from
-  \code{\link{read.psl}}, the function uses specified
-  filtering parameters to obtain integration sites and
-  maintain sequence attrition. The function will remove any
-  non-best scoring alignments from the object if not
-  already filtered apriori.
+Given a RangedData/GRanges object from
+\code{\link{read.psl}}, the function uses specified
+filtering parameters to obtain integration sites and
+maintain sequence attrition. The function will remove any
+non-best scoring alignments from the object if not already
+filtered apriori.
 }
 \examples{
 #getIntegrationSites(test.psl.rd)
 }
 \seealso{
-  \code{\link{startgfServer}}, \code{\link{read.psl}},
-  \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
-  \code{\link{findIntegrations}},
-  \code{\link{pslToRangedObject}},
-  \code{\link{clusterSites}}, \code{\link{otuSites2}},
-  \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
+\code{\link{startgfServer}}, \code{\link{read.psl}},
+\code{\link{blatSeqs}}, \code{\link{blatListedSet}},
+\code{\link{findIntegrations}},
+\code{\link{pslToRangedObject}},
+\code{\link{clusterSites}}, \code{\link{otuSites2}},
+\code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 }
 

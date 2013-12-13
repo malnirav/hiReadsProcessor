@@ -2,9 +2,9 @@
 \alias{clusterSites}
 \title{Cluster/Correct values within a window based on their frequency given discrete factors}
 \usage{
-  clusterSites(posID = NULL, value = NULL, grouping = NULL,
-    psl.rd = NULL, weight = NULL, windowSize = 5,
-    byQuartile = FALSE, quartile = 0.7, parallel = TRUE)
+clusterSites(posID = NULL, value = NULL, grouping = NULL, psl.rd = NULL,
+  weight = NULL, windowSize = 5, byQuartile = FALSE, quartile = 0.7,
+  parallel = TRUE)
 }
 \arguments{
   \item{posID}{a vector of groupings for the value
@@ -43,45 +43,44 @@
   grouping the column.}
 }
 \value{
-  a data frame with clusteredValues and frequency shown
-  alongside with the original input. If psl.rd parameter is
-  defined then a RangedData/GRanges object is returned with
-  three new columns appended at the end: clusteredPosition,
-  clonecount, and clusterTopHit (a representative for a
-  given cluster chosen by best scoring hit!).
+a data frame with clusteredValues and frequency shown
+alongside with the original input. If psl.rd parameter is
+defined then a RangedData/GRanges object is returned with
+three new columns appended at the end: clusteredPosition,
+clonecount, and clusterTopHit (a representative for a given
+cluster chosen by best scoring hit!).
 }
 \description{
-  Given a group of discrete factors (i.e. position ids) and
-  integer values, the function tries to correct/cluster the
-  integer values based on their frequency in a defined
-  windowsize.
+Given a group of discrete factors (i.e. position ids) and
+integer values, the function tries to correct/cluster the
+integer values based on their frequency in a defined
+windowsize.
 }
 \note{
-  The algorithm for clustering when byQuartile=TRUE is as
-  follows: for all values in each grouping, get a
-  distribution and test if their frequency is >= quartile
-  threshold. For values below the quartile threshold, test
-  if any values overlap with the ones that passed the
-  threshold and is within the defined windowSize. If there
-  is a match, then merge with higher value, else leave it
-  as is. This is only useful if the distribution is wide
-  and polynodal. When byQuartile=FALSE, for each group the
-  values within the defined window are merged with the next
-  highest frequently occuring value, if freuquencies are
-  tied then lowest value is used to represent the cluster.
-  When psl.rd is passed, then multihits are ignored and
-  only unique sites are clustered. All multihits will be
-  tagged as a good 'clusterTopHit'.
+The algorithm for clustering when byQuartile=TRUE is as
+follows: for all values in each grouping, get a
+distribution and test if their frequency is >= quartile
+threshold. For values below the quartile threshold, test if
+any values overlap with the ones that passed the threshold
+and is within the defined windowSize. If there is a match,
+then merge with higher value, else leave it as is. This is
+only useful if the distribution is wide and polynodal. When
+byQuartile=FALSE, for each group the values within the
+defined window are merged with the next highest frequently
+occuring value, if freuquencies are tied then lowest value
+is used to represent the cluster. When psl.rd is passed,
+then multihits are ignored and only unique sites are
+clustered. All multihits will be tagged as a good
+'clusterTopHit'.
 }
 \examples{
 #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))
 #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 }
 \seealso{
-  \code{\link{findIntegrations}},
-  \code{\link{getIntegrationSites}},
-  \code{\link{otuSites}}, \code{\link{otuSites2}},
-  \code{\link{crossOverCheck}},
-  \code{\link{pslToRangedObject}}
+\code{\link{findIntegrations}},
+\code{\link{getIntegrationSites}}, \code{\link{otuSites}},
+\code{\link{otuSites2}}, \code{\link{crossOverCheck}},
+\code{\link{pslToRangedObject}}
 }
 

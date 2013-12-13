@@ -2,9 +2,9 @@
 \alias{extractSeqs}
 \title{Extract sequences for a feature in the sampleInfo object.}
 \usage{
-  extractSeqs(sampleInfo, sector = NULL, samplename = NULL,
-    feature = "genomic", trim = TRUE, minReadLength = 1,
-    sideReturn = NULL)
+extractSeqs(sampleInfo, sector = NULL, samplename = NULL,
+  feature = "genomic", trim = TRUE, minReadLength = 1,
+  sideReturn = NULL)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object,
@@ -48,21 +48,21 @@
   features: decoded, genomic or genomicLinkered.}
 }
 \value{
-  a listed DNAStringSet object structed by sector then
-  sample.
+a listed DNAStringSet object structed by sector then
+sample.
 }
 \description{
-  Given a sampleInfo object, the function extracts
-  sequences for a defined feature.
+Given a sampleInfo object, the function extracts sequences
+for a defined feature.
 }
 \examples{
 #extractSeqs(sampleInfo)
 #extractSeqs(sampleInfo,feature="primed")
 }
 \seealso{
-  \code{\link{findPrimers}}, \code{\link{findLTRs}},
-  \code{\link{findLinkers}}, \code{\link{trimSeqs}},
-  \code{\link{extractFeature}},
-  \code{\link{getSectorsForSamples}}
+\code{\link{findPrimers}}, \code{\link{findLTRs}},
+\code{\link{findLinkers}}, \code{\link{trimSeqs}},
+\code{\link{extractFeature}},
+\code{\link{getSectorsForSamples}}
 }
 

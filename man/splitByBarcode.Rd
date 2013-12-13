@@ -2,9 +2,8 @@
 \alias{splitByBarcode}
 \title{Split DNAStringSet object using first X number of bases defined by a vector.}
 \usage{
-  splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL,
-    showStats = FALSE, returnUnmatched = FALSE,
-    dereplicate = FALSE)
+splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL, showStats = FALSE,
+  returnUnmatched = FALSE, dereplicate = FALSE)
 }
 \arguments{
   \item{barcodesSample}{a character vector of barcodes to
@@ -29,24 +28,23 @@
   sequence names/deflines. Default is FALSE.}
 }
 \value{
-  DNAStringSet object split by sample name found in
-  barcodesSample.
+DNAStringSet object split by sample name found in
+barcodesSample.
 }
 \description{
-  Given a character vector of barcodes/MID to sample
-  association and a DNAStringSet object, the function
-  splits/demultiplexes the DNAStringSet object by first few
-  bases dictated by length of barcodes/MID supplied. This
-  is an accessory function used by
-  \code{\link{decodeByBarcode}} or
-  \code{\link{findBarcodes}}
+Given a character vector of barcodes/MID to sample
+association and a DNAStringSet object, the function
+splits/demultiplexes the DNAStringSet object by first few
+bases dictated by length of barcodes/MID supplied. This is
+an accessory function used by \code{\link{decodeByBarcode}}
+or \code{\link{findBarcodes}}
 }
 \examples{
 #splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
 }
 \seealso{
-  \code{\link{decodeByBarcode}},
-  \code{\link{dereplicateReads}},
-  \code{\link{replicateReads}}
+\code{\link{decodeByBarcode}},
+\code{\link{dereplicateReads}},
+\code{\link{replicateReads}}
 }
 

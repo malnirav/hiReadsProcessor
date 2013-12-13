@@ -2,9 +2,9 @@
 \alias{troubleshootLinkers}
 \title{Compare LTRed/Primed sequences to all linkers.}
 \usage{
-  troubleshootLinkers(sampleInfo, qualityThreshold = 0.55,
-    qualityThreshold1 = 0.75, qualityThreshold2 = 0.5,
-    doRC = TRUE, parallel = TRUE, samplenames = NULL, ...)
+troubleshootLinkers(sampleInfo, qualityThreshold = 0.55,
+  qualityThreshold1 = 0.75, qualityThreshold2 = 0.5, doRC = TRUE,
+  parallel = TRUE, samplenames = NULL, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -42,29 +42,28 @@
   \code{\link{pairwiseAlignment}}.}
 }
 \value{
-  a dataframe of counts.
+a dataframe of counts.
 }
 \description{
-  Given a SampleInfo object, the function compares LTRed
-  sequences from each sample per sector to all the linker
-  sequences present in the run. The output is a summary
-  table of counts of good matches to all the linkers per
-  sample.
+Given a SampleInfo object, the function compares LTRed
+sequences from each sample per sector to all the linker
+sequences present in the run. The output is a summary table
+of counts of good matches to all the linkers per sample.
 }
 \note{
-  If parallel=TRUE, then be sure to have a paralle backend
-  registered before running the function. One can use any
-  of the following libraries compatible with
-  \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-  example: library(doMC); registerDoMC(2)
+If parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2)
 }
 \examples{
 #troubleshootLinkers(sampleInfo,showStats=TRUE)
 }
 \seealso{
-  \code{\link{pairwiseAlignSeqs}},
-  \code{\link{vpairwiseAlignSeqs}},
-  \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}},
-  \code{\link{findPrimers}}, \code{\link{findAndTrimSeq}}
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}},
+\code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}},
+\code{\link{findPrimers}}, \code{\link{findAndTrimSeq}}
 }
 

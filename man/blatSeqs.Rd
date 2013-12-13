@@ -2,10 +2,10 @@
 \alias{blatSeqs}
 \title{Align sequences using BLAT.}
 \usage{
-  blatSeqs(query = NULL, subject = NULL,
-    standaloneBlat = TRUE, port = 5560, host = "localhost",
-    parallel = TRUE, gzipResults = TRUE,
-    blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50, q = "dna", t = "dna", out = "psl"))
+blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE,
+  port = 5560, host = "localhost", parallel = TRUE, gzipResults = TRUE,
+  blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 5, tileSize =
+  10, repMatch = 112312, dots = 50, q = "dna", t = "dna", out = "psl"))
 }
 \arguments{
   \item{query}{an object of DNAStringSet, a character
@@ -48,19 +48,19 @@
   sequence with 70\% identity.}
 }
 \value{
-  a character vector of psl filenames.
+a character vector of psl filenames.
 }
 \description{
-  Align batch of sequences using standalone BLAT or
-  gfServer/gfClient protocol for alignment against an
-  indexed reference genome. Depending on parameters
-  provided, the function either aligns batch of files to a
-  reference genome using gfClient or takes sequences from
-  query & subject parameters and aligns them using
-  standalone BLAT. If standaloneBlat=FALSE and gfServer is
-  not launched apriori, this function will start one using
-  \code{\link{startgfServer}} and kill it using
-  \code{\link{stopgfServer}} upon successful execution.
+Align batch of sequences using standalone BLAT or
+gfServer/gfClient protocol for alignment against an indexed
+reference genome. Depending on parameters provided, the
+function either aligns batch of files to a reference genome
+using gfClient or takes sequences from query & subject
+parameters and aligns them using standalone BLAT. If
+standaloneBlat=FALSE and gfServer is not launched apriori,
+this function will start one using
+\code{\link{startgfServer}} and kill it using
+\code{\link{stopgfServer}} upon successful execution.
 }
 \examples{
 #blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
@@ -68,10 +68,10 @@
 #blatSeqs("mySeqs.fa", "/usr/local/blatSuite34/hg18.2bit", standaloneBlat=FALSE)
 }
 \seealso{
-  \code{\link{pairwiseAlignSeqs}},
-  \code{\link{vpairwiseAlignSeqs}},
-  \code{\link{startgfServer}}, \code{\link{stopgfServer}},
-  \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}},
-  \code{\link{read.blast8}}
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}},
+\code{\link{startgfServer}}, \code{\link{stopgfServer}},
+\code{\link{read.psl}}, \code{\link{splitSeqsToFiles}},
+\code{\link{read.blast8}}
 }
 

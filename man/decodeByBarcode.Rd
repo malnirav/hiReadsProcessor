@@ -3,14 +3,14 @@
 \alias{findBarcodes}
 \title{Demultiplex reads by their barcodes}
 \usage{
-  decodeByBarcode(sampleInfo, sector = NULL, dnaSet = NULL,
-    showStats = FALSE, returnUnmatched = FALSE,
-    dereplicate = FALSE, alreadyDecoded = FALSE)
+decodeByBarcode(sampleInfo, sector = NULL, dnaSet = NULL,
+  showStats = FALSE, returnUnmatched = FALSE, dereplicate = FALSE,
+  alreadyDecoded = FALSE)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
   created using \code{\link{read.sampleInfo}}, which holds
-  barcodes and sample names per sector/quadrant or a
+  barcodes and sample names per sector/quadrant/lane or a
   character vector of barcodes to sample name associations.
   Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)}
 
@@ -49,20 +49,19 @@
   into the sampleInfo object.}
 }
 \value{
-  If sampleInfo is an object of SimpleList then decoded
-  sequences are appeneded to respective sample slots, else
-  a named list of DNAStringSet object. If
-  returnUnmatched=TRUE, then x[["unDecodedSeqs"]] has the
-  unmatched sequences.
+If sampleInfo is an object of SimpleList then decoded
+sequences are appeneded to respective sample slots, else a
+named list of DNAStringSet object. If returnUnmatched=TRUE,
+then x[["unDecodedSeqs"]] has the unmatched sequences.
 }
 \description{
-  Given a sample information object, the function reads in
-  the raw fasta/fastq file, demultiplexes reads by their
-  barcodes, and appends it back to the sampleInfo object.
-  Calls \code{\link{splitByBarcode}} to perform the actual
-  splitting of file by barcode sequences. If supplied with
-  a character vector and reads themselves, the function
-  behaves a bit differently. See the examples.
+Given a sample information object, the function reads in
+the raw fasta/fastq file, demultiplexes reads by their
+barcodes, and appends it back to the sampleInfo object.
+Calls \code{\link{splitByBarcode}} to perform the actual
+splitting of file by barcode sequences. If supplied with a
+character vector and reads themselves, the function behaves
+a bit differently. See the examples.
 }
 \examples{
 #findBarcodes(sampleInfo,showStats=TRUE)
@@ -70,8 +69,8 @@
 #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
 }
 \seealso{
-  \code{\link{splitByBarcode}},
-  \code{\link{dereplicateReads}},
-  \code{\link{replicateReads}}
+\code{\link{splitByBarcode}},
+\code{\link{dereplicateReads}},
+\code{\link{replicateReads}}
 }
 
