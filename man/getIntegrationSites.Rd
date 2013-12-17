@@ -35,6 +35,7 @@ a RangedData/GRanges object with integration sites which
 passed all filtering criteria. Each filtering parameter
 creates a new column to flag if a sequence/read passed that
 filter which follows the scheme: 'pass.FilterName'.
+Integration Site is marked by new column named 'Position'.
 }
 \description{
 Given a RangedData/GRanges object from

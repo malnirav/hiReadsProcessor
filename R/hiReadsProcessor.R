@@ -2991,7 +2991,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
 #' @param correctByqStart use qStart to correct genomic position. This would account for sequencing/trimming errors. Position=ifelse(strand=="+",tStart-qStart,tEnd+qStart). Default is TRUE.
 #' @param oneBased the coordinates in psl files are "zero based half open". The first base in a sequence is numbered zero rather than one. Enabling this would add +1 to the start and leave the end as is. Default is FALSE.
 #'
-#' @return a RangedData/GRanges object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'.
+#' @return a RangedData/GRanges object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'. Integration Site is marked by new column named 'Position'.
 #'
 #' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 #'
@@ -3015,15 +3015,14 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
   
   ## check if required columns exist ##
   absentCols <- setdiff(c("qName", "qStart", "qSize","matches", "misMatches", 
-  						  "qBaseInsert", "tBaseInsert"), 
-  						colnames(mcols(psl.rd)))
+                          "qBaseInsert", "tBaseInsert"), 
+                        colnames(mcols(psl.rd)))
   						  
   if(length(absentCols)>0) {
   	stop("Following columns are absent from psl.rd object: ",
   		 paste(absentCols,collapse=","))
   }
 
-  
   ## get the integration position by correcting for any insertions due to sequencing errors ##    
   if(correctByqStart) {
     mcols(psl.rd)$Position <- ifelse(as.character(strand(psl.rd))=="+",
@@ -3043,10 +3042,11 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
   # get scores for picking best hits and identify multihits later
   # check if scoring filtering hasn't already been applied by blat functions
   if(!"score" %in% colnames(mcols(psl.rd))) {
+    message("Adding score column.")
     mcols(psl.rd)$score <- with(as.data.frame(mcols(psl.rd)), 
                                 matches-misMatches-qBaseInsert-tBaseInsert)
-    bestScore <- tapply(mcols(psl.rd)$score, as.character(seqnames(psl.rd)), max)
-    isBest <- mcols(psl.rd)$score==bestScore[as.character(seqnames(psl.rd))]
+    bestScore <- tapply(mcols(psl.rd)$score, as.character(mcols(psl.rd)$qName), max)
+    isBest <- mcols(psl.rd)$score==bestScore[as.character(mcols(psl.rd)$qName)]
     psl.rd <- psl.rd[isBest,]
     rm("isBest","bestScore")
     cleanit <- gc()
@@ -4103,7 +4103,7 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
   
   message("Reading PSL files.")
   ## read all hits and split by samples ##
-  psl <- read.psl(pslFiles, bestScoring=TRUE, asRangedData=TRUE, 
+  psl <- read.psl(pslFiles, bestScoring=TRUE, asGRanges=TRUE, 
                   removeFile=TRUE, parallel=FALSE)
   cleanit <- gc()
   psl$setname <- sub("^(.+)-(.+)$","\\1", psl$qName)
