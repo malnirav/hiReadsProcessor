@@ -646,7 +646,8 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
                               qualityThreshold=1, showStats=FALSE, bufferBases=5, 
                               doRC=TRUE, returnUnmatched=FALSE, 
                               returnLowScored=FALSE, parallel=FALSE, ...) {
-  if(is.null(subjectSeqs) | is.null(patternSeq)) {
+  if(is.null(subjectSeqs) | is.null(patternSeq) | 
+       length(subjectSeqs)==0 | length(patternSeq)==0) {
     stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
   }
   
@@ -825,7 +826,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
                               qualityThreshold1=0.75, qualityThreshold2=0.50, 
                               doAnchored=FALSE, doRC=TRUE, returnUnmatched=FALSE, 
                               returnRejected=FALSE, showStats=FALSE, ...) {
-  if(is.null(subjectSeqs) | is.null(patternSeq)) {
+  if(is.null(subjectSeqs) | is.null(patternSeq) | 
+       length(subjectSeqs)==0 | length(patternSeq)==0) {
     stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
   }
   
@@ -1006,7 +1008,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
 vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", 
                                qualityThreshold=1, showStats=FALSE, 
                                bufferBases=5, doRC=TRUE, parallel=FALSE, ...) {
-  if(is.null(subjectSeqs) | is.null(patternSeq)) {
+  if(is.null(subjectSeqs) | is.null(patternSeq) | 
+       length(subjectSeqs)==0 | length(patternSeq)==0) {
     stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
   }
   
@@ -1131,7 +1134,8 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
 #'
 doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, 
                      qualityThreshold=0.5, core.use=2) {
-  if(is.null(subjectSeqs) | is.null(patternSeq)) {
+  if(is.null(subjectSeqs) | is.null(patternSeq) | 
+       length(subjectSeqs)==0 | length(patternSeq)==0) {
     stop("subjectSeqs/patternSeq is empty. Please supply reads to be aligned")
   }
   
@@ -1187,8 +1191,8 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' #findPrimers(sampleInfo, alignWay="slow", showStats=TRUE)
 #'
 findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, 
-                        doRC=FALSE, parallel=TRUE, samplenames=NULL, bypassChecks=FALSE,
-                        ...) {    
+                        doRC=FALSE, parallel=TRUE, samplenames=NULL, 
+                        bypassChecks=FALSE, ...) {    
   stopifnot(is(sampleInfo,"SimpleList"))
   
   if(!parallel) { registerDoSEQ() }
@@ -1773,6 +1777,10 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
 findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, 
                            alignWay = "slow", ...) {
   
+  if(length(patternSeq)==0 | length(subjectSeqs)==0) {
+    stop("patternSeq/subjectSeqs is empty.")
+  }
+  
   ## give names to subjectSeqs if not there for matching purpose in trimSeqs()
   removeNamesAfter <- FALSE
   if(is.null(names(subjectSeqs))) {
@@ -1817,6 +1825,10 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0,
 trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
   stopifnot(class(dnaSet) %in% c("DNAStringSet", "DNAString"))
   stopifnot(class(coords)=="IRanges")
+  
+  if(length(dnaSet)==0 | length(coords)==0) {
+    stop("dnaSet/coords is empty. Please supply reads/coords to be trimmed.")
+  }
   
   # check if both dnaSet and coords has 'names' attribute, 
   # if yes then check if they have matching names, else check lengths. 
@@ -2664,7 +2676,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   }
   
   ## check the subject parameter
-  if(is.null(subject)) {
+  if(is.null(subject) | length(subject)==0) {
     stop("The subject parameter is empty. 
          Please supply subject sequences or a path to 2bit or nib files to serve as reference/target")
   } else {
@@ -2699,7 +2711,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   }
   
   ## check the query parameter
-  if(is.null(query)) {
+  if(is.null(query) | lenght(query)==0) {
     stop("The query parameter is empty. Please supply reads to be aligned")
   } else {
     queryFiles <- NULL
@@ -2836,7 +2848,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
 #'
 read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, 
                      asGRanges=FALSE, removeFile=TRUE, parallel=FALSE) {
-  if(is.null(pslFile)) {
+  if(is.null(pslFile) | length(pslFile)==0) {
     stop("pslFile parameter empty. Please supply a filename to be read.")
   }
   
@@ -2926,7 +2938,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
 #'
 read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
                         removeFile=TRUE, parallel=FALSE) {
-  if(is.null(files)) {
+  if(is.null(files) | length(files)==0) {
     stop("files parameter empty. Please supply a filename to be read.")
   }
   
@@ -3004,7 +3016,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
                                 genomicPercentIdentity=0.98, correctByqStart=TRUE, 
                                 oneBased=FALSE) {
   stopifnot((is(psl.rd,"RangedData") | is(psl.rd,"GRanges")) & 
-              !is.null(psl.rd) & !is.null(startWithin) & 
+              !is.null(psl.rd) & !is.null(startWithin) & !length(psl.rd)==0 &
               !is.null(alignRatioThreshold) & !is.null(genomicPercentIdentity))
   
   isRangedData <- FALSE
@@ -3157,7 +3169,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     clusters <- clusterSites(posIDs[good.row], 
                              values[good.row], 
                              grouping=grouping[good.row], 
-                             weight=weight, 
+                             weight=weight[good.row], 
                              windowSize=windowSize, 
                              byQuartile=byQuartile, quartile=quartile)
     
@@ -4193,7 +4205,11 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
 #'
 findAndRemoveVector <- function(reads, Vector, minLength=10, returnCoords=FALSE, parallel=TRUE) {
   if(!parallel) { registerDoSEQ() }
-
+  
+  if(length(reads)==0 | length(Vector)==0) {
+    stop("reads/Vector is empty. Please supply reads/Vector to be aligned")
+  }
+  
   hits <- read.blast8(blatSeqs(query=reads, subject=Vector, parallel=parallel,
                                blatParameters=c(stepSize = 5, tileSize = 8, 
                                                 repMatch = 112312, out = "blast8")))
