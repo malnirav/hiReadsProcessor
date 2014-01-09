@@ -2711,7 +2711,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   }
   
   ## check the query parameter
-  if(is.null(query) | lenght(query)==0) {
+  if(is.null(query) | length(query)==0) {
     stop("The query parameter is empty. Please supply reads to be aligned")
   } else {
     queryFiles <- NULL
