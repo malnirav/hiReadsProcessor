@@ -1,8 +1,8 @@
-#' Functions to process LM-PCR reads with hiReadsProcessor.
+#' Functions to process LM-PCR reads from 454/Solexa data.
 #'
 #' hiReadsProcessor contains set of functions which allow users to process LM-PCR sequence data coming out of the 454/Solexa sequencer. Given an excel file containing parameters for demultiplexing and sample metadata, the functions automate trimming of adaptors and identification of the genomic product. In addition, if IntSites MySQL database is setup, the sequence attrition is loaded into respective tables for post processing setup and analysis.
 #'
-#' @import Biostrings GenomicRanges foreach iterators RMySQL xlsx plyr
+#' @import Biostrings GenomicRanges foreach iterators RMySQL xlsx plyr Rsubread
 #' @docType package
 #' @name hiReadsProcessor
 NULL
@@ -11,47 +11,50 @@ NULL
 #'
 #' Given a sequencing folder path, sample information file path, and sequence file extension pattern, the function returns a list of variables required to process the data. The function also calls \code{\link{read.sampleInfo}} which reads in sample processing metadata and formats it if needed.
 #'
-#' @param SequencingFolderPath full or relative path to the sequencing folder
+#' @param sequencingFolderPath full or relative path to the sequencing folder
 #' @param sampleInfoFilePath full or relative path to the sample information file, which holds samples to quadrant/lane associations along with other metadata required to trim sequences or process it. Default to NULL, where the function tries to find xls or tab deliminated txt file in the sequencing folder which sounds similar to 'sampleinfo' and present you with choices of file to select from.
 #' @param seqfilePattern regex to describe sequence file endings. See examples. Default is "\\.TCA.454Reads.fna$".
-#' @param interactive whether to prompt each time the function encounters an issue, or use the defaults. Default is TRUE.
+#' @param interactive whether to prompt each time the function encounters an issue or use the defaults. Default is TRUE.
 #'
 #' @return a SimpleList list which is used by other functions to process and decode the data.
 #'
-#' @note one must make sure that each sequencing file has sector name/number prefixed at the beginning, else \code{\link{decodeByBarcode}} will fail trying to find the filename.
+#' @note 
+#' \itemize{
+#'   \item One must make sure that each sequencing file has sector name/number prefixed at the beginning, else \code{\link{decodeByBarcode}} will fail trying to find the filename.
+#'   \item For paired end Illumina runs, make sure the filenames include R1, R2, and I1 somewhere in the name denoting pair1, pair2, and index/barcode reads, respectively. 
+#' }
 #'
 #' @seealso \code{\link{read.sampleInfo}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
 #'
 #' @export
 #'
 #' @examples  
-#' #read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
-#' #read.SeqFolder(".",seqfilePattern=".+fastq$")
+#' #read.SeqFolder("~/Downloads/454Runs/2011_07_22", seqfilePattern=".+fna$")
+#' #read.SeqFolder(".", seqfilePattern=".+fastq$")
 #'
-read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL, 
+read.SeqFolder <- function(sequencingFolderPath=NULL, sampleInfoFilePath=NULL, 
                            seqfilePattern="\\.TCA.454Reads.fna$", interactive=TRUE) {
-  if(is.null(SequencingFolderPath)) {
+  if(is.null(sequencingFolderPath)) {
     stop("No Sequencing Folder Path provided.")
   }
   
-  ## get the SequencingFolderPath right!
-  SequencingFolderPath <-  normalizePath(SequencingFolderPath, mustWork=TRUE)
+  ## get the sequencingFolderPath right!
+  sequencingFolderPath <- normalizePath(sequencingFolderPath, mustWork=TRUE)
   
-  seqFilePaths <- list.files(path=SequencingFolderPath, recursive=TRUE, 
+  seqFilePaths <- list.files(path=sequencingFolderPath, recursive=TRUE, 
                              full.names=TRUE, pattern=seqfilePattern)
   if(length(seqFilePaths)==0) {
-    stop(paste("No files found in the folder", SequencingFolderPath,
-               "matching following pattern:", seqfilePattern))
+    stop("No files found in the folder ", sequencingFolderPath,
+         "matching following pattern: ", seqfilePattern)
   }
   
   ## read the sample info file
   if(is.null(sampleInfoFilePath)) {
-    possibleFiles <- list.files(path=SequencingFolderPath, 
+    possibleFiles <- list.files(path=sequencingFolderPath, 
                                 recursive=TRUE, full.names=TRUE, 
                                 pattern=".*sampleinfo.+", ignore.case=TRUE)
     if (length(possibleFiles)==0) {
-      stop(paste("No sample information file found in folder :",
-                 SequencingFolderPath))
+      stop("No sample information file found in folder: ", sequencingFolderPath)
     } else {
       if(interactive & length(possibleFiles)>1) {
         message("Please choose a sample information file to read the meta data from:\n",
@@ -66,13 +69,25 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL,
   }
   sampleInfo <- read.sampleInfo(sampleInfoFilePath, interactive=interactive)
   
+  ## do a quick test of filenames if any samples are from paired end illumina
+  if(any(sampleInfo$pairedend)) {    
+    sectors <- unique(sampleInfo$sector[sampleInfo$pairedend])
+    for(sector in sectors) {
+      vals <- grep(gsub("I1|R1|R2","",sector), seqFilePaths, value=TRUE)
+      if(length(vals)!=3) {
+        stop("Sector ",sector," is missing one of the files: R1, R2, or I1.")
+      }
+    }
+  }
+  
   if(length(sampleInfo)!=length(unique(gsub("I1|R1|R2","",seqFilePaths)))) {
     warning("Number of sectors (", length(sampleInfo),
             ") in sample information file does not match number of sector files (", 
-            length(unique(gsub(seqfilePattern,'',seqFilePaths))), ") found in the folder.")
+            length(unique(gsub(seqfilePattern,'',seqFilePaths))), 
+            ") found in the folder.")
   }
   
-  return(SimpleList("SequencingFolderPath"=SequencingFolderPath, 
+  return(SimpleList("sequencingFolderPath"=sequencingFolderPath, 
                     "seqFilePaths"=seqFilePaths, "seqfilePattern"=seqfilePattern, 
                     "sampleInfoFilePath"=sampleInfoFilePath, 
                     "sectors"=sampleInfo, "callHistory"=match.call()))
@@ -90,15 +105,15 @@ read.SeqFolder <- function(SequencingFolderPath=NULL, sampleInfoFilePath=NULL,
 #' \itemize{
 #'  \item Required Column Description:
 #'    \itemize{
-#'  	\item sector => region/quadrant/lane of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed. For paired end data, this is basename of the FASTA/Q file holding the sample data from the LTR side(Lib3_L001_R2_001.fastq.gz or Lib3_L001_R2_001.fastq would be Lib3_L001_R2_001).
-#'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample. If providing filename as sector, then leave this blank.
+#'  	\item sector => region/quadrant/lane of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed. For paired end data, this is basename of the FASTA/Q file holding the sample data from the LTR side. For example, files such as Lib3_L001_R2_001.fastq.gz or Lib3_L001_R2_001.fastq would be Lib3_L001_R2_001, and consequently Lib3_L001_R1_001 would be used as the second pair!
+#'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample. If providing filename as sector, then leave this blank since it is assumed that the data is already demultiplexed.
 #'  	\item primerltrsequence => DNA sequence of the viral LTR primer with/without the viral LTR sequence following the primer landing site. If already trimmed, then mark this as SKIP.
 #'  	\item samplename => Name of the sample associated with the barcode
 #'  	\item sampledescription => Detailed description of the sample
-#'  	\item gender => sex of the sample: male or female
+#'  	\item gender => sex of the sample: male or female or NA
 #'  	\item species => species of the sample: homo sapien, mus musculus, etc.
 #'  	\item freeze => UCSC freeze to which the sample should be aligned to.
-#'  	\item linkersequence => DNA sequence of linker adaptor to found following the genomic sequence. If already trimmed, then mark this as SKIP.
+#'  	\item linkersequence => DNA sequence of the linker adaptor following the genomic sequence. If already trimmed, then mark this as SKIP.
 #'  	\item restrictionenzyme => Restriction enzyme used for digestion and sample recovery. Can also be one of: Fragmentase or Sonication!
 #' 		}
 #'  \item Metadata Parameter Column Description:
@@ -169,9 +184,8 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
   ColsNotThere <- !requiredCols %in% names(sampleInfo)
   if (any(ColsNotThere)) {
     absentCols <- requiredCols[ColsNotThere]
-    info <- paste0("Following required column(s) is absent from the Sample Info file:",
-                   paste(absentCols,sep="", collapse=", "))
-    stop(info)
+    stop("Following required column(s) is absent from the Sample Info file: ",
+         paste(absentCols,sep="", collapse=", "))
   }
   
   # add missing meta data columns
@@ -259,9 +273,9 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
   
   sampleSectorTest <- table(paste(sampleInfo$samplename, sampleInfo$sector))
   if(any(sampleSectorTest>1)) {
-    stop("Duplicate sample names found on same quadrant in the sample information file ",
-         sampleInfoPath, " : ", paste(sampleSectorTest[sampleSectorTest>1],
-                                      sep="",collapse=", "))
+    stop("Duplicate sample names found on same quadrant in the ",
+         "sample information file ", sampleInfoPath, " : ", 
+         paste(sampleSectorTest[sampleSectorTest>1], sep="",collapse=", "))
   }
   
   # prepare the sample info object!
@@ -297,7 +311,8 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
 dereplicateReads <- function(dnaSet) {
   stopifnot(is(dnaSet,"DNAStringSet"))
   if(is.null(names(dnaSet))) {
-    message("No names attribute found in dnaSet object...using artifically generated names")
+    message("No names attribute found in dnaSet object...", 
+            "using artifically generated names")
     names(dnaSet) <- paste("read", 1:length(dnaSet), sep="-")
   }
   dnaSet <- sort(dnaSet)
@@ -337,7 +352,8 @@ replicateReads <- function(dnaSet, counts=NULL) {
     }
     counts <- as.numeric(sub(".+counts=(\\d+)","\\1", names(dnaSet)))
     if(all(is.na(counts))) {
-      stop("No counts=X marker found at the end of definition line or names attribute in dnaSet object")
+      stop("No counts=X marker found at the end of definition line or ",
+           "names attribute in dnaSet object")
     }
   }
   if (length(counts)==1) {
@@ -345,7 +361,8 @@ replicateReads <- function(dnaSet, counts=NULL) {
   }
   
   ids <- unlist(sapply(counts, seq_len))
-  deflines <- paste0(rep(sub("(.+)counts=.+", "\\1", names(dnaSet)), times=counts), ids)
+  deflines <- paste0(rep(sub("(.+)counts=.+", "\\1", 
+                             names(dnaSet)), times=counts), ids)
   dnaSet <- rep(dnaSet, times=counts)
   names(dnaSet) <- deflines
   return(dnaSet)
@@ -507,9 +524,11 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
     for(sector in sectors) {
       ## check everything is cool with the provided barcodes first before reading the sequences! ##
       message("Decoding sector: ",sector) 
+      isPaired <- any(as.logical(extractFeature(sampleInfo, sector, 
+                                                feature='pairedend')[[sector]]))
       
       ## prepare a vector of barcode to sample associations ##
-      sampleBarcodes <- toupper(extractFeature(sampleInfo,sector=sector,
+      sampleBarcodes <- toupper(extractFeature(sampleInfo, sector=sector,
                                                feature="barcode")[[sector]])
       barcodesSample <- structure(names(sampleBarcodes), 
                                   names=as.character(sampleBarcodes))
@@ -522,40 +541,51 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
       realbarcodelen <- unique(nchar(as.character(sampleBarcodes)))
       
       if (any(table(as.character(sampleBarcodes))>1)) {
-        message("Duplicate barcode found on this sector.
-						 Please choose from one of the options below:
-						 1: Pick first few bases of primer for tiebreaker? (This could be dangerous if the sequencing run has too many errors!)
-						 2: Use the last sample associated with the duplicate as the primary sample?
-						 3: Do not do anything.")
+        message("Duplicate barcode found on this sector.\n",
+                "Please choose from one of the options below:\n",
+                "\t1: Pick first few bases of primer for tiebreaker? ",
+                "(This could be dangerous if the run has too many errors!)\n",
+                "\t2: Use the last sample associated with the duplicate ",
+                "as the primary sample?\n", 
+                "\t3: Do not do anything.")
         
         choice <- scan(what=integer(0), n=1, quiet=TRUE, multi.line=FALSE)
         
         if(choice==1) {  
           message("Enter # of bases to use from primer:")
           howmany <- scan(what=integer(0), n=1, quiet=TRUE, multi.line=FALSE)
-          samplePrimers <- toupper(extractFeature(sampleInfo,
-                                                  sector=sector,
-                                                  feature="primerltrsequence")[[sector]])
-          newBarcodes <- toupper(paste(sampleBarcodes,
-                                       substr(samplePrimers,1,howmany),sep="")) 
+          samplePrimers <- extractFeature(sampleInfo,
+                                          sector=sector,
+                                          feature="primerltrsequence")[[sector]]
+          samplePrimers <- toupper(samplePrimers)
+          newBarcodes <- toupper(paste0(sampleBarcodes,
+                                        substr(samplePrimers,1,howmany))) 
           counts <- table(newBarcodes)
-          rows <- newBarcodes %in% names(which(counts==1)) ## only take 1 to 1 associations!
+          ## only take 1 to 1 associations!
+          rows <- newBarcodes %in% names(which(counts==1)) 
+          
           if (any(counts>1)) {            
-            message("Tiebreaking failed...try choosing high number of bases from primer possibly?
-							  Here are the failed barcodes: ",
-                 paste(names(which(counts>1)),collapse=", "))
-            message("Ignore samples associated with those barcodes and continue processing? (y/n)")
+            message("Tie breaking failed...",
+                    "try choosing high number of bases from primer possibly? ",
+                    "Here are the failed barcodes: ",
+                    paste(names(which(counts>1)),collapse=", "))
+            
+            message("Ignore samples associated with those barcodes and ",
+                    "continue processing? (y/n)")
             whatsup <- scan(what=character(0), n=1, quiet=TRUE, multi.line=FALSE)            
             if(whatsup=='n') {
-              stop("Aborting processing due to ambiguous barcode association for samples: ",
+              stop("Aborting processing due to ambiguous barcode ",
+                   "association for samples: ",
                    paste(names(sampleBarcodes[!rows]),collapse=", "))
             } else {              
               message("Ignoring following samples due to duplicate barcodes: ",
                       paste(names(sampleBarcodes[!rows]),collapse=", "))
             }
           }
+          
           barcodesSample <- structure(names(sampleBarcodes[rows]), 
                                       names=newBarcodes[rows])
+          
         } else if(choice==2) {
           message("Overwriting duplicate samples associated with the same barcode...")
         } else {
@@ -563,33 +593,66 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
         }
       }
       
-      dnaSet <- read.seqsFromSector(sampleInfo,sector)
+      dnaSet <- read.seqsFromSector(sampleInfo, sector, isPaired)
       
       if(alreadyDecoded) {
         if(length(barcodesSample)>1) {
-          stop("alreadyDecoded parameter is set to TRUE. 
-               There shouldn't be more than one sample associated to a sequence file.")
+          stop("alreadyDecoded parameter is set to TRUE. There shouldn't be more ",
+               "than one sample associated to a sequence file.")
         }
-        names(dnaSet) <- sub("^(\\S+) .+$", "\\1", names(dnaSet), perl=TRUE)
-        dnaSet <- as.list(split(dnaSet,
-                                rep(as.character(barcodesSample), length(dnaSet))))
+        
+        if(is.list(dnaSet)) {
+          dnaSet <- sapply(dnaSet, function(x) {
+            names(x) <- sub("^\\S+-(\\S+) .+$", "\\1", names(x), perl=TRUE)  
+            x
+          })          
+        } else {
+          names(dnaSet) <- sub("^\\S+-(\\S+) .+$", "\\1", names(dnaSet), perl=TRUE) 
+        }        
+        
+        ## no need to store barcode/index reads if alreadyDecoded!
+        if(isPaired) {
+          dnaSet <- dnaSet[c("pair1","pair2")]
+          dnaSet <- sapply(dnaSet, function(x) {
+            as.list(split(x, rep(as.character(barcodesSample), length(x))))
+          })
+        } else {
+          dnaSet <- as.list(split(dnaSet,
+                                  rep(as.character(barcodesSample), length(dnaSet))))
+        }
       } else {
-        dnaSet <- splitByBarcode(barcodesSample, dnaSet, 
-                                 trimFrom=realbarcodelen+1, showStats=showStats, 
-                                 returnUnmatched=returnUnmatched, 
-                                 dereplicate=dereplicate)
+        if(isPaired) {
+          bc <- splitByBarcode(barcodesSample, dnaSet[["barcode"]], 
+                               trimFrom=realbarcodelen+1, showStats=showStats, 
+                               returnUnmatched=returnUnmatched, 
+                               dereplicate=dereplicate)
+          p1 <- sapply(bc, function(x) dnaSet[['pair1']][names(x)])
+          p2 <- sapply(bc, function(x) dnaSet[['pair2']][names(x)])
+          stopifnot(identical(sapply(bc,length), sapply(p1,length)))
+          stopifnot(identical(sapply(bc,length), sapply(p2,length)))
+          dnaSet <- mapply(function(x,y) list("pair1"=x, "pair2"=y), p1, p2, 
+                           SIMPLIFY=FALSE)
+        } else {
+          dnaSet <- splitByBarcode(barcodesSample, dnaSet, 
+                                   trimFrom=realbarcodelen+1, showStats=showStats, 
+                                   returnUnmatched=returnUnmatched, 
+                                   dereplicate=dereplicate)
+        }
       }
       
       for(samplename in names(dnaSet)) {
         if(samplename=="unDecodedSeqs") {                                        
-          metadata(sampleInfo$sectors[[sector]]) <- append(metadata(sampleInfo$sectors[[sector]]), 
-                                                           list("unDecodedSeqs"=dnaSet[[samplename]]))            
+          metadata(sampleInfo$sectors[[sector]]) <- 
+            append(metadata(sampleInfo$sectors[[sector]]), 
+                   list("unDecodedSeqs"=dnaSet[[samplename]]))            
         } else {
-          sampleInfo$sectors[[sector]]$samples[[samplename]]$decoded <- dnaSet[[samplename]]
+          sampleInfo$sectors[[sector]]$samples[[samplename]]$decoded <- 
+            dnaSet[[samplename]]
         }
       }
-      metadata(sampleInfo$sectors[[sector]]) <- append(metadata(sampleInfo$sectors[[sector]]), 
-                                                       list("decodedBy"=barcodesSample))
+      metadata(sampleInfo$sectors[[sector]]) <- 
+        append(metadata(sampleInfo$sectors[[sector]]),
+               list("decodedBy"=barcodesSample))
     }
     sampleInfo$callHistory <- append(sampleInfo$callHistory, match.call())
     decoded <- sampleInfo
@@ -671,7 +734,8 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     if(any(culprits)) {
       badSeqs <- subjectSeqs[culprits]
       message(length(badSeqs),
-              " sequences were removed from aligning since they were shorter than pattern getting aligned: ",
+              " sequences were removed from aligning since they were",
+              " shorter than pattern getting aligned: ",
               (nchar(patternSeq)+bufferBases),"bp")            
       subjectSeqs <- subjectSeqs[!culprits]            
     }
@@ -842,7 +906,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
   
   ## make sure there are Ns in the patternSeq for considering primerIDs
   if(length(unlist(gregexpr("N",patternSeq)))<4) {
-    stop("There should be minimum of atleast 4 Ns in patternSeq to be considered as a primerID sequence.")
+    stop("There should be minimum of atleast 4 Ns in patternSeq to be ",
+         "considered as a primerID sequence.")
   }
   
   ## Get the right orientation of the supplied patternSeq to peform proper search 
@@ -911,7 +976,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
                        names=good.rows)        
   
   if(length(hits)==0) {
-    stop("No hits found that matched both sides of patternSeq with primerID in the middle.")
+    stop("No hits found that matched both sides of patternSeq with ",
+         "primerID in the middle.")
   }    
   
   ## do anchored search for only sequences that matched both sides of patternSeq
@@ -1029,7 +1095,8 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     if(any(culprits)) {
       badSeqs <- subjectSeqs[culprits]
       message(length(badSeqs),
-              " sequences were removed from aligning since they were shorter than pattern getting aligned: ",
+              " sequences were removed from aligning since they were",
+              " shorter than pattern getting aligned: ",
               (nchar(patternSeq)+bufferBases),"bp")
       subjectSeqs <- subjectSeqs[!culprits]            
     }
@@ -1076,9 +1143,9 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     names(hits) <- as.character(seqnames(reduced))
     rm(reduced)
     if(any(runLength(counts)>1)) {
-      message(paste("More than 1 pattern (", patternSeq,") match found for:",
-                    paste(runValue(counts)[runLength(counts)>1],collapse=",")))
-      message("\nUsing the latter occuring hit as the dominant for each read.")
+      message("More than 1 pattern (", patternSeq,") match found for:",
+              paste(runValue(counts)[runLength(counts)>1],collapse=","),
+              "\nUsing the latter occuring hit as the dominant for each read.")
       toremove <- c()
       for(culprits in as.character(runValue(counts)[runLength(counts)>1])) {
         rows <- which(names(hits) %in% culprits)
@@ -1087,8 +1154,8 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
       hits <- hits[-toremove]
       counts <- Rle(names(hits))
       if(any(runLength(counts)>1)) {
-        stop(paste("More than 1 pattern unresolved (",patternSeq,") match found for:",
-                   paste(runValue(counts)[runLength(counts)>1],collapse=",")))
+        stop("More than 1 pattern unresolved (",patternSeq,") match found for:",
+             paste(runValue(counts)[runLength(counts)>1],collapse=","))
       }
     }
   }
@@ -1157,7 +1224,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
   
   if(hits[[1]] < hits[[2]]) {
     message("There were less/no good hits found for pattern ", patternSeq,
-            "\nthan its reverse complement...", patternSeq.rc,
+            "than its reverse complement...", patternSeq.rc,
             "\nUsing the latter to perform the searching.")
     patternSeq <- patternSeq.rc
   }
@@ -1218,7 +1285,8 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
     if(!all(skippers) & (length(ltrPrimers[!skippers])==0 | 
                            mean(nchar(ltrPrimers[!skippers]))<=5 | 
                            all(is.na(ltrPrimers[!skippers])))) {
-      stop("Either the primer size is too short (<=5) or no primers are found in sample information object.")
+      stop("Either the primer size is too short (<=5) or ",
+           "no primers are found in sample information object.")
     }
     
     ## refine sample list if specific samples are supplied ##
@@ -1269,7 +1337,8 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       ## check if any error occured during alignments ##
       if(any(grepl("simpleError",primerTrimmed))) {
         stop("Error encountered in LTR Trimming function",
-             paste(names(primerTrimmed[grepl("simpleError",primerTrimmed)]),collapse=", "))
+             paste(names(primerTrimmed[grepl("simpleError",primerTrimmed)]),
+                   collapse=", "))
       }        
       
       ## remove samples with no primer hits from further processing ##
@@ -1297,7 +1366,9 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       
       ## if <= 5% of sequences found primers...then something is wrong with the primer sequences provided???
       if(mean(toprint$PercOfDecoded)<=5 & !bypassChecks) {
-        stop("Something seems to be wrong with the primers provided for each sample. On average <= 5% of sequences found primer match for the entire run!!!")
+        stop("Something seems to be wrong with the primers provided for ",
+             "each sample. On average <= 5% of sequences found primer match ",
+             "for the entire run!!!")
       }
       
       ## modify metadata attribute, write primer coordinates back to sampleInfo object & trim
@@ -1362,7 +1433,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
     if(!all(skippers) & (length(sampleLTRbits[!skippers])==0 | 
                            mean(nchar(sampleLTRbits[!skippers]))<=1 | 
                            all(is.na(sampleLTRbits[!skippers])))) {
-      stop("Either LTR bit sequence is too short (<=1) or no LTR bits found in sample information object.")
+      stop("Either LTR bit sequence is too short (<=1) or no LTR bits ",
+           "found in sample information object.")
     }
     
     ## refine sample list if specific samples are supplied ##
@@ -1434,8 +1506,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       
       ## if <= 5% of sequences found LTRs...then something is wrong with the LTR sequences provided???
       if(mean(toprint$PercOfPrimed)<=5 & !bypassChecks) {
-        stop("Something seems to be wrong with the LTRs provided for each sample. 
-             On average <= 5% of sequences found LTR match for the entire run!!!")
+        stop("Something seems to be wrong with the LTRs provided for each sample. ",
+             "On average <= 5% of sequences found LTR match for the entire run!!!")
       }
       
       ## modify metadata attribute, add LTR bit coordinates to primer and write back to sampleInfo object & trim
@@ -1493,7 +1565,8 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
   toProcessSamples <- sapply(toProcess,names,simplify=FALSE)
   sectors <- names(which(sapply(sapply(toProcess,length),">",0)))
   if(length(sectors)==0) {
-    message("No LTRed information found in sampleInfo. Using primed information to find Linkers")
+    message("No LTRed information found in sampleInfo. ",
+            "Using primed information to find Linkers")
     toProcess <- extractFeature(sampleInfo,feature="primed")
     toProcessSamples <- sapply(toProcess,names,simplify=FALSE)
     sectors <- names(which(sapply(sapply(toProcess,length),">",0)))
@@ -1515,7 +1588,8 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
     if(!all(skippers) & (length(sampleLinkers[!skippers])==0 | 
                            mean(nchar(sampleLinkers[!skippers]))<=10 | 
                            all(is.na(sampleLinkers[!skippers])))) {
-      stop("Either Linker sequence is too short (<=10) or no Linkers found in sample information object.")
+      stop("Either Linker sequence is too short (<=10) or ",
+           "no Linkers found in sample information object.")
     }
     
     ## get the linker quality thresholds for non primerID based samples ##
@@ -1557,9 +1631,11 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       message("\tFinding Linkers.")
       linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, 
                                .errorhandling="pass", 
-                               .export=c("primerIded","toProcess","sampleLinkers",
-                                         "doRC","linkerIdentity","primerIded.threshold1",
-                                         "primerIded.threshold2","pairwiseAlignSeqs",
+                               .export=c("primerIded", "toProcess", "sampleLinkers",
+                                         "doRC", "linkerIdentity",
+                                         "primerIded.threshold1",
+                                         "primerIded.threshold2",
+                                         "pairwiseAlignSeqs",
                                          "primerIDAlignSeqs"), 
                                .packages="Biostrings") %dopar% {
         if(primerIded[[x]]) {
@@ -1568,10 +1644,11 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                             qualityThreshold1=primerIded.threshold1[[x]], 
                             qualityThreshold2=primerIded.threshold2[[x]], ...)
         } else {
+          ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
           pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", 
                             qualityThreshold=linkerIdentity[[x]], 
                             returnUnmatched=TRUE, returnLowScored=TRUE, 
-                            doRC=doRC, ...) ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
+                            doRC=doRC, ...) 
         }        
       }
       names(linkerTrimmed) <- samplesToProcess
@@ -1607,8 +1684,8 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       
       ## if <= 5% of sequences found linkers...then something is wrong with the linker sequences provided???
       if(mean(toprint$PercOfPrimedOrLTRed)<=5 & !bypassChecks) {
-        stop("Something seems to be wrong with the linkers provided for each sample. 
-             On average <= 5% of sequences found linker match for the entire run!!!")
+        stop("Something seems wrong with the linkers provided for each sample. ",
+             "On average <= 5% of sequences found linker match for the entire run!!")
       }
       
       message("Adding linker info back to the object")
@@ -1674,7 +1751,8 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
   toProcessSamples <- sapply(toProcess, names, simplify=FALSE)
   sectors <- names(toProcess) 
   if(length(sectors)==0) {
-    message("No LTRed information found in sampleInfo. Using primed information to find Linkers")
+    message("No LTRed information found in sampleInfo. ",
+            "Using primed information to find Linkers")
     toProcess <- extractFeature(sampleInfo, feature="primed")
     toProcessSamples <- sapply(toProcess, names, simplify=FALSE)
     sectors <- names(toProcess)
@@ -1694,7 +1772,8 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
                                             feature="linkersequence")[[sector]])
     if(length(sampleLinkers)==0 | mean(nchar(sampleLinkers))<=10 | 
          all(is.na(sampleLinkers))) {
-      stop("Either Linker sequence is too short (<=10) or no Linkers found in sample information object.")
+      stop("Either Linker sequence is too short (<=10) or ",
+           "no Linkers found in sample information object.")
     }
     
     samplesToProcess <- toProcessSamples[[sector]]
@@ -1712,9 +1791,9 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
       message("Checking ",linkerSeq)
       linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, 
                                .errorhandling="pass", 
-                               .export=c("linkerSeq","toProcess.seqs","doRC",
-                                         "qualityThreshold","qualityThreshold1",
-                                         "qualityThreshold2","pairwiseAlignSeqs",
+                               .export=c("linkerSeq", "toProcess.seqs", "doRC",
+                                         "qualityThreshold", "qualityThreshold1",
+                                         "qualityThreshold2", "pairwiseAlignSeqs",
                                          "primerIDAlignSeqs"), 
                                .packages="Biostrings") %dopar% {
         if(length(unlist(gregexpr("N",linkerSeq)))>3) {
@@ -1731,11 +1810,12 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
       if(length(culprits)>0) {
         linkerTrimmed[culprits] <- 0
       }   
-      results <- rbind(results, data.frame("linkerSeq"=linkerSeq, 
-                                           "samplename"=names(linkerTrimmed), 
-                                           "linkerhits"=as.numeric(unlist(linkerTrimmed)),
-                                           PercentOfTotal=as.numeric(unlist(linkerTrimmed))/totalSeqs[names(linkerTrimmed)],
-                                           stringsAsFactors=FALSE))
+      results <- rbind(results, 
+                       data.frame("linkerSeq"=linkerSeq, 
+                                  "samplename"=names(linkerTrimmed), 
+                                  "linkerhits"=as.numeric(unlist(linkerTrimmed)),
+                                  PercentOfTotal=as.numeric(unlist(linkerTrimmed))/totalSeqs[names(linkerTrimmed)],
+                                  stringsAsFactors=FALSE))
       cleanit <- gc()
     }        
   }  
@@ -1847,24 +1927,31 @@ trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
     }
   }        
   
+  # temp helper function to show messages #
+  .showMessage <- function(x) {
+    message("Following sequences were removed from trimming since their ",
+            "coordinates+offBy were out of sequence length: ", 
+            paste(x,collapse=", "))
+  }
+  
   # trim by side and check if any of the coords are off the sequence length in dnaSet
   if(tolower(side)=="left") {
     test <- end(coords)+offBy > width(dnaSet) | end(coords)+offBy < 1
     if(any(test)) {
-      message("Following sequences were removed from trimming since their coordinates+offBy were out of sequence length: ", paste(names(dnaSet)[test],collapse=", "))
+      .showMessage(names(dnaSet)[test])
     }
     subseq(dnaSet[!test], start=end(coords[!test])+offBy)
   } else if (tolower(side)=="right") {
     test <- start(coords)-offBy > width(dnaSet) | end(coords)+offBy < 1
     if(any(test)) {
-      message("Following sequences were removed from trimming since their coordinates+offBy were out of sequence length: ", paste(names(dnaSet)[test],collapse=", "))
+      .showMessage(names(dnaSet)[test])
     }
     subseq(dnaSet[!test], end=start(coords[!test])-offBy)
   } else {
     test <- start(coords)+offBy > width(dnaSet) | 
       end(coords)-offBy > width(dnaSet) | start(coords)+offBy < 1
     if(any(test)) {
-      message("Following sequences were removed from trimming since their coordinates+offBy were out of sequence length: ", paste(names(dnaSet)[test],collapse=", "))
+      .showMessage(names(dnaSet)[test])
     }
     subseq(dnaSet[!test], 
            start=start(coords[!test])+offBy, 
@@ -1922,7 +2009,8 @@ getSectorsForSamples <- function(sampleInfo, sector=NULL, samplename=NULL,
     })))
   } else {
     samplenames <- sapply(sectors, 
-                          function(x) samplenames[[x]][samplenames[[x]] %in% samplename],
+                          function(x) 
+                            samplenames[[x]][samplenames[[x]] %in% samplename],
                           simplify=FALSE)
     return(list("sectors"=sectors, "samplenames"=samplenames))
   }
@@ -1969,8 +2057,8 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
       if("unDecodedSeqs" %in% names(allmetadata)) {
         allmetadata$unDecodedSeqs 
       } else {
-        message("No unDecoded attribute found for the supplied sampleInfo object and sector ",
-                y)
+        message("No unDecoded attribute found for the supplied ",
+                "sampleInfo object and sector ", y)
       }
     })
   } else {        
@@ -1991,13 +2079,13 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
           linkered <- sampleInfo$sectors[[y]]$samples[[x]]$linkered
           
           if(is.null(LTRed)) {
-            warning("LTRed information not found for",x,"...using primer end as starting boundary.",
-                    immediate.=TRUE)                                
+            warning("LTRed information not found for",x,
+                    "...using primer end as starting boundary.", immediate.=TRUE)                                
           }
           
           if(any(is.null(primed),is.null(linkered))) { 
-            message("No sequences found for requested feature (",feature,") for sample: ",
-                    x,"...skipping.") 
+            message("No sequences found for requested feature (", feature,
+                    ") for sample: ", x,"...skipping.") 
           } else {
             if(trim) {
               # get all LTRed reads and make ends = size of each read
@@ -2052,28 +2140,32 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
             if(length(toreturn)) {
               toreturn
             } else {
-              message("No sequences found for requested feature (",feature,") for sample: ",
-                      x,"...skipping.") 
+              message("No sequences found for requested feature (", feature,
+                      ") for sample: ", x,"...skipping.") 
             }
           } else {                    
             if(is.null(get(feature))) { 
-              message("No sequences found for requested feature (",feature,") for sample: ",
-                      x,"...skipping.") 
+              message("No sequences found for requested feature (", feature,
+                      ") for sample: ", x,"...skipping.") 
             } else {
               res.seq <- decoded[names(decoded) %in% names(get(feature))]
               if(trim) {
                 if(is.null(sideReturn)) {
                   sidetype <- ifelse(grepl("primerID",feature,ignore.case=TRUE), 
                                      "middle", 
-                                     ifelse(grepl("primed|LTRed",feature,ignore.case=TRUE), 
+                                     ifelse(grepl("primed|LTRed",feature,
+                                                  ignore.case=TRUE), 
                                             "left", 
-                                            ifelse(grepl("linkered",feature,ignore.case=TRUE), 
-                                                   "right", "middle")))
+                                            ifelse(grepl("linkered",feature,
+                                                         ignore.case=TRUE), 
+                                                   "right", 
+                                                   "middle")))
                 } else {
                   sidetype <- tolower(sideReturn)
                 }                            
                 offByLength <- ifelse(sidetype=="middle",0,1)
-                seqs <- trimSeqs(res.seq,get(feature), side=sidetype, offBy=offByLength)
+                seqs <- trimSeqs(res.seq,get(feature), 
+                                 side=sidetype, offBy=offByLength)
                 seqs[width(seqs)>=minReadLength]
               } else {
                 res.seq
@@ -2125,13 +2217,15 @@ extractFeature <- function(sampleInfo, sector=NULL, samplename=NULL, feature=NUL
         paste(names(sampleInfo$sectors[[y]]$samples[[x]]), collapse=", ")
       } else {
         res <- sampleInfo$sectors[[y]]$samples[[x]][[feature]]
-        if(class(res)=="factor") { ## convert any factor based vector to the appropriate regular vector
+        ## convert any factor based vector to the appropriate regular vector
+        if(class(res)=="factor") { 
           if(!any(is.na(suppressWarnings(as.numeric(levels(res)))))) { 
             as.numeric(as.character(res)) } 
           else { 
             as.character(res) 
           }    
-        } else if (class(res)=="character"){ ## if a numeric vector is stored as character, convert it back to numeric
+        } else if (class(res)=="character"){ 
+          ## if a numeric vector is stored as character, convert it back to numeric
           if(!any(is.na(suppressWarnings(as.numeric(res))))) { 
             as.numeric(res) 
           } else { 
@@ -2207,63 +2301,105 @@ addFeature <- function(sampleInfo, sector=NULL, samplename=NULL, feature=NULL,
 #'
 #' @param seqFilePath a path to fasta/fastq reads file or a sampleInfo object returned by \code{\link{read.SeqFolder}}
 #' @param sector specific sector to reads sequences from. Default is 1, and not required if seqFilePath is a direct file path rather than sampleInfo object.
+#'  @param isPaired does the sector contain paired end reads? Default is FALSE
 #'
-#' @return a DNAStringSet object.
+#' @return if isPaired is FALSE, then a DNAStringSet object, else a list of DNAStringSet objects of three elements corresponding to reads from "barcode", "pair1", and "pair2".
 #'
 #' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
 #'
 #' @export
 #'
-read.seqsFromSector <- function(seqFilePath=NULL, sector=1) {
+read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
   if(is.null(seqFilePath)) {
     stop("Missing seqFilePath!")
   }
   
   if(class(seqFilePath)=="SimpleList") {
-  	isPaired <- any(as.logical(extractFeature(seqFilePath, sector, 
-  								   			  feature='pairedend')[[sector]]))
-  	if(isPaired) {
-  		filePath <- normalizePath(grep(paste0(gsub("R1|R2|I1","",sector),
-  											  seqFilePath$seqfilePattern),
-									   seqFilePath$seqFilePaths,value=TRUE),
-								  mustWork=TRUE)
-		if(length(filePath)==0) {
-		  stop("No sequence file found for sector: ",sector," in seqFilePath variable (",
-			   paste(seqFilePath$seqFilePaths,collapse=" * "),") using pattern (",
-			   paste0(sector,seqFilePath$seqfilePattern),")")
-		}
-		seqFilePath <- filePath
-  	} else {
-		filePath <- normalizePath(grep(paste0(sector,seqFilePath$seqfilePattern),
-									   seqFilePath$seqFilePaths,value=TRUE),
-								  mustWork=TRUE)
-		if(length(filePath)==0) {
-		  stop("No sequence file found for sector: ",sector," in seqFilePath variable (",
-			   paste(seqFilePath$seqFilePaths,collapse=" * "),") using pattern (",
-			   paste0(sector,seqFilePath$seqfilePattern),")")
-		}
-		if(length(filePath)>1) {
-		  stop("Multiple sequence file found for sector: ",sector,
-			   " in seqFilePath variable (",paste(seqFilePath$seqFilePaths,collapse=" * "),
-			   ") using pattern (",paste0(sector,seqFilePath$seqfilePattern),")")
-		}
-		seqFilePath <- filePath
-	}
+    seqfilePattern <- seqFilePath$seqfilePattern
+    seqFilePaths <- seqFilePath$seqFilePaths
+    
+    if(isPaired) {
+      filePath <- normalizePath(grep(paste0(gsub("R1|R2|I1",".*",sector),
+                                            seqfilePattern), seqFilePaths,
+                                     value=TRUE), mustWork=TRUE)
+      
+      if(length(filePath)==0) {
+        stop("No sequence file found for sector: ", sector,
+             " in seqFilePath variable (",
+             paste(seqFilePaths,collapse=" \n"), ") using pattern (",
+             paste0(sector,seqfilePattern),")")
+      }
+      
+      if(!any(grepl("I1", basename(filePath)))) {
+        warning("No index/barcode file (I1) found.")
+      }
+      
+      seqFilePath <- filePath
+    
+    } else {
+      filePath <- normalizePath(grep(paste0(sector,seqfilePattern),
+                                     seqFilePaths, value=TRUE), mustWork=TRUE)
+      
+      if(length(filePath)==0) {
+        stop("No sequence file found for sector: ", sector,
+             " in seqFilePath variable (",
+             paste(seqFilePaths,collapse=" \n"), ") using pattern (",
+             paste0(sector,seqfilePattern),")")
+      }
+      
+      if(length(filePath)>1) {
+        stop("Multiple sequence file found for sector: ", sector,
+             " in seqFilePath variable (", paste(seqFilePaths,collapse=" \n"),
+             ") using pattern (", paste0(sector,seqfilePattern),")")
+      }
+      seqFilePath <- filePath
+    }
   }
   
-  message("Reading ",seqFilePath)
-  if(grepl("fastq$",seqFilePath)) {
+  message("Reading:\n", paste(seqFilePath, collapse="\n"))
+  if(any(grepl("fastq",seqFilePath,ignore.case=TRUE))) {
     require(ShortRead)
-    bore <- readFastq(normalizePath(seqFilePath,mustWork=TRUE))
-    dnaSet <- sread(bore)
-    names(dnaSet) <- sub("(.+) .+","\\1",id(bore))
-    rm(bore)
+    dnaSet <- sapply(seqFilePath, function(x) {
+      bore <- readFastq(x)
+      dnaSet <- sread(bore)
+      names(dnaSet) <- sub("^\\S+-(\\S+) .+$", "\\1", id(bore), perl=TRUE)
+      if(any(duplicated(names(dnaSet)))) {
+        stop("Duplicate definition lines found in file: ", x)
+      }
+      if(length(dnaSet)==0) {
+        stop("No sequences found in file: ", x)
+      }
+      dnaSet
+    })
+        
+    if(isPaired & length(seqFilePath)>1) {
+      LTRside <- grep(sector, basename(names(dnaSet)))
+      #names(dnaSet[[LTRside]]) <- paste0("@pair1side@",names(dnaSet[[LTRside]]))
+      
+      tempy <- paste0(sub("(.*)R\\d.*","\\1",sector),
+                      ifelse(sub(".*(R\\d).*","\\1",sector)=="R2","R1","R2"))
+      linkerSide <- grep(tempy, basename(names(dnaSet)))
+      #names(dnaSet[[linkerSide]]) <- paste0("@pair2side@",names(dnaSet[[linkerSide]]))
+      
+      barcodes <- grep("I1", basename(names(dnaSet)))
+      
+      dnaSet <- list("barcode"=dnaSet[[barcodes]],
+                     "pair1"=dnaSet[[LTRside]],
+                     "pair2"=dnaSet[[linkerSide]])      
+    } else {
+      ## for single-end data!
+      dnaSet <- dnaSet[[1]]
+    }
   } else {
-    dnaSet <- readDNAStringSet(normalizePath(seqFilePath,mustWork=TRUE))
-  }
-  
-  if(length(dnaSet)==0) {
-    stop("No sequences found")
+    dnaSet <- readDNAStringSet(seqFilePath)
+    if(any(duplicated(names(dnaSet)))) {
+      stop("Duplicate definition lines found in file(s): ", 
+           paste(seqFilePath, collapse=" * "))
+    }
+    
+    if(length(dnaSet)==0) {
+      stop("No sequences found")
+    }
   }
   
   return(dnaSet)
@@ -2305,7 +2441,8 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
   
   out <- foreach(i=iter(names(dnaSet)), .inorder=FALSE, .errorhandling="stop", 
                  .packages="Biostrings", 
-                 .export=c("dnaSet","filePath","filePrefix","prependSamplenames")) %dopar% {
+                 .export=c("dnaSet","filePath","filePrefix",
+                           "prependSamplenames")) %dopar% {
     outputSeqs <- dnaSet[[i]]
     if(length(outputSeqs)>0) {
       if(is.null(names(outputSeqs))) {
@@ -2349,7 +2486,8 @@ summary.simple <- function(sampleInfo) {
                                                                 feature="samplename")[[sector]]))
     res.df$SampleName <- as.character(res.df$SampleName)
     for (metaD in c("decoded","primed","LTRed","linkered","psl","sites")) {
-      res <- sapply(extractFeature(sampleInfo,sector=sector,feature=metaD)[[sector]],length)                        
+      res <- sapply(extractFeature(sampleInfo,sector=sector,feature=metaD)[[sector]],
+                    length)                        
       if(length(res)>0) {
         res.df[,metaD] <- res[res.df$SampleName]
       } else {
@@ -2387,11 +2525,11 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
     }
     for(sample.i in sampleList) {
       cat("\t",sample.i,":\n\t")
-      metadatalist <- as.character(unlist(strsplit(extractFeature(sampleInfo,
-                                                                  sector=sector,
-                                                                  samplename=sample.i,
-                                                                  feature="metadata")[[sector]],
-                                                   ", ")))
+      bore <- strsplit(extractFeature(sampleInfo,
+                                      sector=sector,
+                                      samplename=sample.i,
+                                      feature="metadata")[[sector]], ", ")
+      metadatalist <- as.character(unlist(bore))
       totalDecoded <- extractFeature(sampleInfo, sector=sector, 
                                      samplename=sample.i, feature="decoded")[[sector]]
       if(length(totalDecoded)>0) {
@@ -2422,6 +2560,86 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
   }    
 }
 
+#' Check args and set defaults for functions dealing with reads.
+#'
+#' This function checks all the arguments passed to a function related to aligning or trimming a read and then sets default values for internal use. Evaluation of this function happens in the parent function.
+#'
+.checkArgsSetDefaults_trimmers <- function() {
+  
+  checks <- expression(    
+    if(is(sites.rd,"RangedData")) {
+      RangedDataFlag <- TRUE
+      sites.rd <- as(sites.rd,"GRanges")
+    },
+    
+    if(is(features.rd,"RangedData")) {
+      features.rd <- as(features.rd,"GRanges")
+    },
+    
+    if(!identical(class(sites.rd),class(features.rd))) {
+      stop("sites.rd & features.rd are of different classes. 
+           Please make them the same class: GRanges or RangedData")    	
+    },
+    
+    stopifnot(length(sites.rd)>0),
+    stopifnot(length(features.rd)>0),
+    
+    if(exists("parallel")) { 
+      if(!parallel) { 
+        registerDoSEQ() 
+      }
+    },
+    
+    if(exists("colnam")) {
+      if(is.null(colnam)) {
+        stop("Please define the colnam parameter for the new column(s) to be appended.")
+      }
+    }      
+  )
+  
+  eval.parent(checks)
+}
+
+#' Check args and set defaults for functions dealing with hits of aligned reads.
+#'
+#' This function checks all the arguments passed to a function related to checking hits of an aligned read and then sets default values for internal use. Evaluation of this function happens in the parent function.
+#'
+.checkArgsSetDefaults_aligned <- function() {
+  
+  checks <- expression(    
+    if(is(sites.rd,"RangedData")) {
+      RangedDataFlag <- TRUE
+      sites.rd <- as(sites.rd,"GRanges")
+    },
+    
+    if(is(features.rd,"RangedData")) {
+      features.rd <- as(features.rd,"GRanges")
+    },
+    
+    if(!identical(class(sites.rd),class(features.rd))) {
+      stop("sites.rd & features.rd are of different classes. 
+           Please make them the same class: GRanges or RangedData")      
+    },
+    
+    stopifnot(length(sites.rd)>0),
+    stopifnot(length(features.rd)>0),
+    
+    if(exists("parallel")) { 
+      if(!parallel) { 
+        registerDoSEQ() 
+      }
+    },
+    
+    if(exists("colnam")) {
+      if(is.null(colnam)) {
+        stop("Please define the colnam parameter for the new column(s) to be appended.")
+      }
+    }      
+  )
+  
+  eval.parent(checks)
+}
+
 #' Start a gfServer instance
 #'
 #' Start a gfServer indexed reference genome to align batch of sequences using BLAT gfServer/gfClient protocol.
@@ -2444,7 +2662,8 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
 startgfServer <- function(seqDir=NULL, host="localhost", port=5560, 
                           gfServerOpts=c(repMatch=112312, stepSize=5, tileSize=10)) {
   if(is.null(seqDir)) {
-    stop("Please define the path of nib/2bit files containing the indexed reference sequence(s)")
+    stop("Please define the path of nib/2bit files containing the ",
+         "indexed reference sequence(s)")
   }
   
   cmd <- sprintf("gfServer start %s %i %s %s &", 
@@ -2494,12 +2713,12 @@ stopgfServer <- function(host="localhost", port=NULL) {
 
 #' Align a listed DNAStringSet to a reference using gfClient or standalone BLAT.
 #'
-#' Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and get a psl file as RangedData object. This function heavily relies on defaults of \code{\link{blatSeqs}}.
+#' Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and return the psl file as a GRanges object. This function heavily relies on defaults of \code{\link{blatSeqs}}.
 #'
 #' @param dnaSetList DNAStringSet object containing sequences to be aligned against the reference.
 #' @param ... parameters to be passed to \code{\link{blatSeqs}}.
 #'
-#' @return a list of RangedData object reflecting psl file type per set of sequences.
+#' @return a list of GRanges object reflecting psl file type per set of sequences.
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{read.blast8}}
 #'
@@ -2507,7 +2726,8 @@ stopgfServer <- function(host="localhost", port=NULL) {
 #' 
 blatListedSet <- function(dnaSetList=NULL, ...) {
   if(is.null(dnaSetList)) {
-    stop("dnaSetList is empty. Please supply a listed DNAStringSet returned from extractSeqs() to be aligned against a reference")
+    stop("dnaSetList is empty. Please supply a listed DNAStringSet ",
+         "returned from extractSeqs() to be aligned against a reference")
   }
   
   sapply(names(dnaSetList), function(x) {
@@ -2515,7 +2735,8 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
       if(length(dnaSetList[[x]][[y]])>0) {
         message("BLATing ",y)
         outFiles <- blatSeqs(query=dnaSetList[[x]][[y]], ...)
-        read.psl(outFiles, bestScoring=TRUE, asRangedData=TRUE, removeFile=TRUE, parallel=FALSE)
+        read.psl(outFiles, bestScoring=TRUE, 
+                 asGRanges=TRUE, removeFile=TRUE, parallel=FALSE)
       }
     }))
   })
@@ -2671,20 +2892,23 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   if(!standaloneBlat) { 
     message("Using gfClient protocol to perform BLAT.")
     if(is.null(port)) {
-      stop("The port paramter is empty. Please define the port used to start gfServer with")
+      stop("The port paramter is empty. ",
+           "Please define the port used to start gfServer with")
     }
   }
   
   ## check the subject parameter
   if(is.null(subject) | length(subject)==0) {
-    stop("The subject parameter is empty. 
-         Please supply subject sequences or a path to 2bit or nib files to serve as reference/target")
+    stop("The subject parameter is empty. ", 
+         "Please supply subject sequences or a path to 2bit or nib files to ",
+         "serve as reference/target")
   } else {
     subjectFile <- NULL
     if(is.atomic(subject)) {
       if (any(grepl("\\.2bit$|\\.nib$", subject))) {
         if(standaloneBlat) { 
-          stop("Standalone BLAT cannot be used when subject is an indexed nib or 2bit file.") 
+          stop("Standalone BLAT cannot be used when subject is an indexed ",
+               "nib or 2bit file.") 
         }
         indexFileDir <- dirname(subject)
         subjectFile <- list.files(path=indexFileDir, 
@@ -2774,7 +2998,10 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
                    subjectFile, x, filename.out)
       message(cmd)
       system(cmd)
-      if(grepl("\\.tempyQ$",x)) { system(paste("rm",x)) } ## no need to save splitted files!
+      
+      ## no need to save splitted files!
+      if(grepl("\\.tempyQ$",x)) { system(paste("rm",x)) } 
+      
       if(gzipResults) { 
         system(paste("gzip", filename.out))
         filename.out <- paste(filename.out, "gz", sep=".") 
@@ -2805,7 +3032,10 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
                    host, port, "/", x, filename.out)
       message(cmd)
       system(cmd)
-      if(grepl("\\.tempyQ$", x)) { system(paste("rm", x)) } ## no need to save splitted files!
+      
+      ## no need to save splitted files!
+      if(grepl("\\.tempyQ$", x)) { system(paste("rm", x)) } 
+      
       if(gzipResults) { 
         system(paste("gzip", filename.out))
         filename.out <- paste(filename.out, "gz", sep=".") 
@@ -2854,7 +3084,8 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
   
   if (any(grepl("\\*",pslFile))) {
     ## vector of filenames
-    pslFile <- list.files(path=dirname(pslFile), pattern=basename(pslFile), full.names=TRUE)      
+    pslFile <- list.files(path=dirname(pslFile), 
+                          pattern=basename(pslFile), full.names=TRUE)      
   }
   
   if(length(pslFile)==0) { 
@@ -2872,7 +3103,8 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
                   "character", rep("numeric",4), rep("character",3))
   
   hits <- foreach(x=iter(pslFile), .inorder=FALSE, 
-                  .export=c("cols","cols.class","bestScoring","removeFile")) %dopar% {
+                  .export=c("cols","cols.class",
+                            "bestScoring","removeFile")) %dopar% {
     message(x)
     hits.temp <- read.delim(x, header=FALSE, col.names=cols, 
                             stringsAsFactors=FALSE, colClasses=cols.class)
@@ -2897,7 +3129,8 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
   message("Ordering by qName")
   hits <- arrange(hits, qName)
   
-  if(bestScoring) { ## do round two of bestScore incase any got missed in round one                
+  ## do round two of bestScore incase any got missed in round one
+  if(bestScoring) {
     message("\t cherry picking!")
     hits$score <- with(hits, matches-misMatches-qBaseInsert-tBaseInsert)
     hits <- arrange(hits, qName, desc(score))
@@ -2944,7 +3177,8 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
   
   if (any(grepl("\\*",files))) {
     ## vector of filenames
-    files <- list.files(path=dirname(files), pattern=basename(files), full.names=TRUE)
+    files <- list.files(path=dirname(files), 
+                        pattern=basename(files), full.names=TRUE)
   }
   
   if(length(files)==0) { 
@@ -2959,7 +3193,8 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
   cols.class<-c(rep("character",2), rep("numeric",10))
   
   hits <- foreach(x=iter(files), .inorder=FALSE, 
-                  .export=c("cols","cols.class","bestScoring","removeFile")) %dopar% {
+                  .export=c("cols","cols.class",
+                            "bestScoring","removeFile")) %dopar% {
     message(x)
     hits.temp <- read.delim(x, header=FALSE, col.names=cols, 
                             stringsAsFactors=FALSE, colClasses=cols.class)
@@ -3078,13 +3313,14 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
   
   ## find which query aligned to multiple places with equally good score aka...multihits
   cloneHits <- table(mcols(psl.rd)$qName)
-  mcols(psl.rd)$isMultiHit <- as.logical(cloneHits[as.character(mcols(psl.rd)$qName)]>1)
+  cloneHits <- cloneHits[as.character(mcols(psl.rd)$qName)]>1
+  mcols(psl.rd)$isMultiHit <- as.logical(cloneHits)
   rm(cloneHits)    
   cleanit <- gc()
   
   mcols(psl.rd)$pass.allQC <- mcols(psl.rd)$pass.percIdentity & 
-  								mcols(psl.rd)$pass.alignRatio & 
-  								mcols(psl.rd)$pass.startWithin
+  								            mcols(psl.rd)$pass.alignRatio & 
+  								            mcols(psl.rd)$pass.startWithin
   
   if(isRangedData) {
     psl.rd <- as(psl.rd, "RangedData")
@@ -3136,25 +3372,28 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     
     ## dereplicate & converge sites! ##
     if(!"Position" %in% colnames(mcols(psl.rd))) {
-      stop("The object supplied in psl.rd parameter does not have Position column in it. 
-           Did you run getIntegrationSites() on it?")
+      stop("The object supplied in psl.rd parameter does not have Position ",
+           "column in it. Did you run getIntegrationSites() on it?")
     }
     
     ## make sure column(s) for picking best hits are there! ##
     isthere <- grepl("score", colnames(mcols(psl.rd)), ignore.case=TRUE)  	
     if(!any(isthere)) {
-      message("No 'score' column found in the data. Using 'qEnd' as an alternative to pick the best hit!")
+      message("No 'score' column found in the data. Using 'qEnd' as an ",
+              "alternative to pick the best hit!")
       isthere <- grepl("qEnd", colnames(mcols(psl.rd)), ignore.case=TRUE)		
       if(!any(isthere)) {
-        stop("No 'qEnd' column found in the data either...can't pick the cluster best hit without 'qEnd' or 'score' column present in the object supplied in psl.rd :(")
+        stop("No 'qEnd' column found in the data either...can't pick the ",
+             "cluster best hit without 'qEnd' or 'score' column present in ",
+             "the object supplied in psl.rd :(")
       }            
     }
     
     good.row <- rep(TRUE, length(psl.rd))
     multi.there <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)		
     if(any(multi.there)) { ## see if multihit column exists
-      message("Found 'isMultiHit' column in the data. 
-              These rows will be ignored for the calculation.")
+      message("Found 'isMultiHit' column in the data. ",
+              "These rows will be ignored for the calculation.")
       good.row <- good.row & !mcols(psl.rd)[[which(multi.there)]]
     }
     
@@ -3194,8 +3433,10 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     groupingVals <- paste0(as.character(seqnames(psl.rd)), 
                            as.character(strand(psl.rd)), 
                            mcols(psl.rd)$clusteredPosition, grouping)
-    bestScore <- tapply(mcols(psl.rd)[[which(isthere)]][good.row], groupingVals[good.row], max)
-    isBest <- mcols(psl.rd)[[which(isthere)]][good.row]==bestScore[groupingVals[good.row]]
+    bestScore <- tapply(mcols(psl.rd)[[which(isthere)]][good.row], 
+                        groupingVals[good.row], max)
+    isBest <- mcols(psl.rd)[[which(isthere)]][good.row] == 
+      bestScore[groupingVals[good.row]]
     
     ## pick the first match for cases where >1 reads with the same coordinate had the same best scores ##
     tocheck <- which(isBest)
@@ -3257,12 +3498,16 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
       if(length(table(counts))>1) {
         toFix <- as.numeric(names(which(counts>1)))
         rows <- pos.overlap$queryHits %in% toFix
-        pos.overlap$aboveQuartileValue <- pos.overlap$belowQuartileValue <- pos.overlap$valueDiff <- 0
-        pos.overlap$aboveQuartileValue[rows] <- start(pos.ab[pos.overlap[rows,"subjectHits"]])
-        pos.overlap$belowQuartileValue[rows] <- start(pos.be[pos.overlap[rows,"queryHits"]])
+        pos.overlap$aboveQuartileValue <- 
+          pos.overlap$belowQuartileValue <- pos.overlap$valueDiff <- 0
+        pos.overlap$aboveQuartileValue[rows] <- 
+          start(pos.ab[pos.overlap[rows,"subjectHits"]])
+        pos.overlap$belowQuartileValue[rows] <- 
+          start(pos.be[pos.overlap[rows,"queryHits"]])
         pos.overlap$valueDiff[rows] <- with(pos.overlap[rows,],
                                             abs(aboveQuartileValue-belowQuartileValue))
-        mins <- with(pos.overlap[rows,], tapply(valueDiff, as.character(queryHits), min))
+        mins <- with(pos.overlap[rows,], tapply(valueDiff, 
+                                                as.character(queryHits), min))
         pos.overlap$isClosest <- TRUE
         pos.overlap$isClosest[rows] <- with(pos.overlap[rows,], 
                                             valueDiff == mins[as.character(queryHits)])
@@ -3288,17 +3533,20 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
                                       clusteredValue=as.numeric(res$clusteredValue)))
       
       sites$clusteredValue <- sites$value
-      sites$clusteredValue[sites$belowQuartile][pos.overlap[,"queryHits"]] <- pos.overlap$clusteredValue
+      sites$clusteredValue[sites$belowQuartile][pos.overlap[,"queryHits"]] <- 
+        pos.overlap$clusteredValue
       stopifnot(any(!is.na(sites$clusteredValue)))            
     } else {
-      message("No sites found below defined quartile. Try to increase the quartile or use standard clustering, byQuartile=FALSE.")
+      message("No sites found below defined quartile. Try to increase ",
+              "the quartile or use standard clustering, byQuartile=FALSE.")
     }
   } else {
     message("Clustering by minimum overlap.")
     
     sites <- split(sites, sites$grouping)
     
-    sites <- foreach(x=iter(sites), .inorder=FALSE, .packages=c("GenomicRanges","plyr"), 
+    sites <- foreach(x=iter(sites), .inorder=FALSE, 
+                     .packages=c("GenomicRanges","plyr"), 
                      .combine=rbind) %dopar% {
       
       ## find overlapping positions using findOverlaps() using maxgap adjusted by windowSize! ##
@@ -3412,7 +3660,8 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
     ## find the otuID by clusters ##
     if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
          !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
-      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
+      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' ",
+           "or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
     }
     
     good.rows <- mcols(psl.rd)$clusterTopHit
@@ -3492,7 +3741,8 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
       res <- res[sapply(res,length)>0]                    
       res <- structure(unlist(res,use.names=F),
                        names=rep(names(res), sapply(res,length)))
-      reads[!singles & reads$grouping==f,"newotuID"][as.numeric(res)] <- as.numeric(names(res))
+      reads[!singles & reads$grouping==f,"newotuID"][as.numeric(res)] <- 
+        as.numeric(names(res))
       reads[reads$grouping==f,"check"][as.numeric(res)] <- FALSE
     }    
   }
@@ -3526,7 +3776,8 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
   ## trickle the OTU ids back to sites frame ##    
   ots.ids <- with(reads, split(newotuID, paste0(readID,grouping)))
   if(!is.numeric(ots.ids)) {
-    stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
+    stop("Something went wrong merging non-singletons. ",
+         "Multiple OTUs assigned to one readID most likely!")
   }
   sites$otuID <- as.numeric(unlist(ots.ids[with(sites, paste0(readID,grouping))]))
   
@@ -3594,7 +3845,9 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
       message("No 'clusteredPosition' column found in the data. Using 'Position' as an alternative to use as values.")
       isthere <- grepl("Position", colnames(mcols(psl.rd)), ignore.case=TRUE)  
       if(!any(isthere)) {
-        stop("The object supplied in psl.rd parameter does not have 'clusteredPosition' or 'Position' column in it. Did you run getIntegrationSites() or clusterSites() on it?")
+        stop("The object supplied in psl.rd parameter does not have ",
+             "'clusteredPosition' or 'Position' column in it. ",
+             "Did you run getIntegrationSites() or clusterSites() on it?")
       }
     }
 
@@ -3735,11 +3988,13 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 
                             bore <- sapply(with(res, split(OTU2, nonsigsReadID)),
                                            unique)
-                            if(!is.numeric(bore)) { ## safety check incase >1 OTU found per readID
+                            if(!is.numeric(bore)) { 
+                              ## safety check incase >1 OTU found per readID
                               bore <- sapply(bore, min)
                             }
                             rows <- mcols(nonsigs)$readID %in% names(bore)
-                            mcols(nonsigs)[rows,"newotuID"] <- bore[mcols(nonsigs)[rows,"readID"]]
+                            mcols(nonsigs)[rows,"newotuID"] <- 
+                              bore[mcols(nonsigs)[rows,"readID"]]
                             mcols(nonsigs)[rows,"check"] <- FALSE
                             mcols(sigs)[mcols(sigs)$readID %in% res$sigsReadID, "check"] <- FALSE
                           }
@@ -3800,14 +4055,17 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                           
                           bore <- sapply(with(res, split(OTU2, subjectHits)),
                                          unique)
-                          stopifnot(is.numeric(bore)) ## safety check incase >1 OTU found per subjectHits
+                          ## safety check incase >1 OTU found per subjectHits
+                          stopifnot(is.numeric(bore)) 
+                          
                           rows <- as.numeric(names(bore))
                           mcols(x)[rows,"newotuID"] <- as.numeric(bore)
                           mcols(x)[rows, "check"] <- FALSE
                           
                           bore <- sapply(with(res, split(OTU2, subjectReadID)),
                                          unique)
-                          if(!is.numeric(bore)) { ## safety check incase >1 OTU found per readID
+                          if(!is.numeric(bore)) { 
+                            ## safety check incase >1 OTU found per readID
                             bore <- sapply(bore, min)
                           }
                           rows <- mcols(x)$readID %in% names(bore)
@@ -3827,7 +4085,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
                     unique)
   
   if(!is.numeric(ots.ids) | any(sapply(ots.ids, length)>1)) {
-    stop("Something went wrong merging non-singletons. Multiple OTUs assigned to one readID most likely!")
+    stop("Something went wrong merging non-singletons. ",
+         "Multiple OTUs assigned to one readID most likely!")
   }
   sites$otuID <- as.numeric(unlist(ots.ids[with(sites,
                                                 paste0(readID,grouping))],
@@ -3920,7 +4179,8 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     
     if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
          !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
-      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
+      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' ",
+           "or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
     }
     
     posID <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
@@ -3940,7 +4200,8 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     
     isthere <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)
     if(any(isthere)) { ## see if multihit column exists
-      message("Found 'isMultiHit' column in the data. These rows will be ignored for the calculation.")
+      message("Found 'isMultiHit' column in the data. ",
+              "These rows will be ignored for the calculation.")
       good.row <- good.row & !mcols(psl.rd)[[which(isthere)]]
     }
     
@@ -3960,7 +4221,8 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
                  collapse=", "))
     }
     mcols(psl.rd)$isCrossover <- FALSE
-    mcols(psl.rd)$isCrossover[good.row] <- as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
+    mcols(psl.rd)$isCrossover[good.row] <- 
+      as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
     
     message("Cleaning up!")
     rm("posID","value","grouping","crossed","crossedValues")
@@ -4203,7 +4465,8 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
 #' @examples 
 #' #findAndRemoveVector(reads, Vector)
 #'
-findAndRemoveVector <- function(reads, Vector, minLength=10, returnCoords=FALSE, parallel=TRUE) {
+findAndRemoveVector <- function(reads, Vector, minLength=10, 
+                                returnCoords=FALSE, parallel=TRUE) {
   if(!parallel) { registerDoSEQ() }
   
   if(length(reads)==0 | length(Vector)==0) {
@@ -4211,7 +4474,8 @@ findAndRemoveVector <- function(reads, Vector, minLength=10, returnCoords=FALSE,
   }
   
   hits <- read.blast8(blatSeqs(query=reads, subject=Vector, parallel=parallel,
-                               blatParameters=c(stepSize = 5, tileSize = 8, 
+                               blatParameters=c(stepSize = 3, tileSize = 8,
+                                                minIdentity=70, minScore=5,
                                                 repMatch = 112312, out = "blast8")))
   hits$evalue <- NULL
   hits <- reduce(pslToRangedObject(hits, useTargetAsRef=F, isblast8=T),
