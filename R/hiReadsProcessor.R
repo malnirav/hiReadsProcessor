@@ -1317,8 +1317,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                              feature="decoded")[[sector]]
       
       ## find paired end samples
-      isPaired <- extractFeature(sampleInfo, sector,
-                                 feature='pairedend')[[sector]]
+      isPaired <- extractFeature(sampleInfo, sector, feature='pairedend')[[sector]]
       
       ## trim the primers ##
       message("\tFinding Primers.")
@@ -1334,11 +1333,11 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                .packages="Biostrings") %dopar% {
         if(isPaired[[x]]) {
           p1 <- switch(alignWay,
-                       fast = vpairwiseAlignSeqs(decoded[[x]][["pair1"]], 
+                       fast = vpairwiseAlignSeqs(decoded[[x]]$pair1, 
                                                  ltrPrimers[[x]], "left", 
                                                  (primerIdentity[[x]]-.05), 
                                                  doRC=doRC, ...),
-                       slow = pairwiseAlignSeqs(decoded[[x]][["pair1"]], 
+                       slow = pairwiseAlignSeqs(decoded[[x]]$pair1, 
                                                 ltrPrimers[[x]], "left", 
                                                 (primerIdentity[[x]]), 
                                                 doRC=doRC, ...)                
@@ -1347,11 +1346,11 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
           ## side needs to be middle since we dont know where in pair2 the primer can be
           ltrPrimers.rc <- toString(reverseComplement(DNAString(ltrPrimers[[x]])))
           p2 <- switch(alignWay,
-                       fast = vpairwiseAlignSeqs(decoded[[x]][["pair2"]], 
+                       fast = vpairwiseAlignSeqs(decoded[[x]]$pair2, 
                                                  ltrPrimers.rc, "middle", 
                                                  (primerIdentity[[x]]-.05), 
                                                  doRC=doRC, ...),
-                       slow = pairwiseAlignSeqs(decoded[[x]][["pair2"]], 
+                       slow = pairwiseAlignSeqs(decoded[[x]]$pair2, 
                                                 ltrPrimers.rc, "middle", 
                                                 (primerIdentity[[x]]), 
                                                 doRC=doRC, ...)                
@@ -1515,8 +1514,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
                                    feature="primed")[[sector]]
       
       ## find paired end samples
-      isPaired <- extractFeature(sampleInfo, sector,
-                                 feature='pairedend')[[sector]]
+      isPaired <- extractFeature(sampleInfo, sector, feature='pairedend')[[sector]]
       
       ## trim LTRbits using slow method since its the best! ##
       message("\tFinding LTR bits.")
@@ -1528,13 +1526,11 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
                                       "ltrBitIdentity", "doRC", "pairwiseAlignSeqs"), 
                             .packages="Biostrings") %dopar% {
         if(isPaired[[x]]) {
-          p1 <- pairwiseAlignSeqs(primerTrimmed[[x]][["pair1"]], 
-                                  sampleLTRbits[[x]], "left", 
+          p1 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair1, sampleLTRbits[[x]], "left", 
                                   qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
           
           ltrbit.rc <- toString(reverseComplement(DNAString(sampleLTRbits[[x]])))
-          p2 <- pairwiseAlignSeqs(primerTrimmed[[x]][["pair2"]], 
-                                  ltrbit.rc, "middle", 
+          p2 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair2, ltrbit.rc, "middle", 
                                   qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
 
           list("pair1"=p1, "pair2"=p2)          
@@ -1661,22 +1657,22 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
   
   ## test if there are primed or LTRed sequences in the sampleinfo object ##
   primerFlag <- FALSE
-  toProcess <- extractFeature(sampleInfo,feature="LTRed")
-  toProcessSamples <- sapply(toProcess,names,simplify=FALSE)
-  sectors <- names(which(sapply(sapply(toProcess,length),">",0)))
+  toProcess <- extractFeature(sampleInfo, feature="LTRed")
+  toProcessSamples <- sapply(toProcess, names, simplify=FALSE)
+  sectors <- names(which(sapply(sapply(toProcess, length), ">", 0)))
   if(length(sectors)==0) {
-    message("No LTRed information found in sampleInfo. ",
-            "Using primed information to find Linkers")
-    toProcess <- extractFeature(sampleInfo,feature="primed")
-    toProcessSamples <- sapply(toProcess,names,simplify=FALSE)
-    sectors <- names(which(sapply(sapply(toProcess,length),">",0)))
+    message("No LTRed information found in the sampleInfo object. ",
+            "Using primed information to find Linkers instead...")
+    toProcess <- extractFeature(sampleInfo, feature="primed")
+    toProcessSamples <- sapply(toProcess, names, simplify=FALSE)
+    sectors <- names(which(sapply(sapply(toProcess, length), ">", 0)))
     if(length(sectors)==0) {
       stop("No primed information found in sampleInfo...did you run findPrimers()?")
     }
     primerFlag <- TRUE
   }
   rm(toProcess)
-  gc()
+  cleanit <- gc()
   
   for(sector in sectors) {
     message("Processing sector ",sector)
@@ -1727,28 +1723,65 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       toProcess <- extractSeqs(sampleInfo, sector, samplesToProcess,
                                feature=ifelse(primerFlag,"primed","LTRed"))[[sector]]
       
+      ## find paired end samples
+      isPaired <- extractFeature(sampleInfo, sector, feature='pairedend')[[sector]]
+      
       ## trim the Linkers ##
       message("\tFinding Linkers.")
       linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, 
                                .errorhandling="pass", 
                                .export=c("primerIded", "toProcess", "sampleLinkers",
-                                         "doRC", "linkerIdentity",
+                                         "doRC", "linkerIdentity", "isPaired",
                                          "primerIded.threshold1",
                                          "primerIded.threshold2",
                                          "pairwiseAlignSeqs",
                                          "primerIDAlignSeqs"), 
                                .packages="Biostrings") %dopar% {
+        
+        linker.rc <- toString(reverseComplement(DNAString(sampleLinkers[[x]])))                         
+        
         if(primerIded[[x]]) {
-          primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], doAnchored=TRUE, 
-                            returnUnmatched=TRUE, returnRejected=TRUE, doRC=doRC, 
-                            qualityThreshold1=primerIded.threshold1[[x]], 
-                            qualityThreshold2=primerIded.threshold2[[x]], ...)
+          if(isPaired[[x]]) {
+            p1 <- primerIDAlignSeqs(toProcess[[x]]$pair1, sampleLinkers[[x]], 
+                                    doAnchored=TRUE, returnUnmatched=TRUE, 
+                                    returnRejected=TRUE, doRC=doRC, 
+                                    qualityThreshold1=primerIded.threshold1[[x]], 
+                                    qualityThreshold2=primerIded.threshold2[[x]], ...)
+            
+            p2 <- primerIDAlignSeqs(toProcess[[x]]$pair2, linker.rc, 
+                                    doAnchored=TRUE, returnUnmatched=TRUE, 
+                                    returnRejected=TRUE, doRC=doRC, 
+                                    qualityThreshold1=primerIded.threshold1[[x]], 
+                                    qualityThreshold2=primerIded.threshold2[[x]], ...)
+            
+            list("pair1"=p1, "pair2"=p2)
+          } else {
+            primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], doAnchored=TRUE, 
+                              returnUnmatched=TRUE, returnRejected=TRUE, doRC=doRC, 
+                              qualityThreshold1=primerIded.threshold1[[x]], 
+                              qualityThreshold2=primerIded.threshold2[[x]], ...)
+          }          
         } else {
           ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
-          pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", 
-                            qualityThreshold=linkerIdentity[[x]], 
-                            returnUnmatched=TRUE, returnLowScored=TRUE, 
-                            doRC=doRC, ...) 
+          if(isPaired[[x]]) {
+            p1 <- pairwiseAlignSeqs(toProcess[[x]]$pair1, sampleLinkers[[x]], "middle", 
+                                    qualityThreshold=linkerIdentity[[x]], 
+                                    returnUnmatched=TRUE, returnLowScored=TRUE, 
+                                    doRC=doRC, ...)
+            
+            # pair2 should begin with linker, hence side='left'            
+            p2 <- pairwiseAlignSeqs(toProcess[[x]]$pair2, linker.rc, "left", 
+                                    qualityThreshold=linkerIdentity[[x]], 
+                                    returnUnmatched=TRUE, returnLowScored=TRUE, 
+                                    doRC=doRC, ...)
+            
+            list("pair1"=p1, "pair2"=p2)
+          } else {
+            pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", 
+                              qualityThreshold=linkerIdentity[[x]], 
+                              returnUnmatched=TRUE, returnLowScored=TRUE, 
+                              doRC=doRC, ...) 
+          }
         }        
       }
       names(linkerTrimmed) <- samplesToProcess
@@ -1770,40 +1803,86 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       }        
       
       cleanit <- gc()
-      
-      toprint <- data.frame("Total"=sapply(sapply(linkerTrimmed,"[[","hits"),length))
-      counts <- sapply(toProcess,length)
-      toprint$PercOfPrimedOrLTRed <- 100*(toprint$Total/counts[rownames(toprint)]) 
-      toprint$SampleName <- rownames(toprint)
-      rownames(toprint) <- NULL    
-      
-      if (showStats) {                            
-        message("Sequence Stats after Linker alignment:")
-        print(toprint)        
-      }
-      
-      ## if <= 5% of sequences found linkers...then something is wrong with the linker sequences provided???
-      if(mean(toprint$PercOfPrimedOrLTRed)<=5 & !bypassChecks) {
-        stop("Something seems wrong with the linkers provided for each sample. ",
-             "On average <= 5% of sequences found linker match for the entire run!!")
+ 
+      if(!bypassChecks | showStats) {
+        addFake <- FALSE
+        if(any(sapply(linkerTrimmed, is.list))) {
+          totals <- sapply(linkerTrimmed, sapply, function(x) length(x$hits))
+          counts <- sapply(toProcess[colnames(totals)], sapply, length)
+          stopifnot(identical(colnames(totals),colnames(counts)))
+          toprint <- cbind(as.data.frame(t(totals)),
+                           as.data.frame(t(100*(totals/counts))))
+          names(toprint) <- paste(names(toprint),
+                                  rep(c("Total","PercOfPrimedOrLTRed"),each=2), sep=".")
+          addFake <- TRUE
+        } else {
+          toprint <- data.frame("Total"=sapply(sapply(linkerTrimmed,"[[","hits"),
+                                               length))
+          counts <- sapply(toProcess, length)
+          toprint$PercOfPrimedOrLTRed <- 100*(toprint$Total/counts[rownames(toprint)])          
+        }
+        
+        toprint$SampleName <- rownames(toprint)
+        rownames(toprint) <- NULL
+        
+        if(showStats) {            
+          message("Sequence Stats after Linker alignment:")
+          print(toprint)        
+        }
+        
+        ## if <= 5% of sequences found linkers...then something is wrong with the linker sequences provided???
+        if(addFake)
+          toprint$PercOfPrimedOrLTRed <- toprint$pair2.PercOfPrimedOrLTRed
+        
+        if(mean(toprint$PercOfPrimedOrLTRed)<=5) {
+          stop("Something seems wrong with the linkers provided for each sample. ",
+               "On average <= 5% of sequences found linker match for the entire run!!")
+        }
       }
       
       message("Adding linker info back to the object")
       ## modify metadata attribute, add linker coordinates to LTRed and write back to sampleInfo object
       ## for primerID based samples...write back all the returned attibutes
       for(x in names(linkerTrimmed)) {
-        for(y in names(linkerTrimmed[[x]])) {
-          cat('.')
-          if(primerFlag){
-            LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(linkerTrimmed[[x]][[y]])])
-          } else {
-            LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$LTRed[names(linkerTrimmed[[x]][[y]])])
-          }                    
-          end(linkerTrimmed[[x]][[y]]) <- end(linkerTrimmed[[x]][[y]]) + LTRed.ends
-          start(linkerTrimmed[[x]][[y]]) <- start(linkerTrimmed[[x]][[y]]) + LTRed.ends
-          newAttrName <- paste(ifelse(y=="hits","",y),"linkered",sep="")
-          sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- linkerTrimmed[[x]][[y]]
-          rm(LTRed.ends)
+        cat('.')        
+        if(isPaired[[x]]) {
+          for(y in unique(unlist(sapply(linkerTrimmed[[x]], names)))) {
+            bore <- sapply(linkerTrimmed[[x]], "[[", y)
+            if(primerFlag) {
+              LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$
+                                  primed$pair1[names(bore$pair1)])
+            } else {
+              LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$
+                                  LTRed$pair1[names(bore$pair1)])
+            }
+            
+            end(bore$pair1) <- end(bore$pair1) + LTRed.ends
+            start(bore$pair1) <- start(bore$pair1) + LTRed.ends
+            
+            newAttrName <- paste0(ifelse(y=="hits","",y),"linkered")
+            sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- bore
+            rm("LTRed.ends", "bore")
+          }
+        } else {
+          for(y in names(linkerTrimmed[[x]])) {
+            if(primerFlag) {
+              LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$
+                                  primed[names(linkerTrimmed[[x]][[y]])])
+            } else {
+              LTRed.ends <- end(sampleInfo$sectors[[sector]]$samples[[x]]$
+                                  LTRed[names(linkerTrimmed[[x]][[y]])])
+            }
+            
+            end(linkerTrimmed[[x]][[y]]) <- end(linkerTrimmed[[x]][[y]]) + 
+                                            LTRed.ends
+            start(linkerTrimmed[[x]][[y]]) <- start(linkerTrimmed[[x]][[y]]) + 
+                                              LTRed.ends
+            
+            newAttrName <- paste0(ifelse(y=="hits","",y),"linkered")
+            sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- 
+              linkerTrimmed[[x]][[y]]
+            rm(LTRed.ends)
+          }
         }
       }            
       rm("linkerTrimmed")
