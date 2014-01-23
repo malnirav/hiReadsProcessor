@@ -1344,14 +1344,13 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
           )
           
           ## side needs to be middle since we dont know where in pair2 the primer can be
-          ltrPrimers.rc <- toString(reverseComplement(DNAString(ltrPrimers[[x]])))
           p2 <- switch(alignWay,
                        fast = vpairwiseAlignSeqs(decoded[[x]]$pair2, 
-                                                 ltrPrimers.rc, "middle", 
+                                                 ltrPrimers[[x]], "middle", 
                                                  (primerIdentity[[x]]-.05), 
                                                  doRC=doRC, ...),
                        slow = pairwiseAlignSeqs(decoded[[x]]$pair2, 
-                                                ltrPrimers.rc, "middle", 
+                                                ltrPrimers[[x]], "middle", 
                                                 (primerIdentity[[x]]), 
                                                 doRC=doRC, ...)                
           )
@@ -1389,17 +1388,18 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       
       if(!bypassChecks | showStats) {
         addFake <- FALSE
-        if(any(sapply(primerTrimmed, is.list))) {
-          totals <- sapply(primerTrimmed, sapply, length)          
-          counts <- sapply(decoded, sapply, length)
+        listed <- sapply(primerTrimmed, is.list)
+        if(any(listed)) {
+          totals <- sapply(primerTrimmed[listed], sapply, length)          
+          counts <- sapply(decoded[names(primerTrimmed[listed])], sapply, length)
           stopifnot(identical(colnames(totals),colnames(counts)))
           toprint <- cbind(data.frame("Total"=t(totals)),
                            data.frame("PercOfDecoded"=t(100*(totals/counts))))
           addFake <- TRUE
         } else {
-          toprint <- as.data.frame(sapply(primerTrimmed, length))
+          toprint <- as.data.frame(sapply(primerTrimmed[!listed], length))
           names(toprint) <- "Total"            
-          counts <- sapply(decoded, length)
+          counts <- sapply(decoded[names(primerTrimmed[!listed])], length)
           toprint$PercOfDecoded <- 100*(toprint$Total/counts[rownames(toprint)])          
         }
         
@@ -1413,7 +1413,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
         
         ## if <= 5% of sequences found primers...then something is wrong with the primer sequences provided???
         if(addFake)
-          toprint$PercOfDecoded <- toprint$pair1.PercOfDecoded
+          toprint$PercOfDecoded <- toprint$PercOfDecoded.pair1
         
         if(mean(toprint$PercOfDecoded)<=5) {
           stop("Something seems to be wrong with the primers provided for ",
@@ -1439,7 +1439,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming. This function heavily relies on \code{\link{pairwiseAlignSeqs}}.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}}, which holds decoded and primed sequences for samples per sector/quadrant along with information of sample to LTR associations.
-#' @param showStats toggle output of search statistics. Default is FALSE.
+#' @param showStats toggle output of search statistics. Default is FALSE. For paired end data, stats for "pair2" is relative to decoded and/or primed reads.
 #' @param doRC perform reverse complement search of the defined pattern/LTR sequence. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
@@ -1511,13 +1511,29 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       primerTrimmed <- extractSeqs(sampleInfo, sector, samplesToProcess,
                                    feature="primed")[[sector]]
       
-      ## find paired end samples
-      isPaired <- extractFeature(sampleInfo, sector, feature='pairedend')[[sector]]
+      ## find paired end samples...
+      ## add reads which aren't primed in pair2 for cases where reads were long, etc.
+      isPaired <- extractFeature(sampleInfo, sector, samplesToProcess,
+                                 feature='pairedend')[[sector]]
+      if(any(isPaired)) {
+        message("Getting reads from pair2 which weren't primed...")
+        decoded <- extractSeqs(sampleInfo, sector, names(which(isPaired)),
+                               feature="decoded", pairReturn='pair2')[[sector]]
+        rows <- intersect(names(decoded), names(primerTrimmed))
+        
+        bore <- mapply(function(x,y) {
+          x$pair2 <- c(x$pair2, y[!names(y) %in% names(x$pair2)])
+          x
+        }, primerTrimmed[rows], decoded[rows])
+        primerTrimmed[rows] <- as(bore, "DataFrame")        
+        rm(bore)
+      }
       
       ## trim LTRbits using slow method since its the best! ##
       message("\tFinding LTR bits.")
       ltrBitIdentity <- extractFeature(sampleInfo,sector=sector,
                                        feature="ltrbitidentity")[[sector]]
+      
       ltrTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, 
                             .errorhandling="pass", 
                             .export=c("primerTrimmed", "sampleLTRbits", "isPaired",
@@ -1527,8 +1543,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
           p1 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair1, sampleLTRbits[[x]], "left", 
                                   qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
           
-          ltrbit.rc <- toString(reverseComplement(DNAString(sampleLTRbits[[x]])))
-          p2 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair2, ltrbit.rc, "middle", 
+          p2 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair2, sampleLTRbits[[x]], 
+                                  "middle", 
                                   qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
 
           list("pair1"=p1, "pair2"=p2)          
@@ -1559,17 +1575,18 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       
       if(!bypassChecks | showStats) {
         addFake <- FALSE
-        if(any(sapply(ltrTrimmed, is.list))) {
-          totals <- sapply(ltrTrimmed, sapply, length)          
-          counts <- sapply(primerTrimmed, sapply, length)
+        listed <- sapply(ltrTrimmed, is.list)
+        if(any(listed)) {
+          totals <- sapply(ltrTrimmed[listed], sapply, length)          
+          counts <- sapply(primerTrimmed[names(ltrTrimmed[listed])], sapply, length)
           stopifnot(identical(colnames(totals),colnames(counts)))          
           toprint <- cbind(data.frame("Total"=t(totals)),
-                           data.frame("PercOfDecoded"=t(100*(totals/counts))))
+                           data.frame("PercOfPrimed"=t(100*(totals/counts))))
           addFake <- TRUE
         } else {
-          toprint <- as.data.frame(sapply(ltrTrimmed,length))
+          toprint <- as.data.frame(sapply(ltrTrimmed[!listed],length))
           names(toprint) <- "Total"            
-          counts <- sapply(primerTrimmed, length)
+          counts <- sapply(primerTrimmed[names(ltrTrimmed[!listed])], length)
           toprint$PercOfPrimed <- 100*(toprint$Total/counts[rownames(toprint)])          
         }
         
@@ -1583,7 +1600,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
         
         ## if <= 5% of sequences found primers...then something is wrong with the primer sequences provided???
         if(addFake)
-          toprint$PercOfPrimed <- toprint$pair1.PercOfPrimed
+          toprint$PercOfPrimed <- toprint$PercOfPrimed.pair1
         
         if(mean(toprint$PercOfPrimed)<=5) {
           stop("Something seems to be wrong with the LTRs provided for each sample. ",
@@ -1594,23 +1611,35 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       ## modify metadata attribute, add LTR bit coordinates to primer and write back to sampleInfo object & trim...remember everything is relative to the entire read length!
       message("Adding LTR info back to the object")
       for(x in names(ltrTrimmed)) {
-        cat('.')
+        cat(".")
         if(isPaired[[x]]) {
-          if(any(sapply(ltrTrimmed[[x]],length)>0)) {
-            primed <- sampleInfo$sectors[[sector]]$samples[[x]]$primed$pair1
-            primed.end.p1 <- end(primed[names(ltrTrimmed[[x]]$pair1)])
-            end(ltrTrimmed[[x]]$pair1) <- end(ltrTrimmed[[x]]$pair1) + primed.end.p1
-            start(ltrTrimmed[[x]]$pair1) <- start(ltrTrimmed[[x]]$pair1) + primed.end.p1            
-            sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
-            rm("primed.end.p1","primed")
+          worked <- sapply(ltrTrimmed[[x]],length)>0
+          if(any(worked)) {
+            for(pair in names(which(worked))) {
+              primed <- sampleInfo$sectors[[sector]]$samples[[x]]$primed[[pair]]
+              rows <- names(ltrTrimmed[[x]][[pair]]) %in% names(primed)
+              primed.end <- end(primed[names(ltrTrimmed[[x]][[pair]][rows])])
+              rm(primed)
+              
+              end(ltrTrimmed[[x]][[pair]][rows]) <- 
+                end(ltrTrimmed[[x]][[pair]][rows]) + primed.end              
+              start(ltrTrimmed[[x]][[pair]][rows]) <- 
+                start(ltrTrimmed[[x]][[pair]][rows]) + primed.end              
+              rm(primed.end)
+            }
           }
+          sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
         } else {
           if(length(ltrTrimmed[[x]])>0) {
-            primed.end <- end(sampleInfo$sectors[[sector]]$samples[[x]]$primed[names(ltrTrimmed[[x]])])
+            primed <- sampleInfo$sectors[[sector]]$samples[[x]]$primed
+            primed.end <- end(primed[names(ltrTrimmed[[x]])])
+            rm(primed)
+            
             end(ltrTrimmed[[x]]) <- end(ltrTrimmed[[x]]) + primed.end
             start(ltrTrimmed[[x]]) <- start(ltrTrimmed[[x]]) + primed.end
-            sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
             rm(primed.end)
+            
+            sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
           }
         }        
       }
@@ -1725,10 +1754,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                          "primerIded.threshold2",
                                          "pairwiseAlignSeqs",
                                          "primerIDAlignSeqs"), 
-                               .packages="Biostrings") %dopar% {
-        
-        linker.rc <- toString(reverseComplement(DNAString(sampleLinkers[[x]])))                         
-        
+                               .packages="Biostrings") %dopar% {        
         if(primerIded[[x]]) {
           if(isPaired[[x]]) {
             p1 <- primerIDAlignSeqs(toProcess[[x]]$pair1, sampleLinkers[[x]], 
@@ -1737,7 +1763,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                     qualityThreshold1=primerIded.threshold1[[x]], 
                                     qualityThreshold2=primerIded.threshold2[[x]], ...)
             
-            p2 <- primerIDAlignSeqs(toProcess[[x]]$pair2, linker.rc, 
+            p2 <- primerIDAlignSeqs(toProcess[[x]]$pair2, sampleLinkers[[x]], 
                                     doAnchored=TRUE, returnUnmatched=TRUE, 
                                     returnRejected=TRUE, doRC=doRC, 
                                     qualityThreshold1=primerIded.threshold1[[x]], 
@@ -1751,15 +1777,15 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                               qualityThreshold2=primerIded.threshold2[[x]], ...)
           }          
         } else {
-          ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right'
+          ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right' for single end reads or "pair1"
           if(isPaired[[x]]) {
             p1 <- pairwiseAlignSeqs(toProcess[[x]]$pair1, sampleLinkers[[x]], "middle", 
                                     qualityThreshold=linkerIdentity[[x]], 
                                     returnUnmatched=TRUE, returnLowScored=TRUE, 
                                     doRC=doRC, ...)
             
-            # pair2 should begin with linker, hence side='left'            
-            p2 <- pairwiseAlignSeqs(toProcess[[x]]$pair2, linker.rc, "left", 
+            # pair2 should end with linker, hence side='right'            
+            p2 <- pairwiseAlignSeqs(toProcess[[x]]$pair2, sampleLinkers[[x]], "right", 
                                     qualityThreshold=linkerIdentity[[x]], 
                                     returnUnmatched=TRUE, returnLowScored=TRUE, 
                                     doRC=doRC, ...)
@@ -1795,17 +1821,19 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
  
       if(!bypassChecks | showStats) {
         addFake <- FALSE
+        listed <- sapply(linkerTrimmed, is.list)
         if(any(sapply(linkerTrimmed, is.list))) {
-          totals <- sapply(linkerTrimmed, sapply, function(x) length(x$hits))
+          totals <- sapply(linkerTrimmed[listed], sapply, function(x) length(x$hits))
           counts <- sapply(toProcess[colnames(totals)], sapply, length)
           stopifnot(identical(colnames(totals),colnames(counts)))          
           toprint <- cbind(data.frame("Total"=t(totals)),
                            data.frame("PercOfDecoded"=t(100*(totals/counts))))
           addFake <- TRUE
         } else {
-          toprint <- data.frame("Total"=sapply(sapply(linkerTrimmed,"[[","hits"),
+          toprint <- data.frame("Total"=sapply(sapply(linkerTrimmed[!listed], "[[",
+                                                      "hits"),
                                                length))
-          counts <- sapply(toProcess, length)
+          counts <- sapply(toProcess[names(linkerTrimmed[!listed])], length)
           toprint$PercOfDecoded <- 100*(toprint$Total/counts[rownames(toprint)])          
         }
         
@@ -1819,7 +1847,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
         
         ## if <= 5% of sequences found linkers...then something is wrong with the linker sequences provided???
         if(addFake)
-          toprint$PercOfDecoded <- toprint$pair2.PercOfDecoded
+          toprint$PercOfDecoded <- toprint$PercOfDecoded.pair2
         
         if(mean(toprint$PercOfDecoded)<=5) {
           stop("Something seems wrong with the linkers provided for each sample. ",
@@ -1831,7 +1859,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       ## modify metadata attribute and write back to sampleInfo object
       ## for primerID based samples...write back all the returned attibutes
       for(x in names(linkerTrimmed)) {
-        cat('.')        
+        cat(".") 
         if(isPaired[[x]]) {
           for(y in unique(unlist(sapply(linkerTrimmed[[x]], names)))) {
             bore <- sapply(linkerTrimmed[[x]], "[[", y)
@@ -1928,7 +1956,6 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
                                          "qualityThreshold2", "pairwiseAlignSeqs",
                                          "primerIDAlignSeqs", "isPaired"), 
                                .packages="Biostrings") %dopar% {
-        linker.rc <- toString(reverseComplement(DNAString(linkerSeq)))
         if(length(unlist(gregexpr("N",linkerSeq)))>3) {
           if(isPaired[[x]]) {
             p1 <- try_default(length(primerIDAlignSeqs(toProcess.seqs[[x]]$pair1, 
@@ -1939,7 +1966,7 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
                               0, quiet=TRUE)
 
             p2 <- try_default(length(primerIDAlignSeqs(toProcess.seqs[[x]]$pair2, 
-                                                       linker.rc, 
+                                                       linkerSeq, 
                                                        qualityThreshold1, 
                                                        qualityThreshold2,
                                                        doRC=doRC, ...)$hits), 
@@ -1959,7 +1986,7 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
                                                        ...)), 0, quiet=TRUE)
 
             p2 <- try_default(length(pairwiseAlignSeqs(toProcess.seqs[[x]]$pair2,
-                                                       linker.rc, "left",
+                                                       linkerSeq, "right",
                                                        qualityThreshold, doRC=doRC,
                                                        ...)), 0, quiet=TRUE)
             
@@ -2201,8 +2228,9 @@ getSectorsForSamples <- function(sampleInfo, sector=NULL, samplename=NULL,
 #' @param trim whether to trim the given feature from sequences or keep it. Default is TRUE. This option is ignored for feature with '!'.
 #' @param minReadLength threshold for minimum length of trimmed sequences to return.
 #' @param sideReturn if trim=TRUE, which side of the sequence to return: left, middle, or right. Defaults to NULL and determined automatically. Doesn't apply to features: decoded, genomic or genomicLinkered.
+#' @param pairReturn if the data is paired end, then from which pair to return the feature. Options are "pair1", "pair2", or defaults to "both". Ignored if data is single end. 
 #'
-#' @return a listed DNAStringSet object structed by sector then sample. 
+#' @return a listed DNAStringSet object structed by sector then sample. Note: when feature='genomic' or 'genomicLinkered' and when data is paired end, then "pair2" includes union of reads from both pairs which found LTR.
 #'
 #' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{trimSeqs}}, \code{\link{extractFeature}}, \code{\link{getSectorsForSamples}}
 #'
@@ -2213,7 +2241,8 @@ getSectorsForSamples <- function(sampleInfo, sector=NULL, samplename=NULL,
 #' #extractSeqs(sampleInfo,feature="primed")
 #'
 extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genomic",
-                        trim=TRUE, minReadLength=1, sideReturn=NULL) {
+                        trim=TRUE, minReadLength=1, sideReturn=NULL, 
+                        pairReturn="both") {
   stopifnot(is(sampleInfo,"SimpleList"))        
   
   if(is.null(feature)) {
@@ -2240,90 +2269,185 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
       sapply(samplenames[[y]], function(x,y) { 
         decoded <- sampleInfo$sectors[[y]]$samples[[x]]$decoded
         isPaired <- sampleInfo$sectors[[y]]$samples[[x]]$pairedend
-        
+        if(isPaired & pairReturn!='both') {
+          decoded <- decoded[[pairReturn]]
+        }
+
         if(feature!="decoded") {
           # get ride of ! from feature, else R wont know what to do when making a new object with ! in the front.
           assign(gsub("!","",feature), 
                  sampleInfo$sectors[[y]]$samples[[x]][[gsub("!","",feature)]])
         }
         
-        if (feature=="decoded") {
+        if(feature=="decoded") {
           decoded
         } else if (feature %in% c("genomic","genomicLinkered")) {
           primed <- sampleInfo$sectors[[y]]$samples[[x]]$primed
           LTRed <- sampleInfo$sectors[[y]]$samples[[x]]$LTRed
           linkered <- sampleInfo$sectors[[y]]$samples[[x]]$linkered
           
-          if(is.null(LTRed)) {
+          if(isPaired & pairReturn!='both') {
+            primed <- primed[[pairReturn]]
+            LTRed <- LTRed[[pairReturn]]
+            linkered <- linkered[[pairReturn]]
+          }
+          
+          # if reads dont have LTRs...use primers instead...but throw a warning!
+          LTRed.test <- if(is.list(LTRed)) {
+            any(sapply(LTRed,is.null))
+          } else {
+            is.null(LTRed)
+          }
+          if(LTRed.test) {
             warning("LTRed information not found for",x,
                     "...using primer end as starting boundary.", immediate.=TRUE)                                
           }
           
-          if(any(is.null(primed),is.null(linkered))) { 
+          # test if there are any primed and/or linkered reads
+          p.l.test <- if(is.list(primed)) {
+            any(sapply(primed,is.null), sapply(linkered,is.null))
+          } else {
+            any(is.null(primed), is.null(linkered))
+          }
+          
+          if(p.l.test) { 
             message("No sequences found for requested feature (", feature,
                     ") for sample: ", x,"...skipping.") 
           } else {
             if(trim) {
               # get all LTRed reads and make ends = size of each read
-              # if reads dont have LTRs...use primers instead...but throw a warning!
-              if(is.null(LTRed)) {
-                LTRed <- primed
-              }
-              starts <- end(LTRed)
-              starts.name <- names(LTRed)
-              
-              ends <- width(decoded)
-              ends.name <- names(decoded)
-              
-              stopifnot(identical(starts.name,ends.name[ends.name %in% starts.name]))
-              coords <- IRanges(start=starts+1,end=ends[ends.name %in% starts.name],
-                                names=starts.name)
-              
-              # alter ends for reads where linker was present.
-              ends <- start(linkered)
-              ends.name <- names(linkered)
-              end(coords[ends.name]) <- ends-1
-              
-              if(feature=="genomicLinkered") { 
-                coords <- coords[names(coords) %in% names(linkered)] 
-              }
-              
-              # trim it and return non zero length sequences
-              if(length(coords)>0) {
-                seqs <- trimSeqs(decoded,coords)
-                seqs[width(seqs)>=minReadLength]
+              if(isPaired & pairReturn=='both') {
+                if(LTRed.test) {
+                  LTRed <- primed
+                }
+
+                starts <- lapply(LTRed, function(p) structure(end(p), 
+                                                              names=names(p)))
+                ## add reads present pair1 to pair2 where LTR wasn't found
+                ## make things consistent to pair1 atleast!
+                loners <- setdiff(names(starts$pair1), names(starts$pair2))
+                starts$pair2 <- c(starts$pair2, 
+                                  structure(rep(0L,length(loners)), names=loners))
+                ends <- lapply(decoded, function(p) structure(width(p), 
+                                                              names=names(p)))
+
+                stopifnot(identical(names(starts), names(ends)))
+                stopifnot(mapply(function(s,e) all(names(s) %in% names(e)),
+                                 starts, ends))
+
+                coords <- mapply(function(s,e) {
+                  IRanges(start=s+1, end=e[names(s)], names=names(s))
+                }, starts, ends)
+
+                # alter ends for reads where linker was present
+                # fix cases where start of linker earlier than edge of LTR/primer end
+                ends <- lapply(linkered, function(p) structure(start(p), 
+                                                               names=names(p)))
+                stopifnot(identical(names(coords), names(ends)))
+                
+                coords <- mapply(function(p, e) {
+                  there <- intersect(names(p), names(e))
+                  e <- as.numeric(e[there]-1)
+                  culprits <- start(p[there]) > e
+                  end(p[there][!culprits]) <- e[!culprits]
+                  end(p[there][culprits]) <- start(p[there][culprits])
+                  p
+                }, coords, ends)
+
+                if(feature=="genomicLinkered") { 
+                  stopifnot(identical(names(coords), names(linkered)))
+                  coords <- mapply(function(p, l) p[names(p) %in% names(l)], 
+                                   coords, linkered)
+                }
+                
+                # trim it and return non zero length sequences
+                if(any(sapply(coords, length)>0)) {
+                  stopifnot(identical(names(coords), names(decoded)))
+                  mapply(function(d, p) {
+                    seqs <- trimSeqs(d,p)
+                    seqs[width(seqs)>=minReadLength]
+                  }, decoded, coords)
+                } else {
+                  message("No linkered reads found for sample: ",x,"...skipping.")
+                }
               } else {
-                message("No linkered reads found for sample: ",x,"...skipping.")
-              }                            
+                if(LTRed.test) {
+                  LTRed <- primed
+                }
+                
+                starts <- structure(end(LTRed), names=names(LTRed))
+                ends <- structure(width(decoded), names=names(decoded))
+
+                stopifnot(identical(names(starts), names(ends[names(starts)])))
+                coords <- IRanges(start=starts+1,
+                                  end=ends[names(starts)],
+                                  names=names(starts))
+                
+                # alter ends for reads where linker was present
+                # fix cases where start of linker earlier than edge of LTR/primer end
+                ends <- structure(start(linkered), names=names(linkered))
+                there <- intersect(names(coords), names(ends))
+                ends <- as.numeric(ends[there]-1)
+                culprits <- start(coords[there]) > ends
+                end(coords[there][!culprits]) <- ends[!culprits]
+                end(coords[there][culprits]) <- start(coords[there][culprits])
+                                
+                if(feature=="genomicLinkered") { 
+                  coords <- coords[names(coords) %in% names(linkered)] 
+                }
+                
+                # trim it and return non zero length sequences
+                if(length(coords)>0) {
+                  seqs <- trimSeqs(decoded,coords)
+                  seqs[width(seqs)>=minReadLength]
+                } else {
+                  message("No linkered reads found for sample: ",x,"...skipping.")
+                }                
+              }
             } else {
               # just retuning ranges...simply match names from decoded to the request
-              if(feature=="genomicLinkered") { 
-                decoded[names(decoded) %in% names(linkered)]
-              } else { ## everything past primer and LTR
-                if(is.null(LTRed)) {
-                  decoded[names(decoded) %in% names(primed)]
-                } else {
-                  decoded[names(decoded) %in% names(LTRed)]
+              if(isPaired & pairReturn=='both') {
+                if(feature=="genomicLinkered") { 
+                  mapply(function(d,l) d[names(d) %in% names(l)],
+                         decoded, linkered)
+                } else { ## everything past primer and LTR
+                  if(LTRed.test) {
+                    mapply(function(d,l) d[names(d) %in% names(l)],
+                           decoded, primed)
+                  } else {
+                    mapply(function(d,l) d[names(d) %in% names(l)],
+                           decoded, LTRed)
+                  }
                 }
-              }
+              } else {
+                if(feature=="genomicLinkered") { 
+                  decoded[names(decoded) %in% names(linkered)]
+                } else { ## everything past primer and LTR
+                  if(is.null(LTRed)) {
+                    decoded[names(decoded) %in% names(primed)]
+                  } else {
+                    decoded[names(decoded) %in% names(LTRed)]
+                  }
+                }
+              }              
             }
           }
         } else {
           notFeature <- grepl("!",feature)
           ## no need to trim if looking for "not" based feature since there are no coordinates for it
           if(notFeature) {
-            if(isPaired) {
+            if(isPaired & pairReturn=='both') {
               stopifnot(identical(names(decoded), names(get(gsub("!","",feature)))))
-              toreturn <- mapply(function(x,y) x[!names(x) %in% names(y)], 
+              toreturn <- mapply(function(d,g) d[!names(d) %in% names(g)], 
                                  decoded, get(gsub("!","",feature)))
               
-              ## return the intersect of pairs!
-              toreturn <- list("pair1"=decoded$pair1[!names(decoded$pair1) %in% 
-                                                      names(get(gsub("!","",
-                                                                     feature))$pair1)])
-              toreturn[["pair2"]] <- decoded$pair2[names(decoded$pair2) %in% 
-                                                    names(res.seq$pair1)]
-              
+              toreturn <- list()
+              toreturn[["pair1"]] <- decoded$pair1[!names(decoded$pair1) %in% 
+                                                     names(get(gsub("!","",
+                                                                    feature))$pair1)]
+              toreturn[["pair2"]] <- decoded$pair2[!names(decoded$pair2) %in% 
+                                                     names(get(gsub("!","",
+                                                                    feature))$pair2)]
             } else {
               toreturn <- decoded[!names(decoded) %in% 
                                     names(get(gsub("!","",feature)))]
@@ -2340,12 +2464,12 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
               message("No sequences found for requested feature (", feature,
                       ") for sample: ", x,"...skipping.") 
             } else {
-              if(isPaired) {
-                stopifnot(identical(names(decoded), names(get(feature))))
-                ## return the intersect of pairs!
+              if(isPaired & pairReturn=='both') {
+                stopifnot(identical(names(decoded), names(get(feature))))                
                 res.seq <- list("pair1"=decoded$pair1[names(decoded$pair1) %in% 
-                                                        names(get(feature)$pair1)])
-                res.seq[["pair2"]] <- decoded$pair2[names(res.seq$pair1)]
+                                                        names(get(feature)$pair1)],
+                                "pair2"=decoded$pair2[names(decoded$pair2) %in% 
+                                                        names(get(feature)$pair2)])
               } else {
                 res.seq <- decoded[names(decoded) %in% names(get(feature))]  
               }
@@ -2367,23 +2491,16 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
                 
                 offByLength <- ifelse(sidetype=="middle",0,1)
                 
-                if(isPaired) {
+                if(isPaired & pairReturn=='both') {
                   seqs.p1 <- trimSeqs(res.seq$pair1, get(feature)$pair1, 
                                       side=sidetype, offBy=offByLength)
                   seqs.p1 <- seqs.p1[width(seqs.p1)>=minReadLength]
                   
-                  ## some hits found in pair2 might be absent in pair1 hence ...
-                  ## res.seq$pair2 which is res.seq$pair1 needs to be subsetted
-                  rows <- intersect(names(res.seq$pair2), names(get(feature)$pair2))
-                  seqs.p2 <- trimSeqs(res.seq$pair2[rows], get(feature)$pair2[rows], 
-                                      side=ifelse(sidetype=='left','right','left'), 
-                                      offBy=offByLength)
-                  seqs.p2 <- c(seqs.p2, 
-                               res.seq$pair2[setdiff(names(res.seq$pair2),
-                                                     names(seqs.p2))])
-                  seqs.p2 <- seqs.p2[names(seqs.p2) %in% names(seqs.p1)]
-                  stopifnot(identical(length(seqs.p1),length(seqs.p2)))
-                  list("pair1"=seqs.p1, "pair2"=seqs.p2[names(seqs.p1)])
+                  seqs.p2 <- trimSeqs(res.seq$pair2, get(feature)$pair2, 
+                                      side=sidetype, offBy=offByLength)
+                  seqs.p2 <- seqs.p2[width(seqs.p2)>=minReadLength]
+                  
+                  list("pair1"=seqs.p1, "pair2"=seqs.p2)
                 } else {
                   seqs <- trimSeqs(res.seq, get(feature), 
                                    side=sidetype, offBy=offByLength)
@@ -2547,7 +2664,7 @@ addFeature <- function(sampleInfo, sector=NULL, samplename=NULL, feature=NULL,
 #' @param sector specific sector to reads sequences from. Default is 1, and not required if seqFilePath is a direct file path rather than sampleInfo object.
 #'  @param isPaired does the sector contain paired end reads? Default is FALSE
 #'
-#' @return if isPaired is FALSE, then a DNAStringSet object, else a list of DNAStringSet objects of three elements corresponding to reads from "barcode", "pair1", and "pair2".
+#' @return if isPaired is FALSE, then a DNAStringSet object, else a list of DNAStringSet objects of three elements corresponding to reads from "barcode", "pair1", and "pair2". Note: "pair2" is reverse complemented!
 #'
 #' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
 #'
@@ -2631,7 +2748,7 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
       
       dnaSet <- list("barcode"=dnaSet[[barcodes]],
                      "pair1"=dnaSet[[LTRside]],
-                     "pair2"=dnaSet[[linkerSide]])      
+                     "pair2"=reverseComplement(dnaSet[[linkerSide]]))
     } else {
       ## for single-end data!
       dnaSet <- dnaSet[[1]]
@@ -2659,12 +2776,17 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
 #' @param filePath a path write the fasta files per sample. Default is current working directory.
 #' @param filePrefix prefix the filenames with a string. Default is 'processed' followed by samplename.
 #' @param prependSamplenames Prepend definition lines with samplenames. Default is TRUE. Make sure the dnaSet parameter is a named list where names are used as samplenames.
-#' @param format Either fasta (the default) or fastq.
+#' @param format either fasta (the default) or fastq.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #'
 #' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
 #'
-#' @note Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note
+#' \itemize{
+#'   \item Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. This is to aggregate reads from a sample which might be present in more than one sector. 
+#'   \item If data is paired end, then each pair will be written seperately with designations in the filename.
+#'   \item If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' }
 #'
 #' @export
 #'
@@ -2677,36 +2799,48 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
   stopifnot(class(dnaSet)=="list")
   
   if(!parallel) { registerDoSEQ() }
+  if(filePrefix=="") { filePrefix <- NA }
   
-  ## do a safety check to see if dnaSet is a list of list or list of DNAStringSet objects ##    
-  ## if list of list, then flatten it ##
-  if(all(sapply(dnaSet,class)=="list")) {
-    names(dnaSet) <- NULL
-    dnaSet <- unlist(dnaSet)
-  }
-  
-  out <- foreach(i=iter(names(dnaSet)), .inorder=FALSE, .errorhandling="stop", 
-                 .packages="Biostrings", 
-                 .export=c("dnaSet","filePath","filePrefix",
-                           "prependSamplenames")) %dopar% {
-    outputSeqs <- dnaSet[[i]]
-    if(length(outputSeqs)>0) {
-      if(is.null(names(outputSeqs))) {
-        message("No names attribute found for ",i,
-                " ... using artifically generated names")
-        names(outputSeqs) <- paste("read",1:length(outputSeqs),sep="-")
+  for(x in seq_along(dnaSet)) {
+    foreach(outputSeqs=iter(as(dnaSet[[x]],"list")), 
+            samplename=iter(names(dnaSet[[x]])),
+            .inorder=TRUE, .errorhandling="stop", .packages="Biostrings", 
+            .export=c("filePath", "filePrefix", "prependSamplenames")) %dopar% {
+      
+      if(is.list(outputSeqs)) {
+        list.test <- any(sapply(outputSeqs, length)>0)
+      } else {
+        list.test <- length(outputSeqs)>0
+        outputSeqs <- list("tempy"=outputSeqs)
       }
-      ## remove '.' at the beginning of the filename incase filePrefix is empty
-      filename <- gsub("^\\.","", paste(filePrefix,i,
-                                        ifelse(format=="fastq","fastq","fa"),
-                                        sep="."))
-      filename <- paste(filePath, filename, sep="/")
-      if(prependSamplenames) {
-        names(outputSeqs) <- paste(i,names(outputSeqs),sep="-")
-      }
-      writeXStringSet(outputSeqs, file=filename, format=format, append=TRUE) 
+      
+      if(list.test) {
+        for(p in names(outputSeqs)) {
+          pairname <- ifelse(p=="tempy", NA, p)
+          
+          if(is.null(names(outputSeqs[[p]]))) {
+            message("No names attribute found for ", samplename,
+                    " ... using artifically generated names")
+            names(outputSeqs[[p]]) <- paste("read",1:length(outputSeqs[[p]]),sep="-")
+          }
+          
+          ## remove '.' at the beginning of the filename incase filePrefix is empty
+          filename <- paste(na.omit(c(filePrefix, samplename, pairname, 
+                                      ifelse(format=="fastq", "fastq", "fa"))), 
+                            collapse=".")
+          filename <- paste(filePath, filename, sep="/")
+          
+          if(prependSamplenames) {
+            names(outputSeqs[[p]]) <- paste(samplename, names(outputSeqs[[p]]), sep="-")
+          }
+          
+          writeXStringSet(outputSeqs, file=filename, format=format, append=TRUE) 
+        } 
+      } else {
+        message("No reads written for ", samplename)
+      } 
     }
-  }    
+  }
 }
 
 #' Simple summary of a sampleInfo object.
@@ -2724,7 +2858,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
 #'
 summary.simple <- function(sampleInfo) {
   stopifnot(is(sampleInfo,"SimpleList"))
-  message("Total sectors:",paste(names(sampleInfo$sectors),collapse=","),"\n")
+  message("Total sectors:", paste(names(sampleInfo$sectors),collapse=","), "\n")
   do.call(rbind, lapply(names(sampleInfo$sectors), function(sector) {
     res.df <- data.frame(Sector=sector, 
                          SampleName=as.character(extractFeature(sampleInfo,
@@ -2766,7 +2900,7 @@ summary.simple <- function(sampleInfo) {
 #' @examples 
 #' #summary.elegant(sampleInfo)
 #'
-summary.elegant <- function(sampleInfo,samplenames=NULL) {
+summary.elegant <- function(sampleInfo, samplenames=NULL) {
   stopifnot(is(sampleInfo,"SimpleList"))
   cat("Names of all sectors processed:",
       paste(names(sampleInfo$sectors),collapse=","), 
@@ -2774,11 +2908,15 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
   for(sector in names(sampleInfo$sectors)) {
     cat(rep("*",50),"\n")
     cat("Sector:",sector,"\n")
+    
     sampleList <- as.character(extractFeature(sampleInfo,sector=sector,
                                               feature="samplename")[[sector]])
+    isPaired <- extractFeature(sampleInfo, sector=sector, 
+                               feature="pairedend")[[sector]]
     if(!is.null(samplenames)) {
       sampleList <- sampleList[sampleList %in% samplenames]
     }
+    
     for(sample.i in sampleList) {
       cat("\t",sample.i,":\n\t")
       bore <- strsplit(extractFeature(sampleInfo,
@@ -2788,21 +2926,45 @@ summary.elegant <- function(sampleInfo,samplenames=NULL) {
       metadatalist <- as.character(unlist(bore))
       totalDecoded <- extractFeature(sampleInfo, sector=sector, 
                                      samplename=sample.i, feature="decoded")[[sector]]
-      if(length(totalDecoded)>0) {
-        totalDecoded <- length(totalDecoded[[1]])
+      
+      decode.test <- if(isPaired[[sample.i]]) {
+        all(sapply(totalDecoded, sapply, length)>0)
+      } else {
+        length(totalDecoded)>0
+      }
+      
+      if(decode.test) {
+        totalDecoded <- if(isPaired[[sample.i]]) {
+          sapply(totalDecoded, sapply, length) 
+        } else { 
+          length(totalDecoded[[1]])
+        }
+        
         meta.processed <- grep("ed$", metadatalist, value=TRUE)
-        meta.sites <- c("psl","sites")
+        meta.sites <- c("psl", "sites")
         for(metadata.i in metadatalist) {
-          cat("| ",metadata.i,": ")
+          cat("| ", metadata.i, ": ")
           feature.i <- extractFeature(sampleInfo, sector=sector, samplename=sample.i,
                                       feature=metadata.i)[[sector]][[1]]
+          
+          counts <- if(is.list(feature.i)) {
+            sapply(feature.i, length)
+          } else {
+            length(feature.i)
+          }
+          
           if(metadata.i %in% meta.processed) {
             cat(length(feature.i),"(",
-                round(100*(length(feature.i)/totalDecoded),2),"%) ",
+                round(100*(counts/totalDecoded),2),"%) ",
                 sep="","\n")
           } else if(metadata.i %in% meta.sites) {
-            cat(length(unique(feature.i$qName)),"(",
-                round(100*(length(unique(feature.i$qName))/totalDecoded),2),"%) ",
+            counts <- if(is.list(feature.i)) {
+              sapply(feature.i, function(x) length(unique(x$qName)))
+            } else {
+              length(unique(feature.i$qName))
+            }
+            cat(counts,"(",
+                round(100*(counts/totalDecoded),2),"%) ",
                 sep="","\n")
           } else {
             cat(feature.i," ")
