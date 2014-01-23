@@ -2861,7 +2861,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
             names(outputSeqs[[p]]) <- paste(samplename, names(outputSeqs[[p]]), sep="-")
           }
           
-          writeXStringSet(outputSeqs, file=filename, format=format, append=TRUE) 
+          writeXStringSet(outputSeqs[[p]], file=filename, format=format, append=TRUE) 
         } 
       } else {
         message("No reads written for ", samplename)
