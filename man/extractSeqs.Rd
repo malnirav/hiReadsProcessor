@@ -4,7 +4,7 @@
 \usage{
 extractSeqs(sampleInfo, sector = NULL, samplename = NULL,
   feature = "genomic", trim = TRUE, minReadLength = 1,
-  sideReturn = NULL)
+  sideReturn = NULL, pairReturn = "both")
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object,
@@ -46,10 +46,17 @@ extractSeqs(sampleInfo, sector = NULL, samplename = NULL,
   sequence to return: left, middle, or right. Defaults to
   NULL and determined automatically. Doesn't apply to
   features: decoded, genomic or genomicLinkered.}
+
+  \item{pairReturn}{if the data is paired end, then from
+  which pair to return the feature. Options are "pair1",
+  "pair2", or defaults to "both". Ignored if data is single
+  end.}
 }
 \value{
 a listed DNAStringSet object structed by sector then
-sample.
+sample. Note: when feature='genomic' or 'genomicLinkered'
+and when data is paired end, then "pair2" includes union of
+reads from both pairs which found LTR.
 }
 \description{
 Given a sampleInfo object, the function extracts sequences

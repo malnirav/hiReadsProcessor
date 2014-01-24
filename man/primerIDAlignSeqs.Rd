@@ -94,6 +94,7 @@ using BLAST/BLAT! }
 }
 \seealso{
 \code{\link{vpairwiseAlignSeqs}},
-\code{\link{pairwiseAlignSeqs}}, \code{\link{doRCtest}}
+\code{\link{pairwiseAlignSeqs}}, \code{\link{doRCtest}},
+\code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
 }
 

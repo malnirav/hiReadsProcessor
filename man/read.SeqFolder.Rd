@@ -2,11 +2,11 @@
 \alias{read.SeqFolder}
 \title{Read contents of a sequencing folder and make a SimpleList object}
 \usage{
-read.SeqFolder(SequencingFolderPath = NULL, sampleInfoFilePath = NULL,
+read.SeqFolder(sequencingFolderPath = NULL, sampleInfoFilePath = NULL,
   seqfilePattern = "\\\\.TCA.454Reads.fna$", interactive = TRUE)
 }
 \arguments{
-  \item{SequencingFolderPath}{full or relative path to the
+  \item{sequencingFolderPath}{full or relative path to the
   sequencing folder}
 
   \item{sampleInfoFilePath}{full or relative path to the
@@ -23,8 +23,8 @@ read.SeqFolder(SequencingFolderPath = NULL, sampleInfoFilePath = NULL,
   "\\.TCA.454Reads.fna$".}
 
   \item{interactive}{whether to prompt each time the
-  function encounters an issue, or use the defaults.
-  Default is TRUE.}
+  function encounters an issue or use the defaults. Default
+  is TRUE.}
 }
 \value{
 a SimpleList list which is used by other functions to
@@ -39,14 +39,17 @@ reads in sample processing metadata and formats it if
 needed.
 }
 \note{
-one must make sure that each sequencing file has sector
-name/number prefixed at the beginning, else
+\itemize{ \item One must make sure that each sequencing
+file has sector name/number prefixed at the beginning, else
 \code{\link{decodeByBarcode}} will fail trying to find the
-filename.
+filename.  \item For paired end Illumina runs, make sure
+the filenames include R1, R2, and I1 somewhere in the name
+denoting pair1, pair2, and index/barcode reads,
+respectively. }
 }
 \examples{
-#read.SeqFolder("~/Downloads/454Runs/2011_07_22",seqfilePattern=".+fna$")
-#read.SeqFolder(".",seqfilePattern=".+fastq$")
+#read.SeqFolder("~/Downloads/454Runs/2011_07_22", seqfilePattern=".+fna$")
+#read.SeqFolder(".", seqfilePattern=".+fastq$")
 }
 \seealso{
 \code{\link{read.sampleInfo}},

@@ -42,24 +42,27 @@ to enable 'alreadyDecoded' parameter in
 column is pasted together with 'seqfilePattern' parameter
 in \code{\link{read.SeqFolder}} to find the appropriate
 file needed. For paired end data, this is basename of the
-FASTA/Q file holding the sample data from the LTR
-side(Lib3_L001_R2_001.fastq.gz or Lib3_L001_R2_001.fastq
-would be Lib3_L001_R2_001).  \item barcode => unique 4-12bp
-DNA sequence which identifies the sample. If providing
-filename as sector, then leave this blank.  \item
-primerltrsequence => DNA sequence of the viral LTR primer
-with/without the viral LTR sequence following the primer
-landing site. If already trimmed, then mark this as SKIP.
-\item samplename => Name of the sample associated with the
-barcode \item sampledescription => Detailed description of
-the sample \item gender => sex of the sample: male or
-female \item species => species of the sample: homo sapien,
-mus musculus, etc.  \item freeze => UCSC freeze to which
-the sample should be aligned to.  \item linkersequence =>
-DNA sequence of linker adaptor to found following the
-genomic sequence. If already trimmed, then mark this as
-SKIP.  \item restrictionenzyme => Restriction enzyme used
-for digestion and sample recovery. Can also be one of:
+FASTA/Q file holding the sample data from the LTR side. For
+example, files such as Lib3_L001_R2_001.fastq.gz or
+Lib3_L001_R2_001.fastq would be Lib3_L001_R2_001, and
+consequently Lib3_L001_R1_001 would be used as the second
+pair!  \item barcode => unique 4-12bp DNA sequence which
+identifies the sample. If providing filename as sector,
+then leave this blank since it is assumed that the data is
+already demultiplexed.  \item primerltrsequence => DNA
+sequence of the viral LTR primer with/without the viral LTR
+sequence following the primer landing site. If already
+trimmed, then mark this as SKIP.  \item samplename => Name
+of the sample associated with the barcode \item
+sampledescription => Detailed description of the sample
+\item gender => sex of the sample: male or female or NA
+\item species => species of the sample: homo sapien, mus
+musculus, etc.  \item freeze => UCSC freeze to which the
+sample should be aligned to.  \item linkersequence => DNA
+sequence of the linker adaptor following the genomic
+sequence. If already trimmed, then mark this as SKIP.
+\item restrictionenzyme => Restriction enzyme used for
+digestion and sample recovery. Can also be one of:
 Fragmentase or Sonication!  } \item Metadata Parameter
 Column Description: \itemize{ \item ltrbitsequence => DNA
 sequence of the viral LTR following the primer landing

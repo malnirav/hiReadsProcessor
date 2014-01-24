@@ -2,7 +2,7 @@
 \name{hiReadsProcessor}
 \alias{hiReadsProcessor}
 \alias{hiReadsProcessor-package}
-\title{Functions to process LM-PCR reads with hiReadsProcessor.}
+\title{Functions to process LM-PCR reads from 454/Solexa data.}
 \description{
 hiReadsProcessor contains set of functions which allow
 users to process LM-PCR sequence data coming out of the

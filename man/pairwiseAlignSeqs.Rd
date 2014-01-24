@@ -69,7 +69,9 @@ align the patternSeq against subjectSeqs. One can adjust
 these parameters if prefered, but not recommended. This
 function is meant for aligning a short pattern onto large
 collection of subjects. If you are looking to align a
-vector sequence to subjects, then please use BLAT.
+vector sequence to subjects, then please use BLAT or see
+one of following \code{\link{blatSeqs}},
+\code{\link{findAndRemoveVector}}
 }
 \note{
 \itemize{ \item For qualityThreshold, the alignment score
@@ -97,6 +99,7 @@ example: library(doMC); registerDoMC(2) }
 \seealso{
 \code{\link{primerIDAlignSeqs}},
 \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}},
-\code{\link{findAndTrimSeq}}
+\code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}},
+\code{\link{findAndRemoveVector}}
 }
 

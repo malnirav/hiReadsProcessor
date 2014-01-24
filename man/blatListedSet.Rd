@@ -12,15 +12,16 @@ blatListedSet(dnaSetList = NULL, ...)
   \code{\link{blatSeqs}}.}
 }
 \value{
-a list of RangedData object reflecting psl file type per
-set of sequences.
+a list of GRanges object reflecting psl file type per set
+of sequences.
 }
 \description{
 Align sequences from a listed DNAStringSet object returned
 from \code{\link{extractSeqs}} to an indexed reference
 genome using gfServer/gfClient protocol or using standalone
-BLAT and get a psl file as RangedData object. This function
-heavily relies on defaults of \code{\link{blatSeqs}}.
+BLAT and return the psl file as a GRanges object. This
+function heavily relies on defaults of
+\code{\link{blatSeqs}}.
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}},

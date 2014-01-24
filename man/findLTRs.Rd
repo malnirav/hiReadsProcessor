@@ -13,7 +13,8 @@ findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE,
   associations.}
 
   \item{showStats}{toggle output of search statistics.
-  Default is FALSE.}
+  Default is FALSE. For paired end data, stats for "pair2"
+  is relative to decoded and/or primed reads.}
 
   \item{doRC}{perform reverse complement search of the
   defined pattern/LTR sequence. Default is FALSE.}

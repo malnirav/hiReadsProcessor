@@ -2,7 +2,7 @@
 \alias{read.seqsFromSector}
 \title{Read fasta/fastq given the path or sampleInfo object.}
 \usage{
-read.seqsFromSector(seqFilePath = NULL, sector = 1)
+read.seqsFromSector(seqFilePath = NULL, sector = 1, isPaired = FALSE)
 }
 \arguments{
   \item{seqFilePath}{a path to fasta/fastq reads file or a
@@ -12,9 +12,15 @@ read.seqsFromSector(seqFilePath = NULL, sector = 1)
   \item{sector}{specific sector to reads sequences from.
   Default is 1, and not required if seqFilePath is a direct
   file path rather than sampleInfo object.}
+
+  \item{isPaired}{does the sector contain paired end reads?
+  Default is FALSE}
 }
 \value{
-a DNAStringSet object.
+if isPaired is FALSE, then a DNAStringSet object, else a
+list of DNAStringSet objects of three elements
+corresponding to reads from "barcode", "pair1", and
+"pair2". Note: "pair2" is reverse complemented!
 }
 \description{
 Given a sequence reads file path, the function returns a

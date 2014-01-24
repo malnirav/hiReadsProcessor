@@ -85,6 +85,7 @@ example: library(doMC); registerDoMC(2) }
 \seealso{
 \code{\link{pairwiseAlignSeqs}},
 \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}},
-\code{\link{findAndTrimSeq}}
+\code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}},
+\code{\link{findAndRemoveVector}}
 }
 

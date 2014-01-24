@@ -20,7 +20,7 @@ write.listedDNAStringSet(dnaSet, filePath = ".", filePrefix = "processed",
   parameter is a named list where names are used as
   samplenames.}
 
-  \item{format}{Either fasta (the default) or fastq.}
+  \item{format}{either fasta (the default) or fastq.}
 
   \item{parallel}{use parallel backend to perform
   calculation with \code{\link{foreach}}. Defaults to TRUE.
@@ -34,13 +34,16 @@ Given a listed DNAStringSet object return from
 for each sample as defined in filePath parameter.
 }
 \note{
-Writing of the files is done using
+\itemize{ \item Writing of the files is done using
 \code{\link{writeXStringSet}} with parameter append=TRUE.
-If parallel=TRUE, then be sure to have a paralle backend
-registered before running the function. One can use any of
-the following libraries compatible with
-\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
-example: library(doMC); registerDoMC(2)
+This is to aggregate reads from a sample which might be
+present in more than one sector.  \item If data is paired
+end, then each pair will be written separately with
+designations in the filename.  \item If parallel=TRUE, then
+be sure to have a paralle backend registered before running
+the function. One can use any of the following libraries
+compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW,
+doMPI. For example: library(doMC); registerDoMC(2) }
 }
 \examples{
 #write.listedDNAStringSet(dnaSet)

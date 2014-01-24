@@ -1,16 +1,16 @@
 Package: hiReadsProcessor
 Title: Functions to process LM-PCR reads from 454/Solexa data.
-Version: 0.1.5
-Date: 2014-01-08
+Version: 0.2.5
+Date: 2014-01-24
 Author: Nirav V Malani <malnirav@gmail.com>
 Maintainer: Nirav V Malani <malnirav@gmail.com>
 Description: hiReadsProcessor contains set of functions which allow users to
-    process single-end LM-PCR sequence data coming out of the 454/Illumina sequencer.
-    Given an excel file containing parameters for demultiplexing and sample
-    metadata, the functions automate trimming of adaptors and identification of
-    the genomic product. In addition, if IntSites MySQL database is setup, the
-    sequence attrition is loaded into respective tables for post processing
-    setup and analysis.
+    process single-end LM-PCR sequence data coming out of the 454/Illumina
+    sequencer. Given an excel file containing parameters for demultiplexing and
+    sample metadata, the functions automate trimming of adaptors and
+    identification of the genomic product. In addition, if IntSites MySQL
+    database is setup, the sequence attrition is loaded into respective tables
+    for post processing setup and analysis.
 Depends:
     Biostrings,
     GenomicRanges,
@@ -21,8 +21,6 @@ Depends:
     Rsubread,
     ShortRead
 Imports:
-	plyr   
+    plyr
 License: GPL (>= 2)
 LazyLoad: yes
-Collate:
-    'hiReadsProcessor.R'

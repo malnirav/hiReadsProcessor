@@ -3418,7 +3418,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
     if(bestScoring) {  
       ## do round one of bestScore here to reduce file size          
       hits.temp$score <- with(hits.temp, matches-misMatches-qBaseInsert-tBaseInsert)
-      hits.temp <- arrange(hits.temp, qName, desc(score))
+      hits.temp <- arrange(hits.temp, qName, plyr::desc(score))
       bestScore <- with(hits.temp, tapply(score, qName, max))
       isBest <- with(hits.temp, score==bestScore[qName])
       hits.temp <- hits.temp[isBest,]
@@ -3439,7 +3439,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
   if(bestScoring) {
     message("\t cherry picking!")
     hits$score <- with(hits, matches-misMatches-qBaseInsert-tBaseInsert)
-    hits <- arrange(hits, qName, desc(score))
+    hits <- arrange(hits, qName, plyr::desc(score))
     bestScore <- with(hits, tapply(score,qName,max))
     isBest <- with(hits, score==bestScore[qName])
     hits <- hits[isBest,]
@@ -3775,7 +3775,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
   if(byQuartile) {
     message("Clustering by quartile: ",quartile)
     # obtain the defined quartile of frequency per posID & grouping #
-    sites <- arrange(sites, posID2, value, desc(freq))
+    sites <- arrange(sites, posID2, value, plyr::desc(freq))
     quartiles <- with(sites,
                       tapply(freq, posID2, quantile, probs=quartile, names=FALSE))
     sites$belowQuartile <- with(sites,freq < quartiles[posID2])
@@ -3886,7 +3886,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
         res$ismaxFreq <- with(res, maxFreq==maxes[as.character(queryHits)])        
         
         ## VIP step...this is what merges high value to low value for ties in the hash structure below!!!
-        res <- arrange(res, desc(queryHits), val)
+        res <- arrange(res, plyr::desc(queryHits), val)
         clustered <- unique(subset(res,ismaxFreq)[,c("queryHits","val")])
         clustered <- with(clustered, split(val, queryHits))
         
