@@ -206,6 +206,10 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
     }
   }
   
+  for(column in c('pairedend', 'keepmultihits', 'primeridinlinker')) {
+    sampleInfo[,column] <- as.logical(sampleInfo[,column])
+  }
+  
   # confirm ltr bit is correct
   ltrbitTest <- sampleInfo$primerltrsequence=="SKIP"
   if(any(ltrbitTest)) { ## add SKIP to ltrbit as well if primerltrsequence has been trimmed
@@ -706,7 +710,7 @@ findBarcodes <- decodeByBarcode
 
 #' Align a short pattern to variable length target sequences.
 #'
-#' Align a fixed length short pattern sequence (i.e. primers or adaptors) to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT.
+#' Align a fixed length short pattern sequence (i.e. primers or adaptors) to subject sequences using \code{\link{pairwiseAlignment}}. This function uses default of type="overlap", gapOpening=-1, and gapExtension=-1 to align the patternSeq against subjectSeqs. One can adjust these parameters if prefered, but not recommended. This function is meant for aligning a short pattern onto large collection of subjects. If you are looking to align a vector sequence to subjects, then please use BLAT or see one of following \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
 #'
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search. This is generally smaller than subjectSeqs. 
@@ -733,7 +737,7 @@ findBarcodes <- decodeByBarcode
 #'  \item If returnLowScored or returnUnmatched = T, then a CompressedIRangesList where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed to match qualityThreshold hits, and x[["Absent"]] has the hits where the aligned bit is <=10\% match to the patternSeq.
 #' }
 #'
-#' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}
+#' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
 #'
 #' @export
 #'
@@ -874,7 +878,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
 #'  \item If doAnchored=TRUE, then x[["unAnchoredprimerIDs"]] includes reads that didn't match the base before and after primer ID on patternSeq.
 #' }
 #'
-#' @seealso \code{\link{vpairwiseAlignSeqs}}, \code{\link{pairwiseAlignSeqs}}, \code{\link{doRCtest}}
+#' @seealso \code{\link{vpairwiseAlignSeqs}}, \code{\link{pairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
 #'
 #' @export
 #'
@@ -1048,7 +1052,7 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' 
 #' @return IRanges object with starts, stops, and names of the aligned sequences.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
 #'
 #' @export
 #'
@@ -4571,17 +4575,18 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
 
 #' Find the integration sites and add results to SampleInfo object. 
 #'
-#' Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which BLATs, parses PSL files, finds best hit per read per sample, cluster sites, and assign ISU IDs. It calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.
+#' Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which aligns, finds best hit per read per sample, cluster sites, and assign ISU IDs. Depending on the aligner chosen, it calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered sequences for samples per sector/quadrant along with metadata.
-#' @param seqType which type of sequence to BLAT and find integration sites for. Default is NULL and determined automatically based on type of restriction enzyme or isolation method used. Could be any one of following options: genomic, genomicLinkered, decoded, primed, LTRed, linkered.
-#' @param port a port number to host the gfServer with. Default is 5560.
-#' @param host name of the machine running gfServer. Default is 'localhost'.
-#' @param genomeIndices an associative character vector of freeze to full or relative path of respective .nib or .2bit files. Default is c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit").
+#' @param seqType which type of sequence to align and find integration sites for. Default is NULL and determined automatically based on type of restriction enzyme or isolation method used. If restriction enzyme is Fragmentase or Mu, then this parameter is set to genomicLinkered, else it is genomic. Any one of following options are valid: genomic, genomicLinkered, decoded, primed, LTRed, linkered.
+#' @param aligner which aligner to use: BLAT(default) or Subread. Use 'Subread' for illumina data.
+#' @param port a port number to host the gfServer with. Only used if aligner='BLAT'. Default is 5560.
+#' @param host name of the machine running gfServer. Only used if aligner='BLAT'. Default is 'localhost'.
+#' @param genomeIndices an associative character vector of freeze to full or relative path of respective of indexed genomes from BLAT(.nib or .2bit files) or Subreads(.subread.index). For example: c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"). Be sure to supply an index per freeze supplied in the sampleInfo object. Default is NULL.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #'
-#' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: psl, and sites. The psl attributes holds the BLAT hits per read along with QC information. The sites attribute holds the condensed integration sites where BLAT hits have been clustered by the Position column and cherry picked to have each site pass all the QC steps. 
+#' @return a SimpleList object similar to sampleInfo parameter supplied with new data added under each sector and sample. New data attributes include: psl, and sites. The psl attributes holds the genomic hits per read along with QC information. The sites attribute holds the condensed integration sites where genomic hits have been clustered by the Position column and cherry picked to have each site pass all the QC steps. 
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
 #'
@@ -4592,17 +4597,14 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
 #' @examples 
 #' #findIntegrations(sampleInfo)
 #'
-findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhost", 
-                             genomeIndices=c("hg18"="/usr/local/blatSuite34/hg18.2bit", 
-                                             "mm8"="/usr/local/blatSuite34/mm8.2bit"), 
+findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
+                             port=5560, host="localhost", genomeIndices=NULL,
                              parallel=TRUE, samplenames=NULL) {    
-  stopifnot(is(sampleInfo,"SimpleList"))
-  
-  if(!parallel) { registerDoSEQ() }
+
+  .checkArgs_SEQed()
   
   ## test if there are linkered sequences in the sampleinfo object if specific feature/seqType is not defined ##   
   feature <- ifelse(is.null(seqType), "linkered", seqType)
-  
   message("Checking for ", feature, " reads.")		
   featured <- extractFeature(sampleInfo, feature=feature)
   samplesfeatured <- sapply(featured, names, simplify=FALSE)
@@ -4611,7 +4613,7 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
   cleanit <- gc()
   
   if(length(sectorsfeatured)==0) {
-    stop("No ", feature, " information found in sampleInfo object provided.")
+    stop("No ", feature, " reads found in sampleInfo object provided.")
   }
   
   ## subset specific samples if defined ##
@@ -4620,9 +4622,9 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
   }
   
-  message("Creating hashes of settings for blatting and processing.")
+  message("Creating hashes of settings for aligning and processing.")
   
-  ## setup settings hashes for blatting the genomic seqs by species & processing hits later ##
+  ## setup settings hashes for aligning the genomic seqs by species & processing hits later ##
   for(setting in c("restrictionenzyme", "freeze", "startwithin", 
                    "alignratiothreshold", "genomicpercentidentity", 
                    "clustersiteswithin", "keepmultihits")) {
@@ -4632,13 +4634,13 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
     assign(setting,setter)
   }
   
-  ## BLAT by respective species ##
+  ## Align by respective species ##
   pslFiles <- c()        
   for (f in unique(freeze)) {
-    message("Blatting to: ", f)
+    message("Aligning to: ", f)
     
-    message("Getting sequences to BLAT")        
-    # get sequences to blat #
+    message("Getting sequences to align")        
+    # get sequences to align #
     if (is.null(seqType)) {
       wanted <- names(restrictionenzyme[!grepl("FRAG|SONIC|MU",
                                                restrictionenzyme,ignore.case=TRUE)])
@@ -4661,11 +4663,11 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
       seqs <- extractSeqs(sampleInfo, samplename=names(freeze[freeze==f]), 
                           feature=seqType, minReadLength=5)
       if(any(as.numeric(sapply(seqs,length))>0)) {
-        write.listedDNAStringSet(seqs,filePrefix=paste0("processed",f))
+        write.listedDNAStringSet(seqs, filePrefix=paste0("processed",f))
       }
     }
     
-    # BLAT seqs #
+    # Align seqs #
     pslFile <- blatSeqs(query=paste0("processed",f,".*.fa$"), 
                         subject=genomeIndices[[f]], standaloneBlat=FALSE, 
                         host=host, port=port, parallel=parallel, gzipResults=TRUE)                
@@ -4736,8 +4738,9 @@ findIntegrations <- function(sampleInfo, seqType=NULL, port=5560, host="localhos
                                               'Position')))
     x$start <- x$end <- x$clusteredPosition
     x$clusteredPosition <- NULL    
-    RangedData(x)		
+    GRanges(x)
   })
+  
   sampleInfo <- addFeature(sampleInfo, sector=NULL, samplename=names(psl.hits),
                            feature="sites", value=psl.hits)
   
