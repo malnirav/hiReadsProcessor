@@ -646,19 +646,14 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
         } else {
           names(dnaSet) <- sub("^\\S+-(\\S+) .+$", "\\1", names(dnaSet), perl=TRUE) 
         }        
-                
+
         if(isPaired) {
           ## no need to store barcode/index reads if alreadyDecoded!
-          dnaSet <- dnaSet[c("pair1","pair2")]
-          dnaSet <- sapply(dnaSet, function(x) {
-            as.list(split(x, rep(as.character(barcodesSample), length(x))))
-          })
-          dnaSet <- mapply(function(x,y) list("pair1"=x, "pair2"=y), 
-                           dnaSet[["pair1"]], dnaSet[["pair2"]], SIMPLIFY=FALSE)
+          dnaSet <- list(dnaSet[c("pair1","pair2")])
         } else {
-          dnaSet <- as.list(split(dnaSet,
-                                  rep(as.character(barcodesSample), length(dnaSet))))
+          dnaSet <- list(dnaSet)          
         }
+        names(dnaSet) <- as.character(barcodesSample)
       } else {
         if(isPaired) {
           bc <- splitByBarcode(barcodesSample, dnaSet[["barcode"]], 
