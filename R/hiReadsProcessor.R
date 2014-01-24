@@ -4773,7 +4773,8 @@ summary.simple <- function(sampleInfo) {
       if(is(res,"DataFrame")) {
         res <- t(sapply(as.list(res), sapply, length))
         if(length(res)>0) {
-          res.df[,metaD] <- res[res.df$SampleName,]
+          colnames(res) <- paste(metaD, colnames(res), sep=".")
+          res.df <- cbind(res.df, as.data.frame(res)[res.df$SampleName,])
         } else {
           res.df[,metaD] <- NA
         }
