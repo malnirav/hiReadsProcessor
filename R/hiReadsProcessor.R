@@ -58,7 +58,8 @@ read.SeqFolder <- function(sequencingFolderPath=NULL, sampleInfoFilePath=NULL,
     } else {
       if(interactive & length(possibleFiles)>1) {
         message("Please choose a sample information file to read the meta data from:\n",
-                paste(1:length(possibleFiles), possibleFiles, sep=": ", collapse="\n"))
+                paste(1:length(possibleFiles), possibleFiles, 
+                      sep=": ", collapse="\n"))
         choice <- scan(what=integer(0), n=1, quiet=TRUE, multi.line=FALSE)
       } else {
         choice <- 1            
@@ -321,7 +322,7 @@ dereplicateReads <- function(dnaSet) {
     names(dnaSet) <- paste("read", 1:length(dnaSet), sep="-")
   }
   dnaSet <- sort(dnaSet)
-  ranks <- rank(dnaSet)
+  ranks <- rank(dnaSet, ties.method="first")
   counts <- table(ranks)
   isDuplicate <- duplicated(ranks)
   seqToRank <- data.frame(ranks, counts=as.numeric(counts[as.character(ranks)]),
@@ -1266,7 +1267,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' @param alignWay method to utilize for detecting the primers. One of following: "slow" (Default), or "fast". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern/primer. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
 #' @param ... extra parameters to be passed to either \code{\link{vpatternMatch}} or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.
@@ -1432,7 +1433,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}}, which holds decoded and primed sequences for samples per sector/quadrant along with information of sample to LTR associations.
 #' @param showStats toggle output of search statistics. Default is FALSE. For paired end data, stats for "pair2" is relative to decoded and/or primed reads.
 #' @param doRC perform reverse complement search of the defined pattern/LTR sequence. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
@@ -1619,7 +1620,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern/linker sequence. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
@@ -1822,7 +1823,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
 #' @param qualityThreshold1 percent of first part of patternSeq to match. Default is 0.75. Only applies to primerID based linker search.
 #' @param qualityThreshold2 percent of second part of patternSeq to match. Default is 0.50. Only applies to primerID based linker search.
 #' @param doRC perform reverse complement search of the linker sequence. Default is TRUE. Highly recommended!
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
@@ -2004,7 +2005,7 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0,
 
 #' Find and trim vector sequence from reads. 
 #'
-#' This function facilitates finding and trimming of long/short fragments of vector present in LM-PCR products. The algorithm looks for vector sequence present anywhere within the read and trims according longest contiguous match on either end of the read.
+#' This function facilitates finding and trimming of long/short fragments of vector present in LM-PCR products. The algorithm looks for vector sequence present anywhere within the read and trims according longest contiguous match on either end of the read. Alignment is doing using BLAT
 #'
 #' @param reads DNAStringSet object containing sequences to be trimmed for vector.
 #' @param Vector DNAString object containing vector sequence to be searched in reads.
@@ -2248,7 +2249,8 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
         }
 
         if(feature!="decoded") {
-          # get ride of ! from feature, else R wont know what to do when making a new object with ! in the front.
+          # get ride of ! from feature, else R wont know what to do when making a... 
+          # new object with ! in the front.
           assign(gsub("!","",feature), 
                  sampleInfo$sectors[[y]]$samples[[x]][[gsub("!","",feature)]])
         }
@@ -2297,8 +2299,8 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, feature="genom
 
                 starts <- lapply(LTRed, function(p) structure(end(p), 
                                                               names=names(p)))
-                ## add reads present pair1 to pair2 where LTR wasn't found
-                ## make things consistent to pair1 atleast!
+                ## add reads present pair1 to pair2 where LTR wasn't found which
+                ## makes things consistent to pair1 atleast!
                 loners <- setdiff(names(starts$pair1), names(starts$pair2))
                 starts$pair2 <- c(starts$pair2, 
                                   structure(rep(0L,length(loners)), names=loners))
@@ -2810,7 +2812,7 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
 #' @note
 #' \itemize{
 #'   \item Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. This is to aggregate reads from a sample which might be present in more than one sector. 
-#'   \item If data is paired end, then each pair will be written separately with designations in the filename.
+#'   \item If data is paired end, then each pair will be written separately with designations in the filename as well as in the definition line as @pairX@ appended at the end.
 #'   \item If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
 #' }
 #'
@@ -2826,6 +2828,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
   
   if(!parallel) { registerDoSEQ() }
   if(filePrefix=="") { filePrefix <- NA }
+  filePath <- normalizePath(filePath, mustWork=TRUE)
   
   for(x in seq_along(dnaSet)) {
     foreach(outputSeqs=iter(as(dnaSet[[x]],"list")), 
@@ -2857,7 +2860,13 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".", filePrefix="processed
           filename <- paste(filePath, filename, sep="/")
           
           if(prependSamplenames) {
-            names(outputSeqs[[p]]) <- paste(samplename, names(outputSeqs[[p]]), sep="-")
+            names(outputSeqs[[p]]) <- paste(samplename, names(outputSeqs[[p]]), 
+                                            sep="-")
+          }
+          
+          if(pairname!="tempy") {
+            names(outputSeqs[[p]]) <- paste0(names(outputSeqs[[p]]), 
+                                             "@",pairname,"@")
           }
           
           writeXStringSet(outputSeqs[[p]], file=filename, format=format, append=TRUE) 
@@ -3146,7 +3155,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 
 #' Align sequences using BLAT.
 #'
-#' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol for alignment against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution. 
+#' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution. 
 #'
 #' @param query an object of DNAStringSet, a character vector of filename(s), or a path/pattern of fasta files to BLAT. Default is NULL.
 #' @param subject an object of DNAStringSet, a character vector, or a path to an indexed genome (nibs,2bits) to serve as a reference or target to the query. Default is NULL. If the subject is a path to a nib or 2bit file, then standaloneBlat will not work!
@@ -3157,7 +3166,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 #' @param gzipResults gzip the output files? Default is TRUE.
 #' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70\% identity.
 #'
-#' @return a character vector of psl filenames.
+#' @return a character vector of psl filenames. Each file provided is split by number of parallel workers and with read number denoting the cut. Files are cut in smaller pieces to for the ease of read & write into a single R session. 
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}, \code{\link{read.blast8}}
 #'
@@ -3167,7 +3176,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 #' #blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
 #' #blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
 #' #blatSeqs("mySeqs.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
-#' #' #blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+#' #blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
 #'
 blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, 
                      host="localhost", parallel=TRUE, gzipResults=TRUE, 
@@ -3206,7 +3215,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   } else {
     subjectFile <- NULL
     if(is.atomic(subject)) {
-      if (any(grepl("\\.2bit$|\\.nib$", subject))) {
+      if (any(grepl("\\.2bit$|\\.nib$", subject, ignore.case=TRUE))) {
         if(standaloneBlat) { 
           stop("Standalone BLAT cannot be used when subject is an indexed ",
                "nib or 2bit file.") 
@@ -3241,7 +3250,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   } else {
     queryFiles <- NULL
     if(is.atomic(query)) {
-      if (any(grepl("\\.fna$|\\.fa$|\\*", query))) {
+      if (any(grepl("\\.fna$|\\.fa$|\\.fastq$|\\.fasta$|\\*", query, ignore.case=TRUE))) {
         ## detect whether query paramter is a regex or list of files
         if(any(grepl("\\*|\\$|\\+|\\^",query))) {
           queryFiles <- list.files(path=dirname(query), pattern=basename(query), 
@@ -3301,7 +3310,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       system(cmd)
       
       ## no need to save splitted files!
-      if(grepl("\\.tempyQ$",x)) { system(paste("rm",x)) } 
+      if(grepl("\\.tempyQ$",x)) { file.remove(x) } 
       
       if(gzipResults) { 
         system(paste("gzip", filename.out))
@@ -3309,7 +3318,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       }
       filename.out
     }
-    if(grepl("\\.tempyS$",subjectFile)) { system(paste("rm", subjectFile)) }
+    if(grepl("\\.tempyS$",subjectFile)) { file.remove(subjectFile) }
   } else {
     # start the gfServer if not started already! #
     killFlag <- FALSE
@@ -3335,7 +3344,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       system(cmd)
       
       ## no need to save splitted files!
-      if(grepl("\\.tempyQ$", x)) { system(paste("rm", x)) } 
+      if(grepl("\\.tempyQ$", x)) { file.remove(x) } 
       
       if(gzipResults) { 
         system(paste("gzip", filename.out))
@@ -3354,22 +3363,221 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   return(unlist(filenames))
 }
 
-#' Read psl file(s) outputted by BLAT
+#' Align sequences using Subread.
 #'
-#' Given filename(s), the function reads the psl file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results. Make sure there is no header row!
+#' Align batch of sequences using Subread against an indexed reference genome. Paired end reads are aligned independently and the validity of hits/pairs is evaluated within \code{\link{getIntegrationSites}}once the data is read in by \code{\link{read.BAMasPSL}}. The workhorse function doing the alignment is \code{\link{align}}. 
 #'
-#' @param pslFile psl filename, or vector of filenames, or a pattern of files to import.
+#' @param query an object of DNAStringSet, a character vector of filename(s), or a path/pattern of fasta/fastq files to align. Default is NULL. All files are concatenated for the ease of alignment and output stored into a single BAM file.
+#' @param subject a path to the basename of an indexed genome (.subread.index) to serve as a reference or target to the query. Default is NULL. See basename parameter in \code{\link{buildindex}}
+#' @param outputfile filename to hold the alignment data. Default is "allhits". Extension '.bam' will be appended to this. 
+#' @param subreadParameters a character vector of alignment options to be passed to \code{\link{align}}. Parameters with following names will be silently ignored: index, readfile1, readfile2, input_format, output_format, output_file. Default is: c(nsubreads=15, nBestLocations=10, nthreads=4, indels=10, unique="FALSE", reportFusions="TRUE")
+#'
+#' @return name of the BAM file holding the hits. If parameters 'reportFusions' or 'indels' were passed in subreadParameters, then a named vector is returned with "hits" holding the alignment data filename, and rest are named after the parameters.
+#'
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{read.BAMasPSL}}, \code{\link{read.blast8}}, \code{\link{splitSeqsToFiles}}, \code{\link{align}}
+#'
+#' @export
+#'
+#' @examples 
+#' #indexPath <- "/usr/local/genomeIndexes/subread/hg18/hg18.subreads.index"
+#' #subreadAlignSeqs(dnaSeqs, indexPath, "results")
+#' #subreadAlignSeqs("mySeqs.fa", indexPath, "mySeqs")
+#' #subreadAlignSeqs("my.*.fa", indexPath)
+#'
+subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
+                             subreadParameters=c(nsubreads=15, nBestLocations=10,
+                                                 nthreads=4, indels=10,
+                                                 unique="FALSE",
+                                                 reportFusions="TRUE")) {
+  
+  # buildindex(basename="/usr/local/genomeIndexes/hg18subreads/hg18.subreads.index", 
+  #            reference="/usr/local/genomeIndexes/hg18.fa", memory=4000)
+  
+  ## check subreadParameters ##
+  if(any(is.null(names(subreadParameters)))) {
+    stop('subreadParameters has NULL for one of element names.')
+  }
+  
+  there <- names(subreadParameters) %in% names(formals(align))
+  if(any(!there)) {
+    stop("subreadParameters contains a varible(s) not accepted by align():", 
+         paste(names(subreadParameters)[!there],collapse=", "))
+  }
+  
+  unacceptables <- c("index", "readfile1", "readfile2", "input_format", 
+                     "output_format", "output_file")
+  ignore <- names(subreadParameters) %in% unacceptables
+  subreadParameters <- subreadParameters[!ignore]
+  
+  ## check the subject parameter
+  subjectFile <- list.files(path=dirname(subject), 
+                            pattern=basename(subject), full.names=TRUE)
+  if(length(subjectFile)==0) { 
+    stop("The index supplied in subject parameter doesn't exist or is invalid.") 
+  }
+  
+  ## check the query parameter
+  removeFile <- TRUE
+  if(is.null(query) | length(query)==0) {
+    stop("The query parameter is empty. Please supply reads to be aligned")
+  } else {
+    queryFile <- NULL
+    if(is.atomic(query)) {
+      if (any(grepl("\\.fna$|\\.fa$|\\.fastq$|\\.fasta$|\\*", query, 
+                    ignore.case=TRUE))) {
+        ## detect whether query paramter is a regex or list of files
+        if(any(grepl("\\*|\\$|\\+|\\^",query))) {
+          queryFiles <- list.files(path=dirname(query), pattern=basename(query), 
+                                   full.names=TRUE)
+          input_format <- ifelse(any(grepl("fastq|fq",queryFiles,ignore.case=TRUE)),
+                                 "FASTQ", "FASTA")
+          queryFile <- file.path(dirname(query), "queryFile.fa.tempyQ")
+          system(sprintf("cat %s > %s", 
+                         paste(queryFiles, collapse=" "), queryFile)) 
+        } else {
+          queryFile <- query
+          input_format <- ifelse(any(grepl("fastq|fq",queryFile,ignore.case=TRUE)),
+                                 "FASTQ", "FASTA")
+          removeFile <- FALSE
+        }
+        stopifnot(file.exists(queryFile))
+      } else {
+        ## change object type if necessary for troubleshooting purpose in later steps
+        query <- DNAStringSet(query)
+      }
+    }
+    
+    if(is.null(queryFile)) {
+      ## queryFile is still null so it means that query is a DNAStringSet
+      if(is.list(query)) {
+        stop("query is of type list which is unsupported by this function")  
+      }
+      
+      if(is.null(names(query))) {  ## fix names of query if not present
+        names(query) <- paste("read", 1:length(query),sep="-")
+      }  
+      
+      ## write out the query sequences into fasta files
+      queryFile <- "queryFile.fa.tempyQ"
+      input_format <- "FASTA"
+      writeXStringSet(query, file=queryFile, format="fasta")
+    }
+  }
+  
+  ## do some formatting ##
+  queryFile <- as.character(queryFile)
+  subjectFile <- as.character(subjectFile)
+  
+  ## subread align it ##
+  results.dir <- dirname(queryFile)
+  outputfile <- file.path(results.dir, paste0(outputfile,".bam"))
+  subreadParameters <- c(subreadParameters, "index"=subject, "readfile1"=queryFile,
+                         "output_format"="BAM", "input_format"=input_format, 
+                         "output_file"=outputfile)
+  do.call("align", as.list(subreadParameters))
+  if(removeFile) { file.remove(queryFile) }
+  
+  outputfile <- structure(outputfile, names="hits")
+
+  if(any(c("indels","reportFusions") %in% names(subreadParameters))) {
+    if("indels" %in% names(subreadParameters)) {
+      outputfile["indels"] <- paste0(outputfile[["hits"]], ".indel")
+    }
+    
+    if("reportFusions" %in% names(subreadParameters)) {
+      outputfile["reportFusions"] <- paste0(outputfile[["hits"]], ".fusion.txt")
+    }
+    
+    attr(outputfile, "from") <- "subreadAlignSeqs"
+    outputfile    
+  } else {
+    outputfile[["hits"]]
+  }
+}
+
+#' Reads a BAM/SAM file and converts it into a PSL like format. 
+#'
+#' Given filename(s), the function reads the BAM/SAM file, converts into a PSL like format. Any other file format will yield errors or erroneous results.
+#'
+#' @param bamFile BAM/SAM filename, or vector of filenames, or a pattern of files to import.
+#' @param asRangedData return a RangedData object instead of a dataframe. Default is FALSE
+#' @param asGRanges return a GRanges object instead of a dataframe. Default is FALSE
+#' @param removeFile remove the file(s) supplied in bamFile paramter after importing. Default is FALSE.
+#'
+#' @return a dataframe reflecting psl file type. If asGRanges=T or asRangedData=T, then a GRanges object or RangedData object, respectively.  
+#'
+#'
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}
+#'
+#' @export
+#'
+#' @examples 
+#' #read.psl(bamFile="processed.*.bam$")
+#' #read.psl(bamFile=c("sample1hits.sam","sample2hits.sam"))
+#'
+read.BAMasPSL <- function(bamFile=NULL, asRangedData=FALSE, 
+                          asGRanges=FALSE, removeFile=TRUE) {
+  if(is.null(bamFile) | length(bamFile)==0) {
+    stop("bamFile parameter empty. Please supply a filename to be read.")
+  }
+  
+  if (any(grepl("\\*|\\$|\\+|\\^",bamFile))) {
+    ## vector of filenames
+    bamFile <- list.files(path=dirname(bamFile), 
+                          pattern=basename(bamFile), full.names=TRUE)      
+  }
+  
+  if(length(bamFile)==0) { 
+    stop("No file(s) found with given paramter in bamFile:", bamFile) 
+  }
+
+  if(length(attr(bamFile, "from")=="subreadAlignSeqs")==1) {
+    bamFile <- bamFile[["hits"]]
+  }
+  
+  ## setup psl columns + classes
+  cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", 
+            "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", "qSize", 
+            "qStart", "qEnd", "tName", "tSize", "tStart", "tEnd", "blockCount", 
+            "blockSizes", "qStarts", "tStarts")
+  cols.class <- c(rep("numeric",8), rep("character",2), rep("numeric",3),
+                  "character", rep("numeric",4), rep("character",3))
+  
+  # The following tags are used for secondary alignments in the optional fields: CC(chromosome name), CP(mapping position), CG(CIGAR string) and CT(strand). Note that a fusion or junction read is always saved in a single record in SAM/BAM output.
+  hits <- sapply(bamFile, readGAlignments, use.names=TRUE, with.which_label=TRUE,
+                 param=ScanBamParam())
+    
+  if(nrow(hits)==0) {
+    stop("No hits found")
+  }
+  
+  message("Ordering by qName")
+  hits <- arrange(hits, qName)
+
+  if(asRangedData | asGRanges) {
+    hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, asGRanges=asGRanges)
+  }
+  
+  if(removeFile) { file.remove(bamFile) }
+  return(hits)
+}
+
+#' Read PSL file(s) outputted by BLAT
+#'
+#' Given filename(s), the function reads the PSL file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results. Make sure there is no header row!
+#'
+#' @param pslFile PSL filename, or vector of filenames, or a pattern of files to import.
 #' @param bestScoring report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.
 #' @param asRangedData return a RangedData object instead of a dataframe. Default is FALSE
 #' @param asGRanges return a GRanges object instead of a dataframe. Default is FALSE
-#' @param removeFile remove the psl file(s) after importing. Default is FALSE.
+#' @param removeFile remove the PSL file(s) after importing. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #'
 #' @return a dataframe reflecting psl file type. If asGRanges=T or asRangedData=T, then a GRanges object or RangedData object, respectively.  
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{pslToRangedObject}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
@@ -3383,7 +3591,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
     stop("pslFile parameter empty. Please supply a filename to be read.")
   }
   
-  if (any(grepl("\\*",pslFile))) {
+  if (any(grepl("\\*|\\$|\\+|\\^",pslFile))) {
     ## vector of filenames
     pslFile <- list.files(path=dirname(pslFile), 
                           pattern=basename(pslFile), full.names=TRUE)      
@@ -3405,11 +3613,10 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
   
   hits <- foreach(x=iter(pslFile), .inorder=FALSE, 
                   .export=c("cols","cols.class",
-                            "bestScoring","removeFile")) %dopar% {
+                            "bestScoring")) %dopar% {
     message(x)
     hits.temp <- read.delim(x, header=FALSE, col.names=cols, 
-                            stringsAsFactors=FALSE, colClasses=cols.class)
-    if(removeFile) { system(paste("rm", x)) }
+                            stringsAsFactors=FALSE, colClasses=cols.class)    
     if(bestScoring) {  
       ## do round one of bestScore here to reduce file size          
       hits.temp$score <- with(hits.temp, matches-misMatches-qBaseInsert-tBaseInsert)
@@ -3445,6 +3652,8 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
     hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, asGRanges=asGRanges)
   }
   
+  if(removeFile) { file.remove(pslFile) }
+  
   return(hits)
 }
 
@@ -3476,7 +3685,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
     stop("files parameter empty. Please supply a filename to be read.")
   }
   
-  if (any(grepl("\\*",files))) {
+  if (any(grepl("\\*|\\$|\\+|\\^",files))) {
     ## vector of filenames
     files <- list.files(path=dirname(files), 
                         pattern=basename(files), full.names=TRUE)
@@ -3495,7 +3704,7 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
   
   hits <- foreach(x=iter(files), .inorder=FALSE, 
                   .export=c("cols","cols.class",
-                            "bestScoring","removeFile")) %dopar% {
+                            "bestScoring")) %dopar% {
     message(x)
     hits.temp <- read.delim(x, header=FALSE, col.names=cols, 
                             stringsAsFactors=FALSE, colClasses=cols.class)
@@ -3507,8 +3716,6 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
     hits.temp$tStart[rows] <- tstarts
     hits.temp$tEnd[rows] <- tends
     rm("tstarts","tends","rows")
-    
-    if(removeFile) { system(paste("rm", x)) }
     hits.temp
   }
   hits <- unique(do.call(rbind, hits))
@@ -3524,6 +3731,8 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
     hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, 
                               isblast8=TRUE, asGRanges=asGRanges)
   }
+  
+  if(removeFile) { file.remove(files) }
   
   return(hits)
 }
@@ -4580,6 +4789,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
 #' @param genomeIndices an associative character vector of freeze to full or relative path of respective of indexed genomes from BLAT(.nib or .2bit files) or Subreads(.subread.index). For example: c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"). Be sure to supply an index per freeze supplied in the sampleInfo object. Default is NULL.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
+#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70\% identity. Ignored if aligner is "Subread".
 #'
 #' @return a SimpleList object similar to sampleInfo parameter supplied with new data added under each sector and sample. New data attributes include: psl, and sites. The psl attributes holds the genomic hits per read along with QC information. The sites attribute holds the condensed integration sites where genomic hits have been clustered by the Position column and cherry picked to have each site pass all the QC steps. 
 #'
@@ -4594,7 +4804,11 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
 #'
 findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
                              port=5560, host="localhost", genomeIndices=NULL,
-                             parallel=TRUE, samplenames=NULL) {    
+                             parallel=TRUE, samplenames=NULL,
+                             blatParameters = c(minIdentity = 70, minScore = 5, 
+                                                stepSize = 5, tileSize = 10, 
+                                                repMatch = 112312, dots = 50, 
+                                                q = "dna", t = "dna", out = "psl")) {    
 
   .checkArgs_SEQed()
   
@@ -4665,11 +4879,12 @@ findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
     # Align seqs #
     pslFile <- blatSeqs(query=paste0("processed",f,".*.fa$"), 
                         subject=genomeIndices[[f]], standaloneBlat=FALSE, 
-                        host=host, port=port, parallel=parallel, gzipResults=TRUE)                
+                        host=host, port=port, parallel=parallel, gzipResults=TRUE,
+                        blatParameters=blatParameters)                
     
     message("Cleaning!")
     # add pslFiles for later use #
-    pslFiles <- c(pslFiles,pslFile)
+    pslFiles <- c(pslFiles, pslFile)
     cleanit <- gc()
     system(paste("rm",paste0("processed",f,".*.fa")))
   }
