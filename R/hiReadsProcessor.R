@@ -3051,16 +3051,15 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
   })
 }
 
-#' Convert psl dataframe to RangedData/GRanges
+#' Convert psl dataframe to GRanges
 #'
-#' Convert psl dataframe to RangedData or GRanges object using either the query or target as the reference data column. 
+#' Convert psl dataframe to GRanges object using either the query or target as the reference data column. 
 #'
 #' @param x dataframe reflecting psl format
 #' @param useTargetAsRef use target(tName) or query(qName) as the chromosome or the reference data. Default is TRUE.
-#' @param asGRanges make a GRanges object instead of RangedData. Default is TRUE.
 #' @param isblast8 the input dataframe blast8 format output from BLAT. Default is FALSE.
 #'
-#' @return a GRanges object reflecting psl file type. If asGRanges=FALSE, then RangedData object is returned.
+#' @return a GRanges object reflecting psl file type.
 #'
 #' @seealso \code{\link{read.psl}}, \code{\link{read.blast8}}, \code{\link{blatListedSet}}
 #'
@@ -3068,10 +3067,10 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #'
 #' @examples 
 #' #pslToRangedObject(psl)
-#' #pslToRangedObject(psl, asGRanges=FALSE)
+#' #pslToRangedObject(psl)
 #' #pslToRangedObject(psl, useTargetAsRef=FALSE)
 #'
-pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=TRUE, isblast8=FALSE) {
+pslToRangedObject <- function(x, useTargetAsRef=TRUE, isblast8=FALSE) {
   if(useTargetAsRef) {
     metadataCols <- c(setdiff(names(x), c("tName","tStart","tEnd","strand")),
                       ifelse(isblast8, NA, "tStarts"))
@@ -3087,10 +3086,6 @@ pslToRangedObject <- function(x, useTargetAsRef=TRUE, asGRanges=TRUE, isblast8=F
   for(f in na.omit(metadataCols)) {
     mcols(out)[[f]] <- x[,f]
   } 
-  
-  if(!asGRanges) {
-    out <- as(out, "RangedData")
-  }
   
   out
 }
@@ -3370,7 +3365,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
 #' @param query an object of DNAStringSet, a character vector of filename(s), or a path/pattern of fasta/fastq files to align. Default is NULL. All files are concatenated for the ease of alignment and output stored into a single BAM file.
 #' @param subject a path to the basename of an indexed genome (.subread.index) to serve as a reference or target to the query. Default is NULL. See basename parameter in \code{\link{buildindex}}
 #' @param outputfile filename to hold the alignment data. Default is "allhits". Extension '.bam' will be appended to this. 
-#' @param subreadParameters a character vector of alignment options to be passed to \code{\link{align}}. Parameters with following names will be silently ignored: index, readfile1, readfile2, input_format, output_format, output_file. Default is: c(nsubreads=15, nBestLocations=10, nthreads=4, indels=10, unique="FALSE", reportFusions="TRUE")
+#' @param subreadParameters a character vector of alignment options to be passed to \code{\link{align}}. Parameters with following names will be silently ignored: index, readfile1, readfile2, input_format, output_format, output_file. Default is: c(nsubreads=15, nBestLocations=10, nthreads=4, indels=10, unique="FALSE", reportFusions="TRUE", tieBreakHamming="TRUE")
 #'
 #' @return name of the BAM file holding the hits. If parameters 'reportFusions' or 'indels' were passed in subreadParameters, then a named vector is returned with "hits" holding the alignment data filename, and rest are named after the parameters.
 #'
@@ -3388,7 +3383,8 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
                              subreadParameters=c(nsubreads=15, nBestLocations=10,
                                                  nthreads=4, indels=10,
                                                  unique="FALSE",
-                                                 reportFusions="TRUE")) {
+                                                 reportFusions="TRUE",
+                                                 tieBreakHamming="TRUE")) {
   
   # buildindex(basename="/usr/local/genomeIndexes/hg18subreads/hg18.subreads.index", 
   #            reference="/usr/local/genomeIndexes/hg18.fa", memory=4000)
@@ -3488,7 +3484,6 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
       outputfile["reportFusions"] <- paste0(outputfile[["hits"]], ".fusion.txt")
     }
     
-    attr(outputfile, "from") <- "subreadAlignSeqs"
     outputfile    
   } else {
     outputfile[["hits"]]
@@ -3500,14 +3495,13 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
 #' Given filename(s), the function reads the BAM/SAM file, converts into a PSL like format. Any other file format will yield errors or erroneous results.
 #'
 #' @param bamFile BAM/SAM filename, or vector of filenames, or a pattern of files to import.
-#' @param asRangedData return a RangedData object instead of a dataframe. Default is FALSE
-#' @param asGRanges return a GRanges object instead of a dataframe. Default is FALSE
+#' @param asGRanges return a GRanges object instead of a GAlignments object. Default is FALSE
 #' @param removeFile remove the file(s) supplied in bamFile paramter after importing. Default is FALSE.
 #'
-#' @return a dataframe reflecting psl file type. If asGRanges=T or asRangedData=T, then a GRanges object or RangedData object, respectively.  
+#' @return a GAlignments object reflecting psl file type. If asGRanges=T, then a GRanges object.  
 #'
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}, \code{\link{GAlignments}}
 #'
 #' @export
 #'
@@ -3515,8 +3509,7 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
 #' #read.psl(bamFile="processed.*.bam$")
 #' #read.psl(bamFile=c("sample1hits.sam","sample2hits.sam"))
 #'
-read.BAMasPSL <- function(bamFile=NULL, asRangedData=FALSE, 
-                          asGRanges=FALSE, removeFile=TRUE) {
+read.BAMasPSL <- function(bamFile=NULL, asGRanges=FALSE, removeFile=TRUE) {
   if(is.null(bamFile) | length(bamFile)==0) {
     stop("bamFile parameter empty. Please supply a filename to be read.")
   }
@@ -3531,7 +3524,7 @@ read.BAMasPSL <- function(bamFile=NULL, asRangedData=FALSE,
     stop("No file(s) found with given paramter in bamFile:", bamFile) 
   }
 
-  if(length(attr(bamFile, "from")=="subreadAlignSeqs")==1) {
+  if("hits" %in% names(bamFile)) {
     bamFile <- bamFile[["hits"]]
   }
   
@@ -3544,21 +3537,34 @@ read.BAMasPSL <- function(bamFile=NULL, asRangedData=FALSE,
                   "character", rep("numeric",4), rep("character",3))
   
   # The following tags are used for secondary alignments in the optional fields: CC(chromosome name), CP(mapping position), CG(CIGAR string) and CT(strand). Note that a fusion or junction read is always saved in a single record in SAM/BAM output.
-  hits <- sapply(bamFile, readGAlignments, use.names=TRUE, with.which_label=TRUE,
-                 param=ScanBamParam())
-    
-  if(nrow(hits)==0) {
+  param <- ScanBamParam(what=c("qname"),
+                        flag=scanBamFlag(isPaired = NA, isProperPair = NA, 
+                                         isUnmappedQuery = FALSE, 
+                                         hasUnmappedMate = NA,
+                                         isMinusStrand = NA, isMateMinusStrand = NA,
+                                         isFirstMateRead = NA, isSecondMateRead = NA,
+                                         isNotPrimaryRead = NA, isDuplicate = NA,
+                                         isNotPassingQualityControls = NA),
+                        tag=c("CC", "CT", "CP", "CG", "NH"))
+  hits <- sapply(bamFile, readGAlignments, param=param)
+  hits <- do.call(c, hits)
+  
+  if(length(hits)==0) {
     stop("No hits found")
   }
   
   message("Ordering by qName")
-  hits <- arrange(hits, qName)
+  hits <- hits[order(mcols(hits)$qname)]
 
-  if(asRangedData | asGRanges) {
-    hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, asGRanges=asGRanges)
+  if(asGRanges) {
+    hits.gr <- as(hits,"GRanges")
+    mcols(hits.gr) <- mcols(hits.gr)
+    hits <- hits.gr
+    rm(hits.gr)
   }
   
   if(removeFile) { file.remove(bamFile) }
+  
   return(hits)
 }
 
@@ -3568,12 +3574,11 @@ read.BAMasPSL <- function(bamFile=NULL, asRangedData=FALSE,
 #'
 #' @param pslFile PSL filename, or vector of filenames, or a pattern of files to import.
 #' @param bestScoring report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.
-#' @param asRangedData return a RangedData object instead of a dataframe. Default is FALSE
 #' @param asGRanges return a GRanges object instead of a dataframe. Default is FALSE
 #' @param removeFile remove the PSL file(s) after importing. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #'
-#' @return a dataframe reflecting psl file type. If asGRanges=T or asRangedData=T, then a GRanges object or RangedData object, respectively.  
+#' @return a dataframe reflecting psl file type. If asGRanges=T, then a GRanges object.  
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
 #'
@@ -3585,7 +3590,7 @@ read.BAMasPSL <- function(bamFile=NULL, asRangedData=FALSE,
 #' #read.psl(pslFile="processed.*.psl$")
 #' #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
 #'
-read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE, 
+read.psl <- function(pslFile=NULL, bestScoring=TRUE,
                      asGRanges=FALSE, removeFile=TRUE, parallel=FALSE) {
   if(is.null(pslFile) | length(pslFile)==0) {
     stop("pslFile parameter empty. Please supply a filename to be read.")
@@ -3648,8 +3653,8 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
     rm("isBest","bestScore")
   }
   
-  if(asRangedData | asGRanges) {
-    hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, asGRanges=asGRanges)
+  if(asGRanges) {
+    hits <- pslToRangedObject(hits, useTargetAsRef=TRUE)
   }
   
   if(removeFile) { file.remove(pslFile) }
@@ -3662,12 +3667,11 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
 #' Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
 #'
 #' @param files blast8 filename, or vector of filenames, or a pattern of files to import.
-#' @param asRangedData return a RangedData object instead of a dataframe. Default is TRUE. Saves memory!
-#' @param asGRanges return a GRanges object instead of a dataframe. Default is FALSE
+#' @param asGRanges return a GRanges object instead of a dataframe. Default is TRUE Saves memory!
 #' @param removeFile remove the blast8 file(s) after importing. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
 #'
-#' @return a dataframe or RangedData object reflecting blast8 file type.
+#' @return a dataframe or GRanges object reflecting blast8 file type.
 #'
 #' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
 #'
@@ -3679,7 +3683,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asRangedData=FALSE,
 #' #read.blast8(files="processed.*.blast8$")
 #' #read.blast8(files=c("sample1hits.blast8","sample2hits.blast8"))
 #'
-read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
+read.blast8 <- function(files=NULL, asGRanges=FALSE,
                         removeFile=TRUE, parallel=FALSE) {
   if(is.null(files) | length(files)==0) {
     stop("files parameter empty. Please supply a filename to be read.")
@@ -3727,9 +3731,8 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
   message("Ordering by qName")
   hits <- arrange(hits,qName)
   
-  if(asRangedData | asGRanges) {
-    hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, 
-                              isblast8=TRUE, asGRanges=asGRanges)
+  if(asGRanges) {
+    hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, isblast8=TRUE)
   }
   
   if(removeFile) { file.remove(files) }
@@ -3739,16 +3742,16 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
 
 #' Obtain integration sites from BLAT output
 #'
-#' Given a RangedData/GRanges object from \code{\link{read.psl}}, the function uses specified filtering parameters to obtain integration sites and maintain sequence attrition. The function will remove any non-best scoring alignments from the object if not already filtered apriori.
+#' Given a GRanges object from \code{\link{read.psl}}, the function uses specified filtering parameters to obtain integration sites and maintain sequence attrition. The function will remove any non-best scoring alignments from the object if not already filtered apriori.
 #'
-#' @param psl.rd a RangedData/GRanges object reflecting psl format where tName is the spaces/seqnames.
+#' @param psl.rd a GRanges object reflecting psl format where tName is the spaces/seqnames.
 #' @param startWithin upper bound limit of where the alignment should start within the query. Default is 3.
 #' @param alignRatioThreshold cuttoff for (alignment span/read length). Default is 0.7.
 #' @param genomicPercentIdentity cuttoff for (1-(misMatches/matches)). Default is 0.98.
 #' @param correctByqStart use qStart to correct genomic position. This would account for sequencing/trimming errors. Position=ifelse(strand=="+",tStart-qStart,tEnd+qStart). Default is TRUE.
 #' @param oneBased the coordinates in psl files are "zero based half open". The first base in a sequence is numbered zero rather than one. Enabling this would add +1 to the start and leave the end as is. Default is FALSE.
 #'
-#' @return a RangedData/GRanges object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'. Integration Site is marked by new column named 'Position'.
+#' @return a GRanges object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'. Integration Site is marked by new column named 'Position'.
 #'
 #' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 #'
@@ -3760,16 +3763,10 @@ read.blast8 <- function(files=NULL, asRangedData=FALSE, asGRanges=FALSE,
 getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=0.7, 
                                 genomicPercentIdentity=0.98, correctByqStart=TRUE, 
                                 oneBased=FALSE) {
-  stopifnot((is(psl.rd,"RangedData") | is(psl.rd,"GRanges")) & 
+  stopifnot(is(psl.rd,"GRanges") & 
               !is.null(psl.rd) & !is.null(startWithin) & !length(psl.rd)==0 &
               !is.null(alignRatioThreshold) & !is.null(genomicPercentIdentity))
-  
-  isRangedData <- FALSE
-  if(is(psl.rd, "RangedData")) {
-    isRangedData <- TRUE
-    psl.rd <- as(psl.rd, "GRanges")
-  }
-  
+   
   ## check if required columns exist ##
   absentCols <- setdiff(c("qName", "qStart", "qSize","matches", "misMatches", 
                           "qBaseInsert", "tBaseInsert"), 
@@ -3832,10 +3829,6 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
   								            mcols(psl.rd)$pass.alignRatio & 
   								            mcols(psl.rd)$pass.startWithin
   
-  if(isRangedData) {
-    psl.rd <- as(psl.rd, "RangedData")
-  }
-  
   return(psl.rd)
 }
 
@@ -3846,7 +3839,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined. 
 #' @param value a vector of integer with values that needs to corrected/clustered (i.e. Positions). Required if psl.rd parameter is not defined. 
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData/GRanges object returned from \code{\link{getIntegrationSites}}. Default is NULL. 
+#' @param psl.rd a GRanges object returned from \code{\link{getIntegrationSites}}. Default is NULL. 
 #' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
 #' @param windowSize size of window within which values should be corrected/clustered. Default is 5.
 #' @param byQuartile flag denoting whether quartile based technique should be employed. See notes for details. Default is TRUE.
@@ -3855,7 +3848,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3, alignRatioThreshold=
 #'
 #' @note The algorithm for clustering when byQuartile=TRUE is as follows: for all values in each grouping, get a distribution and test if their frequency is >= quartile threshold. For values below the quartile threshold, test if any values overlap with the ones that passed the threshold and is within the defined windowSize. If there is a match, then merge with higher value, else leave it as is. This is only useful if the distribution is wide and polynodal. When byQuartile=FALSE, for each group the values within the defined window are merged with the next highest frequently occuring value, if freuquencies are tied then lowest value is used to represent the cluster. When psl.rd is passed, then multihits are ignored and only unique sites are clustered. All multihits will be tagged as a good 'clusterTopHit'.
 #'
-#' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a RangedData/GRanges object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
+#' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a GRanges object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
 #'
 #' @seealso \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{pslToRangedObject}}
 #'
@@ -3873,13 +3866,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
   } else {
-    
-    isRangedData <- FALSE
-    if(is(psl.rd, "RangedData")) {
-      isRangedData <- TRUE
-      psl.rd <- as(psl.rd, "GRanges")
-    }
-    
+
     ## dereplicate & converge sites! ##
     if(!"Position" %in% colnames(mcols(psl.rd))) {
       stop("The object supplied in psl.rd parameter does not have Position ",
@@ -3959,10 +3946,6 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     message("Cleaning up!")
     rm("isBest","bestScore","posIDs","values","groupingVals")
     cleanit <- gc()
-    
-    if(isRangedData) {
-      psl.rd <- as(psl.rd, "RangedData")
-    }
     
     return(psl.rd)
   }
@@ -4139,11 +4122,11 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
 #' @param posID a vector of discrete positions, i.e. Chr,strand,Position.
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData/GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
 #'
 #' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions. 
 #'
-#' @return a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a RangedData/GRanges object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
+#' @return a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a GRanges object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -4160,12 +4143,6 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
     stopifnot(!is.null(posID))
     stopifnot(!is.null(readID))
   } else {
-    
-    isRangedData <- FALSE
-    if(is(psl.rd, "RangedData")) {
-      isRangedData <- TRUE
-      psl.rd <- as(psl.rd, "GRanges")
-    }
     
     ## find the otuID by clusters ##
     if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
@@ -4196,11 +4173,6 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
     
     rm("otus","otuIDs","posIDs","readIDs","grouping")
     cleanit <- gc()
-    
-    if(isRangedData) {
-      psl.rd <- as(psl.rd, "RangedData")
-    }
-    
     return(psl.rd)
   }
   
@@ -4307,7 +4279,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData/GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
 #' @param maxgap max distance allowed between two non-overlapping position to trigger the merging. Default is 5.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
 #'
@@ -4324,7 +4296,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #'  \item positions with no overlap are left as is with the original arbitrary ID
 #' }
 #' 
-#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData/GRanges object.
+#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a GRanges object.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -4342,13 +4314,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
     stopifnot(!is.null(value))
     stopifnot(!is.null(readID))
   } else {
-    
-    isRangedData <- FALSE
-    if(is(psl.rd, "RangedData")) {
-      isRangedData <- TRUE
-      psl.rd <- as(psl.rd, "GRanges")
-    }
-    
+
     ## find the otuID by Positions ##
     isthere <- grepl("clusteredPosition", colnames(mcols(psl.rd)), ignore.case=TRUE)
     if(!any(isthere)) {
@@ -4391,10 +4357,6 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
     message("Cleaning up!")
     rm("otus","otuIDs","value","posID","readID","grouping","good.rows")
     cleanit <- gc()
-    
-    if(isRangedData) {
-      psl.rd <- as(psl.rd, "RangedData")
-    }
     
     return(psl.rd)
   }
@@ -4621,13 +4583,13 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a RangedData/GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
 #' @param maxgap max distance allowed between two non-overlapping position to trigger the merging. Default is 5.
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
 #'
 #' @note The algorithm for making isus of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same ISU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same ISU ID to all readIDs sharing 1 or more positions.
 #'
-#' @return a data frame with binned values and isuID shown alongside the original input. If psl.rd parameter is defined, then a RangedData/GRanges object where object is first filtered by clusterTopHit column and the isuID column appended at the end.
+#' @return a data frame with binned values and isuID shown alongside the original input. If psl.rd parameter is defined, then a GRanges object where object is first filtered by clusterTopHit column and the isuID column appended at the end.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{isuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -4662,9 +4624,9 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
 #' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
-#' @param psl.rd a RangedData/GRanges object. Default is NULL. 
+#' @param psl.rd a GRanges object. Default is NULL. 
 #'
-#' @return a data frame of the original input with columns denoting whether a given row is crossover or not. If psl.rd parameter is defined, then a RangedData/GRanges object with 'isCrossover' column appended at the end.
+#' @return a data frame of the original input with columns denoting whether a given row is crossover or not. If psl.rd parameter is defined, then a GRanges object with 'isCrossover' column appended at the end.
 #'
 #' @seealso  \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -4680,12 +4642,6 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
   } else {     
-    
-    isRangedData <- FALSE
-    if(is(psl.rd, "RangedData")) {
-      isRangedData <- TRUE
-      psl.rd <- as(psl.rd, "GRanges")
-    }
     
     if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
          !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
@@ -4737,10 +4693,6 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     message("Cleaning up!")
     rm("posID","value","grouping","crossed","crossedValues")
     cleanit <- gc()
-    
-    if(isRangedData) {
-      psl.rd <- as(psl.rd, "RangedData")
-    }
     
     return(psl.rd)
   }
