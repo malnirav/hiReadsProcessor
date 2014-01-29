@@ -3121,13 +3121,7 @@ read.BAMasPSL <- function(bamFile=NULL, asGRanges=FALSE, removeFile=TRUE) {
   if("hits" %in% names(bamFile)) {
     bamFile <- bamFile[["hits"]]
   }
-  
-  ## setup psl columns + classes
-  cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", 
-            "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", "qSize", 
-            "qStart", "qEnd", "tName", "tSize", "tStart", "tEnd", "blockCount", 
-            "blockSizes", "qStarts", "tStarts")
-  
+
   param <- ScanBamParam(what=c("qname"),
                         flag=scanBamFlag(isPaired = NA, isProperPair = NA, 
                                          isUnmappedQuery = FALSE, 
@@ -3136,7 +3130,7 @@ read.BAMasPSL <- function(bamFile=NULL, asGRanges=FALSE, removeFile=TRUE) {
                                          isFirstMateRead = NA, isSecondMateRead = NA,
                                          isNotPrimaryRead = NA, isDuplicate = NA,
                                          isNotPassingQualityControls = NA),
-                        tag=c("CC", "CT", "CP", "CG", "NH"))
+                        tag=c("CC", "CT", "CP", "CG"))
   hits <- lapply(bamFile, readGAlignments, param=param)
   hits <- do.call(c, hits)
   
@@ -3157,27 +3151,29 @@ read.BAMasPSL <- function(bamFile=NULL, asGRanges=FALSE, removeFile=TRUE) {
   hits <- hits[order(mcols(hits)$qName)]
   
   ## add few required columns present in PSL format which are crucial to filtering
+  message("Adding relevent PSL columns")
   stopifnot(identical(cigarWidthAlongQuerySpace(cigar(hits)), qwidth(hits)))
   mcols(hits)$qSize <- qwidth(hits)
   
   bore <- cigarRangesAlongQuerySpace(cigar(hits), ops="M")
+  mcols(hits)$matches <- sapply(width(bore), sum)
   mcols(hits)$qStart <- min(start(bore))
   mcols(hits)$qEnd <- max(end(bore))
-  mcols(hits)$matches <- sapply(width(bore), sum)
   
   bore <- cigarRangesAlongQuerySpace(cigar(hits), ops="X")
   mcols(hits)$misMatches <- sapply(width(bore), sum)
   
   bore <- cigarRangesAlongQuerySpace(cigar(hits), ops="I")
+  mcols(hits)$qNumInsert <- sapply(bore, length)
   mcols(hits)$qBaseInsert <- sapply(width(bore), sum)
-  
+
   bore <- cigarRangesAlongReferenceSpace(cigar(hits), ops="I")
+  mcols(hits)$tNumInsert <- sapply(bore, length)
   mcols(hits)$tBaseInsert <- sapply(width(bore), sum)
   
   if(asGRanges) {
     hits.gr <- as(hits,"GRanges")
-    mcols(hits.gr) <- cbind(DataFrame(qwidth=qwidth(hits), cigar=cigar(hits), 
-                                      ngap=ngap(hits)),
+    mcols(hits.gr) <- cbind(DataFrame(cigar=cigar(hits), ngap=ngap(hits)),
                             mcols(hits))
     hits <- hits.gr
     rm(hits.gr)
