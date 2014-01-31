@@ -2721,8 +2721,10 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
              paste0(sector,seqfilePattern),")")
       }
       
+      nobarcodes <- FALSE ## incase the data is already demultiplexed
       if(!any(grepl("I1", basename(filePath)))) {
         warning("No index/barcode file (I1) found.")
+        nobarcodes <- TRUE
       }
       
       pair2 <- paste0(sub("(.*)R\\d.*","\\1",sector),
@@ -2774,11 +2776,13 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
       linkerSide <- grep(pair2, basename(names(dnaSet)))      
       #names(dnaSet[[linkerSide]]) <- paste0("@pair2side@",names(dnaSet[[linkerSide]]))
       
-      barcodes <- grep("I1", basename(names(dnaSet)))
-      
-      dnaSet <- list("barcode"=dnaSet[[barcodes]],
-                     "pair1"=dnaSet[[LTRside]],
+      dnaSet <- list("pair1"=dnaSet[[LTRside]],
                      "pair2"=reverseComplement(dnaSet[[linkerSide]]))
+      
+      if(!nobarcodes) {
+        barcodes <- grep("I1", basename(names(dnaSet)))
+        dnaSet[["barcode"]] <- dnaSet[[barcodes]]
+      }      
     } else {
       ## for single-end data!
       dnaSet <- dnaSet[[1]]
@@ -3095,13 +3099,13 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
 #' @return a GAlignments object reflecting psl file type. If asGRanges=T, then a GRanges object.  
 #'
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}, \code{\link{GAlignments}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}, \code{\link{GAlignments}}, \code{\link{pairUpAlignments}}
 #'
 #' @export
 #'
 #' @examples 
-#' #read.psl(bamFile="processed.*.bam$")
-#' #read.psl(bamFile=c("sample1hits.sam","sample2hits.sam"))
+#' #read.BAMasPSL(bamFile="processed.*.bam$")
+#' #read.BAMasPSL(bamFile=c("sample1hits.sam","sample2hits.sam"))
 #'
 read.BAMasPSL <- function(bamFile=NULL, asGRanges=FALSE, removeFile=TRUE) {
   if(is.null(bamFile) | length(bamFile)==0) {
@@ -3182,6 +3186,30 @@ read.BAMasPSL <- function(bamFile=NULL, asGRanges=FALSE, removeFile=TRUE) {
   if(removeFile) { file.remove(bamFile) }
   
   return(hits)
+}
+
+#' Pair upalignments in a GRanges/GAlignments object
+#'
+#' Given a GRanges/GAlignment object from \code{\link{read.BAMasPSL}}, the function uses specified filtering parameters to pair up reads where the definition line or qName ends with "@pairname@" which is outputted by \code{\link{extractSeqs}}.
+#'
+#' @param psl.rd a GRanges/GAlignments object with qNames ending in "@pairname@".
+#' @param startWithin upper bound limit of where the alignment should start within the query. Default is 3.
+#' @param alignRatioThreshold cuttoff for (alignment span/read length). Default is 0.7.
+#' @param genomicPercentIdentity cuttoff for (1-(misMatches/matches)). Default is 0.98
+#'
+#' @return a GRanges/GAlignments object with paired up reads
+#'
+#'
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{subreadAlignSeqs}}, \code{\link{GAlignments}}, \code{\link{read.BAMasPSL}}
+#'
+#' @export
+#'
+#' @examples 
+#' #pairUpAlignments()
+#' #pairUpAlignments()
+#'
+pairUpAlignments <- function(psl.rd=NULL ) {
+  
 }
 
 #' Start a gfServer instance
