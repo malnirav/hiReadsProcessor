@@ -403,10 +403,10 @@ removeReadsWithNs <- function(dnaSet, maxNs=5, consecutive=TRUE) {
 
 #' Breaks an object into chunks of N size.
 #'
-#' Given a linear object, the function breaks query into chunks of N size where each chunk has a respective subject object filtered by seqnames/space present in the query chunk. This is a helper function used by functions in 'See Also' section where each chunk is sent to a parallel node for processing.
+#' Given a linear/vector like object, the function breaks it into equal sized chunks either by chunkSize. This is a helper function used by functions in 'See Also' section where each chunk is sent to a parallel node for processing.
 #'
 #' @param x a linear object.
-#' @param chunkSize number of rows to use per chunk of query. Default to length(sites.rd)/detectCores() or length(query)/getDoParWorkers() depending on parallel backend registered. 
+#' @param chunkSize number of rows to use per chunk of query. Defaults to length(x)/detectCores() or length(query)/getDoParWorkers() depending on parallel backend registered. 
 #'
 #' @return a list of object split into chunks.
 #'
@@ -425,7 +425,7 @@ chunkize <- function(x, chunkSize = NULL) {
   chunks <- breakInChunks(length(x), 
                           ifelse(!is.null(chunkSize),
                                  length(x)/chunkSize, 
-                                 ifelse(!is.null(is.null(getDoParWorkers())), 
+                                 ifelse(!is.null(getDoParWorkers()), 
                                         length(x)/getDoParWorkers(), 
                                         length(x)/detectCores())))
   mapply(function(z, y) x[z:y], start(chunks), end(chunks), 
@@ -748,51 +748,64 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
   
   .checkArgs_SEQed()
   
-  ## only get the relevant side of subject sequence with extra bufferBases to 
-  ## account for indels/mismatches & save memory while searching and avoid 
-  ## searching elsewhere in the sequence
-  if(tolower(side)=="left") {
-    badSeqs <- DNAStringSet()
-    culprits <- width(subjectSeqs) < (nchar(patternSeq)+bufferBases)
-    if(any(culprits)) {
-      badSeqs <- subjectSeqs[culprits]
-      message(length(badSeqs),
-              " sequences were removed from aligning since they were",
-              " shorter than pattern getting aligned: ",
-              (nchar(patternSeq)+bufferBases),"bp")            
-      subjectSeqs <- subjectSeqs[!culprits]            
-    }
-    subjectSeqs2 <- subseq(subjectSeqs, start=1, end=(nchar(patternSeq)+bufferBases))
-    overFromLeft <- rep(0,length(subjectSeqs))
-  } else if (tolower(side)=="right") { 
-    overFromLeft <- width(subjectSeqs)-(nchar(patternSeq)+bufferBases)
-    overFromLeft[overFromLeft<1] <- 1
-    subjectSeqs2 <- subseq(subjectSeqs, start=overFromLeft)
-  } else {
-    subjectSeqs2 <- subjectSeqs
-    overFromLeft <- rep(0, length(subjectSeqs))
-  }
-  
-  ## search both ways to test which side yields more hits!
-  if(doRC) {
-    patternSeq <- doRCtest(subjectSeqs2, patternSeq, qualityThreshold)            
-  }
-  
   if(parallel) {
-    subjectSeqs2 <- chunkize(subjectSeqs2)
-    hits <- foreach(x=iter(subjectSeqs2), .inorder=TRUE, 
-                           .errorhandling="pass", 
-                           .export=c("patternSeq",names(match.call())), 
-                           .packages="Biostrings") %dopar% {
-		if(any(names(match.call()) %in% c("type","gapOpening","gapExtension"))) {
-		  pairwiseAlignment(x, patternSeq, ...)        
-		} else {
-		  pairwiseAlignment(x, patternSeq, type="overlap", 
-							gapOpening=-1, gapExtension=-1, ...)
-		}
+    ### match function call args and recall! ###
+    args.list <- formals(pairwiseAlignSeqs); args.list["..."] <- NULL
+    call.list <- as.list(match.call()); call.list[[1]] <- NULL
+    toExport <- intersect(names(call.list),names(args.list))
+    args.list[toExport] <- call.list[toExport]
+    toExport <- setdiff(names(call.list),names(args.list))
+    args.list <- append(args.list, call.list[toExport])
+    args.list[["subjectSeqs"]] <- NULL
+    args.list[["parallel"]] <- FALSE
+    
+    subjectSeqs2 <- chunkize(subjectSeqs)
+    hits <- foreach(subjectSeqs=iter(subjectSeqs2), .inorder=TRUE,
+                    .export="args.list", .packages="Biostrings") %dopar% {
+                      do.call(pairwiseAlignSeqs, 
+                              append(args.list, list("subjectSeqs"=subjectSeqs)))
+                    }    
+    hits <- do.call(c,hits)
+    if(is(hits,"CompressedIRangesList")) {
+      attrs <- unique(names(hits))
+      hits <- sapply(attrs, function(x) unlist(hits[names(hits)==x]))
+      IRangesList(hits)
+    } else {
+      hits
     }
-    hits <- do.call(c, hits)
   } else {
+    
+    ## only get the relevant side of subject sequence with extra bufferBases to 
+    ## account for indels/mismatches & save memory while searching and avoid 
+    ## searching elsewhere in the sequence
+    if(tolower(side)=="left") {
+      badSeqs <- DNAStringSet()
+      culprits <- width(subjectSeqs) < (nchar(patternSeq)+bufferBases)
+      if(any(culprits)) {
+        badSeqs <- subjectSeqs[culprits]
+        message(length(badSeqs),
+                " sequences were removed from aligning since they were",
+                " shorter than pattern getting aligned: ",
+                (nchar(patternSeq)+bufferBases),"bp")            
+        subjectSeqs <- subjectSeqs[!culprits]            
+      }
+      subjectSeqs2 <- subseq(subjectSeqs, start=1, 
+                             end=(nchar(patternSeq)+bufferBases))
+      overFromLeft <- rep(0,length(subjectSeqs))
+    } else if (tolower(side)=="right") { 
+      overFromLeft <- width(subjectSeqs)-(nchar(patternSeq)+bufferBases)
+      overFromLeft[overFromLeft<1] <- 1
+      subjectSeqs2 <- subseq(subjectSeqs, start=overFromLeft)
+    } else {
+      subjectSeqs2 <- subjectSeqs
+      overFromLeft <- rep(0, length(subjectSeqs))
+    }
+    
+    ## search both ways to test which side yields more hits!
+    if(doRC) {
+      patternSeq <- doRCtest(subjectSeqs2, patternSeq, qualityThreshold)            
+    }
+    
     ## type=overlap is best for primer trimming...see Biostrings Alignment vignette
     if(any(names(match.call()) %in% c("type","gapOpening","gapExtension"))) {
       hits <- pairwiseAlignment(subjectSeqs2, patternSeq, ...)        
@@ -800,48 +813,49 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
       hits <- pairwiseAlignment(subjectSeqs2, patternSeq, type="overlap", 
                                 gapOpening=-1, gapExtension=-1, ...)
     }
-  }
-  
-  stopifnot(length(hits)==length(subjectSeqs2))
-  
-  scores <- round(score(hits))
-  highscored <- scores >= round(nchar(patternSeq)*qualityThreshold)*2
-  unmatched <- nchar(hits) <= round(nchar(patternSeq)*.1) ## basically a small subset of highscored
-  
-  # no point in showing stats if all sequences are a potential match! #
-  if(showStats & qualityThreshold!=0) {
-    message("Total of ",as.numeric(table(highscored)['FALSE']),
-            " did not have the defined pattern sequence (", patternSeq,
-            ") that passed qualityThreshold on the ", side, " side")
-  }
-  
-  ## extract starts-stops of the entire pattern hit ##
-  starts <- start(pattern(hits))
-  ends <- end(pattern(hits))
-  namesq <- names(subjectSeqs)
-  hits <- IRanges(start=starts+overFromLeft-ifelse(side=="right",2,0), 
-                  end=ends+overFromLeft-ifelse(side=="right",2,0), 
-                  names=namesq)
-  rm("scores","subjectSeqs2","subjectSeqs","starts","ends","namesq")
-  
-  ## no need to test if there were any multiple hits since pairwiseAlignment will 
-  ## only output one optimal alignment...see the man page.
-  if(!returnLowScored & !returnUnmatched) {
-    hits <- hits[highscored]
-  } else {
-    hitstoreturn <- IRangesList("hits"=hits[highscored])
-    if(returnLowScored & length(hits[!highscored])>0) {
-      hitstoreturn <- append(hitstoreturn, IRangesList("Rejected"=hits[!highscored]))
+    stopifnot(length(hits)==length(subjectSeqs2))
+    
+    scores <- round(score(hits))
+    highscored <- scores >= round(nchar(patternSeq)*qualityThreshold)*2
+    unmatched <- nchar(hits) <= round(nchar(patternSeq)*.1) ## basically a small subset of highscored
+    
+    # no point in showing stats if all sequences are a potential match! #
+    if(showStats & qualityThreshold!=0) {
+      message("Total of ",as.numeric(table(highscored)['FALSE']),
+              " did not have the defined pattern sequence (", patternSeq,
+              ") that passed qualityThreshold on the ", side, " side")
     }
     
-    if(returnUnmatched & length(hits[unmatched])>0) {
-      hitstoreturn <- append(hitstoreturn, IRangesList("Absent"=hits[unmatched]))
-    }
-    hits <- hitstoreturn
-    rm(hitstoreturn)
-  }             
-  cleanit <- gc()
-  return(hits)
+    ## extract starts-stops of the entire pattern hit ##
+    starts <- start(pattern(hits))
+    ends <- end(pattern(hits))
+    namesq <- names(subjectSeqs)
+    hits <- IRanges(start=starts+overFromLeft-ifelse(side=="right",2,0), 
+                    end=ends+overFromLeft-ifelse(side=="right",2,0), 
+                    names=namesq)
+    rm("scores","subjectSeqs2","subjectSeqs","starts","ends","namesq")
+    
+    ## no need to test if there were any multiple hits since pairwiseAlignment will 
+    ## only output one optimal alignment...see the man page.
+    if(!returnLowScored & !returnUnmatched) {
+      hits <- hits[highscored]
+    } else {
+      hitstoreturn <- IRangesList("hits"=hits[highscored])
+      if(returnLowScored & length(hits[!highscored])>0) {
+        hitstoreturn <- append(hitstoreturn, 
+                               IRangesList("Rejected"=hits[!highscored]))
+      }
+      
+      if(returnUnmatched & length(hits[unmatched])>0) {
+        hitstoreturn <- append(hitstoreturn, 
+                               IRangesList("Absent"=hits[unmatched]))
+      }
+      hits <- hitstoreturn
+      rm(hitstoreturn)
+    }             
+    cleanit <- gc()
+    return(hits)
+  }
 }
 
 #' Align a short pattern with PrimerID to variable length target sequences.
