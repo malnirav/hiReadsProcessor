@@ -1267,9 +1267,10 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' @param alignWay method to utilize for detecting the primers. One of following: "slow" (Default), or "fast". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern/primer. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
+#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector. Use parallel2 for parallelization at sequence level.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
+#' @param parallel2 perform parallelization is sequence level. Default is FALSE. Useful in cases where each sector has only one sample with numerous sequences.
 #' @param ... extra parameters to be passed to either \code{\link{vpatternMatch}} or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: primed
@@ -1286,7 +1287,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #'
 findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, 
                         doRC=FALSE, parallel=TRUE, samplenames=NULL, 
-                        bypassChecks=FALSE, ...) {    
+                        bypassChecks=FALSE, parallel2=FALSE, ...) {    
   
   .checkArgs_SEQed()
   
@@ -1349,20 +1350,20 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       
       primerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, 
                                .errorhandling="pass", 
-                               .export=c("ltrPrimers", "primerIdentity", "doRC",
-                                         "alignWay", "vpairwiseAlignSeqs", 
-                                         "pairwiseAlignSeqs", "decoded", "isPaired"), 
+                               .export=c("ltrPrimers","primerIdentity","doRC",
+                                         "alignWay","vpairwiseAlignSeqs","parallel2",
+                                         "pairwiseAlignSeqs","decoded","isPaired"), 
                                .packages="Biostrings") %dopar% {
         if(isPaired[[x]]) {
           p1 <- switch(alignWay,
                        fast = vpairwiseAlignSeqs(decoded[[x]]$pair1, 
                                                  ltrPrimers[[x]], "left", 
                                                  (primerIdentity[[x]]-.05), 
-                                                 doRC=doRC, ...),
+                                                 doRC=doRC, parallel=parallel2, ...),
                        slow = pairwiseAlignSeqs(decoded[[x]]$pair1, 
                                                 ltrPrimers[[x]], "left", 
                                                 (primerIdentity[[x]]), 
-                                                doRC=doRC, ...)                
+                                                doRC=doRC, parallel=parallel2, ...)                
           )
           
           ## side needs to be middle since we dont know where in pair2 the primer can be
@@ -1370,21 +1371,21 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                        fast = vpairwiseAlignSeqs(decoded[[x]]$pair2, 
                                                  ltrPrimers[[x]], "middle", 
                                                  (primerIdentity[[x]]-.05), 
-                                                 doRC=doRC, ...),
+                                                 doRC=doRC, parallel=parallel2, ...),
                        slow = pairwiseAlignSeqs(decoded[[x]]$pair2, 
                                                 ltrPrimers[[x]], "middle", 
                                                 (primerIdentity[[x]]), 
-                                                doRC=doRC, ...)                
+                                                doRC=doRC, parallel=parallel2, ...)                
           )
           list("pair1"=p1, "pair2"=p2)
         } else {
           switch(alignWay,
                  fast = vpairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", 
                                            qualityThreshold=(primerIdentity[[x]]-.05), 
-                                           doRC=doRC, ...),
+                                           doRC=doRC, parallel=parallel2, ...),
                  slow = pairwiseAlignSeqs(decoded[[x]], ltrPrimers[[x]], "left", 
                                           qualityThreshold=(primerIdentity[[x]]), 
-                                          doRC=doRC, ...)                
+                                          doRC=doRC, parallel=parallel2, ...)                
           )
         }
       }
@@ -1436,6 +1437,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
+#' @param parallel2 perform parallelization is sequence level. Default is FALSE. Useful in cases where each sector has only one sample with numerous sequences.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: LTRed
@@ -1450,7 +1452,8 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' #findLTRs(sampleInfo,showStats=TRUE)
 #'
 findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, 
-                     parallel=TRUE, samplenames=NULL, bypassChecks=FALSE, ...) {    
+                     parallel=TRUE, samplenames=NULL, bypassChecks=FALSE, 
+                     parallel2=FALSE, ...) {    
   
   .checkArgs_SEQed()
   
@@ -1528,20 +1531,25 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       ltrTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, 
                             .errorhandling="pass", 
                             .export=c("primerTrimmed", "sampleLTRbits", "isPaired",
-                                      "ltrBitIdentity", "doRC", "pairwiseAlignSeqs"), 
+                                      "ltrBitIdentity", "doRC", "pairwiseAlignSeqs",
+                                      "parallel2"), 
                             .packages="Biostrings") %dopar% {
         if(isPaired[[x]]) {
-          p1 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair1, sampleLTRbits[[x]], "left", 
-                                  qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
+          p1 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair1, 
+                                  sampleLTRbits[[x]], "left", 
+                                  qualityThreshold=ltrBitIdentity[[x]], 
+                                  doRC=doRC, parallel=parallel2, ...)
           
-          p2 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair2, sampleLTRbits[[x]], 
-                                  "middle", 
-                                  qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
+          p2 <- pairwiseAlignSeqs(primerTrimmed[[x]]$pair2, 
+                                  sampleLTRbits[[x]], "middle", 
+                                  qualityThreshold=ltrBitIdentity[[x]], 
+                                  doRC=doRC, parallel=parallel2, ...)
 
           list("pair1"=p1, "pair2"=p2)          
         } else {
           pairwiseAlignSeqs(primerTrimmed[[x]], sampleLTRbits[[x]], "left", 
-                            qualityThreshold=ltrBitIdentity[[x]], doRC=doRC, ...)
+                            qualityThreshold=ltrBitIdentity[[x]], 
+                            doRC=doRC, parallel=parallel2, ...)
         }        
       }
       names(ltrTrimmed) <- samplesToProcess
@@ -1623,6 +1631,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
+#' @param parallel2 perform parallelization is sequence level. Default is FALSE. Useful in cases where each sector has only one sample with numerous sequences.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: linkered. If linkers have primerID then, primerIDs attribute is appended as well. 
@@ -1637,7 +1646,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #' #findLinkers(sampleInfo,showStats=TRUE)
 #'
 findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
-                        samplenames=NULL, bypassChecks=FALSE, ...) {    
+                        samplenames=NULL, bypassChecks=FALSE, 
+                        parallel2=FALSE, ...) {    
   
   .checkArgs_SEQed()
   
@@ -1714,7 +1724,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                          "primerIded.threshold1",
                                          "primerIded.threshold2",
                                          "pairwiseAlignSeqs",
-                                         "primerIDAlignSeqs"), 
+                                         "primerIDAlignSeqs", "parallel2"), 
                                .packages="Biostrings") %dopar% {        
         if(primerIded[[x]]) {
           if(isPaired[[x]]) {
@@ -1722,20 +1732,23 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                     doAnchored=TRUE, returnUnmatched=TRUE, 
                                     returnRejected=TRUE, doRC=doRC, 
                                     qualityThreshold1=primerIded.threshold1[[x]], 
-                                    qualityThreshold2=primerIded.threshold2[[x]], ...)
+                                    qualityThreshold2=primerIded.threshold2[[x]],
+                                    parallel=parallel2, ...)
             
             p2 <- primerIDAlignSeqs(toProcess[[x]]$pair2, sampleLinkers[[x]], 
                                     doAnchored=TRUE, returnUnmatched=TRUE, 
                                     returnRejected=TRUE, doRC=doRC, 
                                     qualityThreshold1=primerIded.threshold1[[x]], 
-                                    qualityThreshold2=primerIded.threshold2[[x]], ...)
+                                    qualityThreshold2=primerIded.threshold2[[x]], 
+                                    parallel=parallel2, ...)
             
             list("pair1"=p1, "pair2"=p2)
           } else {
             primerIDAlignSeqs(toProcess[[x]], sampleLinkers[[x]], doAnchored=TRUE, 
                               returnUnmatched=TRUE, returnRejected=TRUE, doRC=doRC, 
                               qualityThreshold1=primerIded.threshold1[[x]], 
-                              qualityThreshold2=primerIded.threshold2[[x]], ...)
+                              qualityThreshold2=primerIded.threshold2[[x]], 
+                              parallel=parallel2, ...)
           }          
         } else {
           ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right' for single end reads or "pair1"
@@ -1744,21 +1757,21 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                     sampleLinkers[[x]], "middle", 
                                     qualityThreshold=linkerIdentity[[x]], 
                                     returnUnmatched=TRUE, returnLowScored=TRUE, 
-                                    doRC=doRC, ...)
+                                    doRC=doRC, parallel=parallel2, ...)
             
             # pair2 should end with linker, hence side='right'            
             p2 <- pairwiseAlignSeqs(toProcess[[x]]$pair2, 
                                     sampleLinkers[[x]], "right", 
                                     qualityThreshold=linkerIdentity[[x]], 
                                     returnUnmatched=TRUE, returnLowScored=TRUE, 
-                                    doRC=doRC, ...)
+                                    doRC=doRC, parallel=parallel2, ...)
             
             list("pair1"=p1, "pair2"=p2)
           } else {
             pairwiseAlignSeqs(toProcess[[x]], sampleLinkers[[x]], "middle", 
                               qualityThreshold=linkerIdentity[[x]], 
                               returnUnmatched=TRUE, returnLowScored=TRUE, 
-                              doRC=doRC, ...) 
+                              doRC=doRC, parallel=parallel2, ...) 
           }
         }        
       }
