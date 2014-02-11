@@ -39,11 +39,13 @@ for each sample as defined in filePath parameter.
 This is to aggregate reads from a sample which might be
 present in more than one sector.  \item If data is paired
 end, then each pair will be written separately with
-designations in the filename.  \item If parallel=TRUE, then
-be sure to have a paralle backend registered before running
-the function. One can use any of the following libraries
-compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW,
-doMPI. For example: library(doMC); registerDoMC(2) }
+designations in the filename as well as in the definition
+line as (at)pairX(at) appended at the end.  \item If
+parallel=TRUE, then be sure to have a paralle backend
+registered before running the function. One can use any of
+the following libraries compatible with
+\code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For
+example: library(doMC); registerDoMC(2) }
 }
 \examples{
 #write.listedDNAStringSet(dnaSet)

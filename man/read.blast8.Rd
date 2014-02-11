@@ -2,18 +2,15 @@
 \alias{read.blast8}
 \title{Read blast8 file(s) outputted by BLAT}
 \usage{
-read.blast8(files = NULL, asRangedData = FALSE, asGRanges = FALSE,
-  removeFile = TRUE, parallel = FALSE)
+read.blast8(files = NULL, asGRanges = FALSE, removeFile = TRUE,
+  parallel = FALSE)
 }
 \arguments{
   \item{files}{blast8 filename, or vector of filenames, or
   a pattern of files to import.}
 
-  \item{asRangedData}{return a RangedData object instead of
-  a dataframe. Default is TRUE. Saves memory!}
-
   \item{asGRanges}{return a GRanges object instead of a
-  dataframe. Default is FALSE}
+  dataframe. Default is TRUE Saves memory!}
 
   \item{removeFile}{remove the blast8 file(s) after
   importing. Default is FALSE.}
@@ -25,8 +22,7 @@ read.blast8(files = NULL, asRangedData = FALSE, asGRanges = FALSE,
   \code{\link{registerDoSEQ()}}.}
 }
 \value{
-a dataframe or RangedData object reflecting blast8 file
-type.
+a dataframe or GRanges object reflecting blast8 file type.
 }
 \description{
 Given filename(s), the function reads the blast8 file

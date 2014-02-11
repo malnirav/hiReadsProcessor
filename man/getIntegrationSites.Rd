@@ -7,8 +7,8 @@ getIntegrationSites(psl.rd = NULL, startWithin = 3,
   correctByqStart = TRUE, oneBased = FALSE)
 }
 \arguments{
-  \item{psl.rd}{a RangedData/GRanges object reflecting psl
-  format where tName is the spaces/seqnames.}
+  \item{psl.rd}{a GRanges/GAlignments object reflecting psl
+  format where tName is the seqnames.}
 
   \item{startWithin}{upper bound limit of where the
   alignment should start within the query. Default is 3.}
@@ -31,14 +31,14 @@ getIntegrationSites(psl.rd = NULL, startWithin = 3,
   to the start and leave the end as is. Default is FALSE.}
 }
 \value{
-a RangedData/GRanges object with integration sites which
+a GRanges/GAlignment object with integration sites which
 passed all filtering criteria. Each filtering parameter
 creates a new column to flag if a sequence/read passed that
 filter which follows the scheme: 'pass.FilterName'.
 Integration Site is marked by new column named 'Position'.
 }
 \description{
-Given a RangedData/GRanges object from
+Given a GRanges/GAlignment object from
 \code{\link{read.psl}}, the function uses specified
 filtering parameters to obtain integration sites and
 maintain sequence attrition. The function will remove any

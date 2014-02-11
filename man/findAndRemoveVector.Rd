@@ -38,7 +38,8 @@ This function facilitates finding and trimming of
 long/short fragments of vector present in LM-PCR products.
 The algorithm looks for vector sequence present anywhere
 within the read and trims according longest contiguous
-match on either end of the read.
+match on either end of the read. Alignment is doing using
+BLAT
 }
 \note{
 If parallel=TRUE, then be sure to have a paralle backend

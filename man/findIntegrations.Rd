@@ -4,7 +4,9 @@
 \usage{
 findIntegrations(sampleInfo, seqType = NULL, aligner = "BLAT",
   port = 5560, host = "localhost", genomeIndices = NULL,
-  parallel = TRUE, samplenames = NULL)
+  parallel = TRUE, samplenames = NULL, blatParameters = c(minIdentity =
+  70, minScore = 5, stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50, q
+  = "dna", t = "dna", out = "psl"))
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -48,6 +50,18 @@ findIntegrations(sampleInfo, seqType = NULL, aligner = "BLAT",
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
   sampleInfo object.}
+
+  \item{blatParameters}{a character vector of options to be
+  passed to gfClient/BLAT command except for 'nohead'
+  option. Default: c(minIdentity=70, minScore=5,
+  stepSize=5, tileSize=10, repMatch=112312, dots=50,
+  q="dna", t="dna", out="psl"). Be sure to only pass
+  parameters accepted by either BLAT or gfClient. For
+  example, if repMatch or stepSize parameters are specified
+  when using gfClient, then the function will simply ignore
+  them! The defaults are configured to align a 19bp
+  sequence with 70\% identity. Ignored if aligner is
+  "Subread".}
 }
 \value{
 a SimpleList object similar to sampleInfo parameter

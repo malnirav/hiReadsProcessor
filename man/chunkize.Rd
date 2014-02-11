@@ -8,7 +8,7 @@ chunkize(x, chunkSize = NULL)
   \item{x}{a linear object.}
 
   \item{chunkSize}{number of rows to use per chunk of
-  query. Default to length(sites.rd)/detectCores() or
+  query. Defaults to length(x)/detectCores() or
   length(query)/getDoParWorkers() depending on parallel
   backend registered.}
 }
@@ -16,12 +16,10 @@ chunkize(x, chunkSize = NULL)
 a list of object split into chunks.
 }
 \description{
-Given a linear object, the function breaks query into
-chunks of N size where each chunk has a respective subject
-object filtered by seqnames/space present in the query
-chunk. This is a helper function used by functions in 'See
-Also' section where each chunk is sent to a parallel node
-for processing.
+Given a linear/vector like object, the function breaks it
+into equal sized chunks either by chunkSize. This is a
+helper function used by functions in 'See Also' section
+where each chunk is sent to a parallel node for processing.
 }
 \examples{
 x <- c("GAGGCTGTCACCGACAAGGTTCTGA", "AATAGCGTGGTGACAGCCCACATGC",

@@ -15,12 +15,12 @@ otuSites(posID = NULL, readID = NULL, grouping = NULL, psl.rd = NULL,
   \item{grouping}{additional vector of grouping by which to
   pool the rows (i.e. samplenames). Default is NULL.}
 
-  \item{psl.rd}{a RangedData/GRanges object returned from
+  \item{psl.rd}{a GRanges/GAlignment object returned from
   \code{\link{clusterSites}}. Default is NULL.}
 }
 \value{
 a data frame with posID, readID, grouping, and otuID. If
-psl.rd parameter is defined, then a RangedData/GRanges
+psl.rd parameter is defined, then a GRanges/GAlignment
 object where object is first filtered by clusterTopHit
 column and the otuID column appended at the end.
 }

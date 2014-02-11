@@ -3,7 +3,7 @@
 \title{Remove values/positions which are overlapping between discrete groups based on their frequency.}
 \usage{
 crossOverCheck(posID = NULL, value = NULL, grouping = NULL,
-  weight = NULL, psl.rd = NULL)
+  weight = NULL, windowSize = 1, psl.rd = NULL)
 }
 \arguments{
   \item{posID}{a vector of groupings for the value
@@ -21,14 +21,18 @@ crossOverCheck(posID = NULL, value = NULL, grouping = NULL,
   calculating frequency of value by posID and grouping if
   specified. Default is NULL.}
 
-  \item{psl.rd}{a RangedData/GRanges object. Default is
+  \item{windowSize}{size of window within which values
+  should be checked. Default is 1.}
+
+  \item{psl.rd}{a GRanges/GAlignment object. Default is
   NULL.}
 }
 \value{
 a data frame of the original input with columns denoting
-whether a given row is crossover or not. If psl.rd
-parameter is defined, then a RangedData/GRanges object with
-'isCrossover' column appended at the end.
+whether a given row was a Candidate and isCrossover. If
+psl.rd parameter is defined, then a GRanges/GAlignment
+object with 'isCrossover', 'Candidate', and 'FoundIn'
+columns appended at the end.
 }
 \description{
 Given a group of discrete factors (i.e. position ids) and

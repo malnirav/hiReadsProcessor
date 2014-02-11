@@ -48,15 +48,18 @@ blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE,
   sequence with 70\% identity.}
 }
 \value{
-a character vector of psl filenames.
+a character vector of psl filenames. Each file provided is
+split by number of parallel workers and with read number
+denoting the cut. Files are cut in smaller pieces to for
+the ease of read & write into a single R session.
 }
 \description{
 Align batch of sequences using standalone BLAT or
-gfServer/gfClient protocol for alignment against an indexed
-reference genome. Depending on parameters provided, the
-function either aligns batch of files to a reference genome
-using gfClient or takes sequences from query & subject
-parameters and aligns them using standalone BLAT. If
+gfServer/gfClient protocol against an indexed reference
+genome. Depending on parameters provided, the function
+either aligns batch of files to a reference genome using
+gfClient or takes sequences from query & subject parameters
+and aligns them using standalone BLAT. If
 standaloneBlat=FALSE and gfServer is not launched apriori,
 this function will start one using
 \code{\link{startgfServer}} and kill it using
@@ -66,7 +69,7 @@ this function will start one using
 #blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
 #blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
 #blatSeqs("mySeqs.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
-#' #blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+#blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}},

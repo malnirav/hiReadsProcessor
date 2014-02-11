@@ -1,9 +1,8 @@
 \name{pslToRangedObject}
 \alias{pslToRangedObject}
-\title{Convert psl dataframe to RangedData/GRanges}
+\title{Convert psl dataframe to GRanges}
 \usage{
-pslToRangedObject(x, useTargetAsRef = TRUE, asGRanges = TRUE,
-  isblast8 = FALSE)
+pslToRangedObject(x, useTargetAsRef = TRUE, isblast8 = FALSE)
 }
 \arguments{
   \item{x}{dataframe reflecting psl format}
@@ -12,23 +11,19 @@ pslToRangedObject(x, useTargetAsRef = TRUE, asGRanges = TRUE,
   as the chromosome or the reference data. Default is
   TRUE.}
 
-  \item{asGRanges}{make a GRanges object instead of
-  RangedData. Default is TRUE.}
-
   \item{isblast8}{the input dataframe blast8 format output
   from BLAT. Default is FALSE.}
 }
 \value{
-a GRanges object reflecting psl file type. If
-asGRanges=FALSE, then RangedData object is returned.
+a GRanges object reflecting psl file type.
 }
 \description{
-Convert psl dataframe to RangedData or GRanges object using
-either the query or target as the reference data column.
+Convert psl dataframe to GRanges object using either the
+query or target as the reference data column.
 }
 \examples{
 #pslToRangedObject(psl)
-#pslToRangedObject(psl, asGRanges=FALSE)
+#pslToRangedObject(psl)
 #pslToRangedObject(psl, useTargetAsRef=FALSE)
 }
 \seealso{

@@ -1,25 +1,22 @@
 \name{read.psl}
 \alias{read.psl}
-\title{Read psl file(s) outputted by BLAT}
+\title{Read PSL file(s) outputted by BLAT}
 \usage{
-read.psl(pslFile = NULL, bestScoring = TRUE, asRangedData = FALSE,
-  asGRanges = FALSE, removeFile = TRUE, parallel = FALSE)
+read.psl(pslFile = NULL, bestScoring = TRUE, asGRanges = FALSE,
+  removeFile = TRUE, parallel = FALSE)
 }
 \arguments{
-  \item{pslFile}{psl filename, or vector of filenames, or a
+  \item{pslFile}{PSL filename, or vector of filenames, or a
   pattern of files to import.}
 
   \item{bestScoring}{report only best scoring hits instead
   of all hits. Default is TRUE. Score is calculated by
   matches-misMatches-qBaseInsert-tBaseInsert.}
 
-  \item{asRangedData}{return a RangedData object instead of
-  a dataframe. Default is FALSE}
-
   \item{asGRanges}{return a GRanges object instead of a
   dataframe. Default is FALSE}
 
-  \item{removeFile}{remove the psl file(s) after importing.
+  \item{removeFile}{remove the PSL file(s) after importing.
   Default is FALSE.}
 
   \item{parallel}{use parallel backend to perform
@@ -29,12 +26,11 @@ read.psl(pslFile = NULL, bestScoring = TRUE, asRangedData = FALSE,
   \code{\link{registerDoSEQ()}}.}
 }
 \value{
-a dataframe reflecting psl file type. If asGRanges=T or
-asRangedData=T, then a GRanges object or RangedData object,
-respectively.
+a dataframe reflecting psl file type. If asGRanges=T, then
+a GRanges object.
 }
 \description{
-Given filename(s), the function reads the psl file format
+Given filename(s), the function reads the PSL file format
 from BLAT as a data frame and performs basic score
 filtering if indicated. Any other file format will yield
 errors or erroneous results. Make sure there is no header
@@ -55,6 +51,7 @@ example: library(doMC); registerDoMC(2)
 \code{\link{pairwiseAlignSeqs}},
 \code{\link{vpairwiseAlignSeqs}},
 \code{\link{startgfServer}}, \code{\link{blatSeqs}},
-\code{\link{read.blast8}}, \code{\link{pslToRangedObject}}
+\code{\link{read.blast8}}, \code{\link{read.BAMasPSL}},
+\code{\link{pslToRangedObject}}
 }
 

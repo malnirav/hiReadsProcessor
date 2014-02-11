@@ -1,0 +1,62 @@
+\name{subreadAlignSeqs}
+\alias{subreadAlignSeqs}
+\title{Align sequences using Subread.}
+\usage{
+subreadAlignSeqs(query = NULL, subject = NULL, outputfile = "allhits",
+  subreadParameters = c(nsubreads = 15, nBestLocations = 10, nthreads = 4,
+  indels = 10, unique = "FALSE", reportFusions = "TRUE", tieBreakHamming =
+  "TRUE"))
+}
+\arguments{
+  \item{query}{an object of DNAStringSet, a character
+  vector of filename(s), or a path/pattern of fasta/fastq
+  files to align. Default is NULL. All files are
+  concatenated for the ease of alignment and output stored
+  into a single BAM file.}
+
+  \item{subject}{a path to the basename of an indexed
+  genome (.subread.index) to serve as a reference or target
+  to the query. Default is NULL. See basename parameter in
+  \code{\link{buildindex}}}
+
+  \item{outputfile}{filename to hold the alignment data.
+  Default is "allhits". Extension '.bam' will be appended
+  to this.}
+
+  \item{subreadParameters}{a character vector of alignment
+  options to be passed to \code{\link{align}}. Parameters
+  with following names will be silently ignored: index,
+  readfile1, readfile2, input_format, output_format,
+  output_file. Default is: c(nsubreads=15,
+  nBestLocations=10, nthreads=4, indels=10, unique="FALSE",
+  reportFusions="TRUE", tieBreakHamming="TRUE")}
+}
+\value{
+name of the BAM file holding the hits. If parameters
+'reportFusions' or 'indels' were passed in
+subreadParameters, then a named vector is returned with
+"hits" holding the alignment data filename, and rest are
+named after the parameters.
+}
+\description{
+Align batch of sequences using Subread against an indexed
+reference genome. Paired end reads are aligned
+independently and the validity of hits/pairs is evaluated
+within \code{\link{getIntegrationSites}}once the data is
+read in by \code{\link{read.BAMasPSL}}. The workhorse
+function doing the alignment is \code{\link{align}}.
+}
+\examples{
+#indexPath <- "/usr/local/genomeIndexes/subread/hg18/hg18.subreads.index"
+#subreadAlignSeqs(dnaSeqs, indexPath, "results")
+#subreadAlignSeqs("mySeqs.fa", indexPath, "mySeqs")
+#subreadAlignSeqs("my.*.fa", indexPath)
+}
+\seealso{
+\code{\link{pairwiseAlignSeqs}},
+\code{\link{vpairwiseAlignSeqs}}, \code{\link{blatSeqs}},
+\code{\link{read.psl}}, \code{\link{read.BAMasPSL}},
+\code{\link{read.blast8}}, \code{\link{splitSeqsToFiles}},
+\code{\link{align}}
+}
+

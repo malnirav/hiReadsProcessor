@@ -4,7 +4,7 @@
 \usage{
 findPrimers(sampleInfo, alignWay = "slow", showStats = FALSE,
   doRC = FALSE, parallel = TRUE, samplenames = NULL,
-  bypassChecks = FALSE, ...)
+  bypassChecks = FALSE, parallel2 = FALSE, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -31,7 +31,9 @@ findPrimers(sampleInfo, alignWay = "slow", showStats = FALSE,
   calculation with \code{\link{foreach}}. Defaults to TRUE.
   If no parallel backend is registered, then a serial
   version of foreach is ran using
-  \code{\link{registerDoSEQ()}}.}
+  \code{\link{registerDoSEQ()}}. Parllelization is done at
+  sample level per sector. Use parallel2 for
+  parallelization at sequence level.}
 
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
@@ -39,6 +41,10 @@ findPrimers(sampleInfo, alignWay = "slow", showStats = FALSE,
 
   \item{bypassChecks}{skip checkpoints which detect if
   something was odd with the data? Default is FALSE.}
+
+  \item{parallel2}{perform parallelization is sequence
+  level. Default is FALSE. Useful in cases where each
+  sector has only one sample with numerous sequences.}
 
   \item{...}{extra parameters to be passed to either
   \code{\link{vpatternMatch}} or

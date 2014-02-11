@@ -3,7 +3,7 @@
 \title{Find the 3' linkers and add results to SampleInfo object.}
 \usage{
 findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE,
-  samplenames = NULL, bypassChecks = FALSE, ...)
+  samplenames = NULL, bypassChecks = FALSE, parallel2 = FALSE, ...)
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
@@ -22,7 +22,8 @@ findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE,
   calculation with \code{\link{foreach}}. Defaults to TRUE.
   If no parallel backend is registered, then a serial
   version of foreach is ran using
-  \code{\link{registerDoSEQ()}}.}
+  \code{\link{registerDoSEQ()}}. Parllelization is done at
+  sample level per sector.}
 
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from
@@ -30,6 +31,10 @@ findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE,
 
   \item{bypassChecks}{skip checkpoints which detect if
   something was odd with the data? Default is FALSE.}
+
+  \item{parallel2}{perform parallelization is sequence
+  level. Default is FALSE. Useful in cases where each
+  sector has only one sample with numerous sequences.}
 
   \item{...}{extra parameters to be passed to
   \code{\link{pairwiseAlignment}}.}

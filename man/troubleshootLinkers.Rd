@@ -32,7 +32,8 @@ troubleshootLinkers(sampleInfo, qualityThreshold = 0.55,
   calculation with \code{\link{foreach}}. Defaults to TRUE.
   If no parallel backend is registered, then a serial
   version of foreach is ran using
-  \code{\link{registerDoSEQ()}}.}
+  \code{\link{registerDoSEQ()}}. Parllelization is done at
+  sample level per sector.}
 
   \item{samplenames}{a vector of samplenames to process.
   Default is NULL, which processes all samples from

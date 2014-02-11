@@ -2838,7 +2838,7 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
 #' @note
 #' \itemize{
 #'   \item Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. This is to aggregate reads from a sample which might be present in more than one sector. 
-#'   \item If data is paired end, then each pair will be written separately with designations in the filename as well as in the definition line as @pairX@ appended at the end.
+#'   \item If data is paired end, then each pair will be written separately with designations in the filename as well as in the definition line as (at)pairX(at) appended at the end.
 #'   \item If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
 #' }
 #'
@@ -4751,7 +4751,11 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     
     if(is.null(weight)) { ## see if clonecount column exists
       isthere <- grepl("clonecount", colnames(mcols(psl.rd)))
-      if(any(isthere)) { weight <- mcols(psl.rd)[[which(isthere)]] } else { weight <- weight }
+      if(any(isthere)) { 
+        weight <- mcols(psl.rd)[[which(isthere)]] 
+      } else { 
+        weight <- weight 
+      }
     }
     grouping <- if(is.null(grouping)) { "" } else { grouping }
     crossed <- crossOverCheck(posID[good.row], value[good.row], 
@@ -4776,7 +4780,8 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
       								class(crossed[[newCol]]))
     }
 
-    mcols(psl.rd)[good.row,][!is.na(rows),newCols] <- crossed[rows[!is.na(rows)], newCols]
+    mcols(psl.rd)[good.row,][!is.na(rows),newCols] <- 
+                                                crossed[rows[!is.na(rows)], newCols]
 
     message("Cleaning up!")
     rm("posID","value","grouping","crossed")
