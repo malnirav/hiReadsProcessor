@@ -4701,9 +4701,10 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
 #' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
+#' @param windowSize size of window within which values should be checked. Default is 1.
 #' @param psl.rd a GRanges/GAlignment object. Default is NULL. 
 #'
-#' @return a data frame of the original input with columns denoting whether a given row is crossover or not. If psl.rd parameter is defined, then a GRanges/GAlignment object with 'isCrossover' column appended at the end.
+#' @return a data frame of the original input with columns denoting whether a given row was a Candidate and isCrossover. If psl.rd parameter is defined, then a GRanges/GAlignment object with 'isCrossover', 'Candidate', and 'FoundIn' columns appended at the end.
 #'
 #' @seealso  \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -4714,7 +4715,7 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #' #crossOverCheck(psl.rd=test.psl.rd)
 #'
 crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, 
-                           weight=NULL, psl.rd=NULL) {
+                           weight=NULL, windowSize=1, psl.rd=NULL) {
   if(is.null(psl.rd)) {
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
@@ -4754,21 +4755,31 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     }
     grouping <- if(is.null(grouping)) { "" } else { grouping }
     crossed <- crossOverCheck(posID[good.row], value[good.row], 
-                              grouping=grouping[good.row], weight=weight[good.row])
+                              grouping=grouping[good.row], weight=weight[good.row],
+                              windowSize=windowSize)
     
-    message("Adding isCrossover data back to psl.rd.")        
-    crossedValues <- with(crossed, split(isCrossover, paste0(posID,value,grouping)))
-    if(any(sapply(crossedValues, length)>1)) {
+    message("Adding cross over data back to psl.rd.")
+    crossed$pvg <- with(crossed, paste0(posID,value,grouping))
+    totest <- pmin(xtabs(~pvg+isCrossover, crossed),1)
+    if(any(rowSums(totest)>1)) {
       stop("Error in crossOverCheck: sampling culprits... ", 
-           paste(names(crossedValues[which(sapply(crossedValues, length)>1)]), 
-                 collapse=", "))
+           paste(rownames(totest[rowSums(totest)>1,]), collapse=", "))
     }
-    mcols(psl.rd)$isCrossover <- FALSE
-    mcols(psl.rd)$isCrossover[good.row] <- 
-      as.logical(crossedValues[paste0(posID,value,grouping)[good.row]])
     
+    crossed <- as(crossed, "DataFrame")
+    rows <- match(paste0(posID,value,grouping)[good.row], crossed$pvg)
+    
+    newCols <- c("Candidate","isCrossover","FoundIn")
+    mcols(psl.rd)[newCols] <- NA
+    for(newCol in newCols) {
+      mcols(psl.rd)[[newCol]] <- as(mcols(psl.rd)[[newCol]], 
+      								class(crossed[[newCol]]))
+    }
+
+    mcols(psl.rd)[good.row,][!is.na(rows),newCols] <- crossed[rows[!is.na(rows)], newCols]
+
     message("Cleaning up!")
-    rm("posID","value","grouping","crossed","crossedValues")
+    rm("posID","value","grouping","crossed")
     cleanit <- gc()
     
     return(psl.rd)
@@ -4783,13 +4794,13 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
   sites <- count(sites, c("posID","value","grouping"), wt_var="weight")
   rm("groups","weight2")
   
-  sites$isCrossover <- FALSE
+  sites$isCrossover <- sites$Candidate <- FALSE
   sites$FoundIn <- sites$grouping
   
   # find overlapping positions & pick the winner based on frequencies #
   sites.gr <- with(sites, GRanges(seqnames=posID, IRanges(start=value,width=1), 
                                   strand="*", grouping, freq))
-  res <- findOverlaps(sites.gr, maxgap=1, ignoreSelf=TRUE, 
+  res <- findOverlaps(sites.gr, maxgap=windowSize, ignoreSelf=TRUE, 
                       ignoreRedundant=FALSE, select="all")
   if(length(res)>0) {
     res <- as.data.frame(res)
@@ -4802,6 +4813,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
                  isBest=all(qfreq>sfreq))
     sites$isCrossover[subset(res,!isBest)$queryHits] <- TRUE  
     sites$FoundIn[res$queryHits] <- res$FoundIn
+    sites$Candidate[res$queryHits] <- TRUE
   }
   sites
 }
