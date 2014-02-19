@@ -762,7 +762,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     hits <- do.call(c,hits)
     if(is(hits,"CompressedIRangesList")) {
       attrs <- unique(names(hits))
-      hits <- sapply(attrs, function(x) unlist(hits[names(hits)==x]))
+      hits <- sapply(attrs, function(x) unlist(hits[names(hits)==x],use.names=F))
       IRangesList(hits)
     } else {
       hits
