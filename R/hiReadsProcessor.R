@@ -441,7 +441,6 @@ chunkize <- function(x, chunkSize = NULL) {
 #' @param trimFrom integer value serving as start point to trim the sequences from. This is calculated internally length barcode+1. Default is NULL.
 #' @param showStats boolean flag denoting whether to show decoding statistics per sample & barcode. Default is FALSE.
 #' @param returnUnmatched boolean flag denoting whether to return unmatched reads. Default is FALSE.
-#' @param dereplicate return dereplicated sequences. Calls \code{\link{dereplicateReads}}, which appends counts=X to sequence names/deflines. Default is FALSE.
 #'
 #' @return DNAStringSet object split by sample name found in barcodesSample.
 #'
@@ -453,7 +452,7 @@ chunkize <- function(x, chunkSize = NULL) {
 #' #splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
 #'
 splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALSE, 
-                           returnUnmatched=FALSE, dereplicate=FALSE) {
+                           returnUnmatched=FALSE) {
   if(is.null(barcodesSample) | length(barcodesSample)==0) {
     stop("No barcodes to samples association vector provided in parameter ",
          "barcodesSample.")
@@ -501,12 +500,7 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
   }
   
   dnaSet <- as.list(split(dnaSet, as.character(sampleNames)))
-  
-  if(dereplicate) {
-    message("Dereplicating reads.")
-    dnaSet <- lapply(dnaSet, dereplicateReads)
-  }
-  
+    
   if(returnUnmatched) {
     dnaSet <- c(dnaSet, "unDecodedSeqs"=unmatched)
   }
@@ -523,7 +517,7 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, showStats=FALS
 #' @param dnaSet DNAStringSet object containing sequences to be decoded or demultiplexed. Default is NULL. If sampleInfo is a SimpleList object, then reads are automatically extracted using \code{\link{read.seqsFromSector}} and parameters defined in sampleInfo object.
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param returnUnmatched return unmatched sequences. Returns results as a list where x[["unDecodedSeqs"]] has culprits. Default is FALSE.
-#' @param dereplicate return dereplicated sequences. Calls \code{\link{dereplicateReads}}, which appends counts=X to sequence names/deflines. Default is FALSE.
+#' @param dereplicate return dereplicated sequences. Calls \code{\link{dereplicateReads}}, which appends counts=X to sequence names/deflines. Default is FALSE. Not applicable for paired end data since it can cause insyncronicity.
 #' @param alreadyDecoded if reads have be already decoded and split into respective files per sample and 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} is set to reading sample files and not the sector files, then set this to TRUE. Default is FALSE. Enabling this parameter skips the barcode detection step and loads the sequence file as is into the sampleInfo object. 
 #'
 #' @return If sampleInfo is an object of SimpleList then decoded sequences are appeneded to respective sample slots, else a named list of DNAStringSet object. If returnUnmatched=TRUE, then x[["unDecodedSeqs"]] has the unmatched sequences.
@@ -651,16 +645,19 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
         if(isPaired) {
           ## no need to store barcode/index reads if alreadyDecoded!
           dnaSet <- list(dnaSet[c("pair1","pair2")])
-        } else {
-          dnaSet <- list(dnaSet)          
+        } else {          
+          if(dereplicate) {
+            dnaSet <- list(dereplicateReads(dnaSet))
+          } else {
+            dnaSet <- list(dnaSet)
+          }
         }
         names(dnaSet) <- as.character(barcodesSample)
       } else {
         if(isPaired) {
           bc <- splitByBarcode(barcodesSample, dnaSet[["barcode"]], 
                                trimFrom=realbarcodelen+1, showStats=showStats, 
-                               returnUnmatched=returnUnmatched, 
-                               dereplicate=dereplicate)
+                               returnUnmatched=returnUnmatched)
           p1 <- sapply(bc, function(x) dnaSet[['pair1']][names(x)])
           p2 <- sapply(bc, function(x) dnaSet[['pair2']][names(x)])
           stopifnot(identical(sapply(bc,length), sapply(p1,length)))
@@ -671,8 +668,10 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, showStats=FALS
         } else {
           dnaSet <- splitByBarcode(barcodesSample, dnaSet, 
                                    trimFrom=realbarcodelen+1, showStats=showStats, 
-                                   returnUnmatched=returnUnmatched, 
-                                   dereplicate=dereplicate)
+                                   returnUnmatched=returnUnmatched)
+          if(dereplicate) {
+            dnaSet <- dereplicateReads(dnaSet)
+          }
         }
       }
       
