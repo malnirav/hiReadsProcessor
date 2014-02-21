@@ -3,7 +3,7 @@
 \title{Split DNAStringSet object using first X number of bases defined by a vector.}
 \usage{
 splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL, showStats = FALSE,
-  returnUnmatched = FALSE, dereplicate = FALSE)
+  returnUnmatched = FALSE)
 }
 \arguments{
   \item{barcodesSample}{a character vector of barcodes to
@@ -22,10 +22,6 @@ splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL, showStats = FALSE,
 
   \item{returnUnmatched}{boolean flag denoting whether to
   return unmatched reads. Default is FALSE.}
-
-  \item{dereplicate}{return dereplicated sequences. Calls
-  \code{\link{dereplicateReads}}, which appends counts=X to
-  sequence names/deflines. Default is FALSE.}
 }
 \value{
 DNAStringSet object split by sample name found in

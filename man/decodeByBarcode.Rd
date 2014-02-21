@@ -37,7 +37,8 @@ decodeByBarcode(sampleInfo, sector = NULL, dnaSet = NULL,
 
   \item{dereplicate}{return dereplicated sequences. Calls
   \code{\link{dereplicateReads}}, which appends counts=X to
-  sequence names/deflines. Default is FALSE.}
+  sequence names/deflines. Default is FALSE. Not applicable
+  for paired end data since it can cause insyncronicity.}
 
   \item{alreadyDecoded}{if reads have be already decoded
   and split into respective files per sample and

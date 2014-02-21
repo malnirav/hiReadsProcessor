@@ -2,21 +2,17 @@
 \alias{read.BAMasPSL}
 \title{Reads a BAM/SAM file and converts it into a PSL like format.}
 \usage{
-read.BAMasPSL(bamFile = NULL, asGRanges = FALSE, removeFile = TRUE)
+read.BAMasPSL(bamFile = NULL, removeFile = TRUE)
 }
 \arguments{
   \item{bamFile}{BAM/SAM filename, or vector of filenames,
   or a pattern of files to import.}
 
-  \item{asGRanges}{return a GRanges object instead of a
-  GAlignments object. Default is FALSE}
-
   \item{removeFile}{remove the file(s) supplied in bamFile
   paramter after importing. Default is FALSE.}
 }
 \value{
-a GAlignments object reflecting psl file type. If
-asGRanges=T, then a GRanges object.
+a GRanges object reflecting psl file type.
 }
 \description{
 Given filename(s), the function reads the BAM/SAM file,
@@ -31,7 +27,7 @@ yield errors or erroneous results.
 \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}},
 \code{\link{read.blast8}}, \code{\link{read.psl}},
 \code{\link{pslToRangedObject}},
-\code{\link{subreadAlignSeqs}}, \code{\link{GAlignments}},
+\code{\link{subreadAlignSeqs}},
 \code{\link{pairUpAlignments}}
 }
 

@@ -1,30 +1,37 @@
 \name{pairUpAlignments}
 \alias{pairUpAlignments}
-\title{Pair upalignments in a GRanges/GAlignments object}
+\title{Pair up alignments in a GRanges object}
 \usage{
-pairUpAlignments(psl.rd = NULL)
+pairUpAlignments(psl.rd = NULL, maxGapLength = 1000, sameStrand = TRUE,
+  parallel = TRUE)
 }
 \arguments{
-  \item{psl.rd}{a GRanges/GAlignments object with qNames
-  ending in "}
+  \item{psl.rd}{a GRanges object with qNames ending in "}
 
-  \item{startWithin}{upper bound limit of where the
-  alignment should start within the query. Default is 3.}
+  \item{maxGapLength}{maximum gap allowed between end of
+  pair1 and start of pair2. Default is 1000 bp.}
 
-  \item{alignRatioThreshold}{cuttoff for (alignment
-  span/read length). Default is 0.7.}
+  \item{sameStrand}{should pairs be aligned to the same
+  strand or in same orientationin the reference genome?
+  Default is TRUE. This is 'TRUE' because pair2 reads are
+  reverseComplemented when reading in data in
+  \code{\link{findBarcodes}}}
 
-  \item{genomicPercentIdentity}{cuttoff for
-  (1-(misMatches/matches)). Default is 0.98}
+  \item{parallel}{use parallel backend to perform
+  calculation with \code{\link{foreach}}. Defaults to TRUE.
+  If no parallel backend is registered, then a serial
+  version of foreach is ran using
+  \code{\link{registerDoSEQ()}}.}
 }
 \value{
-a GRanges/GAlignments object with paired up reads
+a GRanges object with reads paired up denoted by "paired"
+column. Improper pairs or unpaired reads are returned with
+"paired" column as FALSE.
 }
 \description{
-Given a GRanges/GAlignment object from
-\code{\link{read.BAMasPSL}}, the function uses specified
-filtering parameters to pair up reads where the definition
-line or qName ends with "
+Given a GRanges object, the function uses specified
+gaplength parameter to pair up reads where the qName column
+ends with "
 }
 \examples{
 #pairUpAlignments()
@@ -34,7 +41,6 @@ line or qName ends with "
 \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}},
 \code{\link{read.blast8}}, \code{\link{read.psl}},
 \code{\link{getIntegrationSites}},
-\code{\link{subreadAlignSeqs}}, \code{\link{GAlignments}},
-\code{\link{read.BAMasPSL}}
+\code{\link{subreadAlignSeqs}}, \code{\link{read.BAMasPSL}}
 }
 

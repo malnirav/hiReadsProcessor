@@ -5,7 +5,7 @@
 subreadAlignSeqs(query = NULL, subject = NULL, outputfile = "allhits",
   subreadParameters = c(nsubreads = 15, nBestLocations = 10, nthreads = 4,
   indels = 10, unique = "FALSE", reportFusions = "TRUE", tieBreakHamming =
-  "TRUE"))
+  "FALSE"))
 }
 \arguments{
   \item{query}{an object of DNAStringSet, a character
@@ -29,7 +29,7 @@ subreadAlignSeqs(query = NULL, subject = NULL, outputfile = "allhits",
   readfile1, readfile2, input_format, output_format,
   output_file. Default is: c(nsubreads=15,
   nBestLocations=10, nthreads=4, indels=10, unique="FALSE",
-  reportFusions="TRUE", tieBreakHamming="TRUE")}
+  reportFusions="TRUE", tieBreakHamming="FALSE")}
 }
 \value{
 name of the BAM file holding the hits. If parameters

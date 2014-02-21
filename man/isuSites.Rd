@@ -20,7 +20,7 @@ isuSites(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
   \item{grouping}{additional vector of grouping by which to
   pool the rows (i.e. samplenames). Default is NULL.}
 
-  \item{psl.rd}{a GRanges/GAlignment object returned from
+  \item{psl.rd}{a GRanges object returned from
   \code{\link{clusterSites}}. Default is NULL.}
 
   \item{maxgap}{max distance allowed between two
@@ -37,7 +37,7 @@ isuSites(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
 \value{
 a data frame with binned values and isuID shown alongside
 the original input. If psl.rd parameter is defined, then a
-GRanges/GAlignment object where object is first filtered by
+GRanges object where object is first filtered by
 clusterTopHit column and the isuID column appended at the
 end.
 }

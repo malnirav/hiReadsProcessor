@@ -20,7 +20,7 @@ otuSites2(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
   \item{grouping}{additional vector of grouping by which to
   pool the rows (i.e. samplenames). Default is NULL.}
 
-  \item{psl.rd}{a GRanges/GAlignment object returned from
+  \item{psl.rd}{a GRanges object returned from
   \code{\link{clusterSites}}. Default is NULL.}
 
   \item{maxgap}{max distance allowed between two
@@ -37,7 +37,7 @@ otuSites2(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
 \value{
 a data frame with binned values and otuID shown alongside
 the original input. If psl.rd parameter is defined, then a
-GRanges/GAlignment object.
+GRanges object.
 }
 \description{
 Given a group of values or genomic positions per

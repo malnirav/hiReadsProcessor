@@ -24,15 +24,14 @@ crossOverCheck(posID = NULL, value = NULL, grouping = NULL,
   \item{windowSize}{size of window within which values
   should be checked. Default is 1.}
 
-  \item{psl.rd}{a GRanges/GAlignment object. Default is
-  NULL.}
+  \item{psl.rd}{a GRanges object. Default is NULL.}
 }
 \value{
 a data frame of the original input with columns denoting
 whether a given row was a Candidate and isCrossover. If
-psl.rd parameter is defined, then a GRanges/GAlignment
-object with 'isCrossover', 'Candidate', and 'FoundIn'
-columns appended at the end.
+psl.rd parameter is defined, then a GRanges object with
+'isCrossover', 'Candidate', and 'FoundIn' columns appended
+at the end.
 }
 \description{
 Given a group of discrete factors (i.e. position ids) and
