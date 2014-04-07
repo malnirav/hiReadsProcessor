@@ -4887,14 +4887,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
       value <- start(psl.rd)
       good.row <- rep(TRUE, length(value))
     }
-    
-    isthere <- grepl("clusterTopHit", colnames(mcols(psl.rd)), ignore.case=TRUE)
-    if(any(isthere)) { ## see if clusterTopHit column exists
-      message("Found 'clusterTopHit' column in the data. ",
-              "Using these rows for the calculation.")
-      good.row <- good.row & !mcols(psl.rd)[[which(isthere)]]
-    }
-    
+       
     isthere <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)
     if(any(isthere)) { ## see if multihit column exists
       message("Found 'isMultiHit' column in the data. ",
