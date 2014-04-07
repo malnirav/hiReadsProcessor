@@ -1,7 +1,7 @@
 Package: hiReadsProcessor
 Title: Functions to process LM-PCR reads from 454/Solexa data.
-Version: 0.2.10
-Date: 2014-02-21
+Version: 0.2.11
+Date: 2014-04-07
 Author: Nirav V Malani <malnirav@gmail.com>
 Maintainer: Nirav V Malani <malnirav@gmail.com>
 Description: hiReadsProcessor contains set of functions which allow users to

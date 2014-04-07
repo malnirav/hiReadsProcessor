@@ -3193,7 +3193,7 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE) {
   mcols(hits)$tNumInsert <- sapply(bore, length)
   mcols(hits)$tBaseInsert <- sapply(width(bore), sum)
   
-  hits.gr <- as(hits,"GRanges")
+  hits.gr <- as(hits, "GRanges")
   mcols(hits.gr) <- cbind(DataFrame(cigar=cigar(hits), ngap=ngap(hits)),
                           mcols(hits))
   hits <- hits.gr
@@ -3223,7 +3223,7 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE) {
 #' #pairUpAlignments()
 #' #pairUpAlignments()
 #'
-pairUpAlignments <- function(psl.rd=NULL, maxGapLength=1000, 
+pairUpAlignments <- function(psl.rd=NULL, maxGapLength=2500, 
                              sameStrand=TRUE, parallel=TRUE) {
   
   stopifnot("qName" %in% names(mcols(psl.rd)))
@@ -3831,6 +3831,57 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
   return(hits)
 }
 
+#' Write PSL file from dataframe or GRanges
+#'
+#' Given a data frame or GRanges object, the function write a tab deliminated PSL file
+#'
+#' @param x data frame or GRanges object with required columns for psl file format.
+#' @param filename name for the output PSL file. Default is "out.psl"
+#' @param header include PSL header line. Default is FALSE.
+#' @param includeOtherCols nclude other non PSL specific columns from x in the output. Default is FALSE.
+#'
+#' @return name of the output PSL file
+#'
+#' @seealso \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
+#'
+#' @export
+#'
+write.psl <- function(x, filename="out.psl", header=FALSE, includeOtherCols=FALSE) {
+  if(is.null(x) | length(x)==0) {
+    stop("x parameter is empty or of length 0.")
+  }
+  
+  if(!is(x, "data.frame")) {
+    isGRanges <- is(x, "GRanges")
+    x <- as.data.frame(x)
+    if(isGRanges) {
+      names(x)[1:3] <- c("tName","tStart","tEnd")
+      x$width <- NULL
+    }
+  }
+  
+  ## PSL columns ##
+  cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", 
+            "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", "qSize", 
+            "qStart", "qEnd", "tName", "tSize", "tStart", "tEnd", "blockCount", 
+            "blockSizes", "qStarts", "tStarts")
+
+  ## missing columns ##
+  missing <- setdiff(cols, names(x))   
+  if(length(missing)>0) {
+    stop("Following columns missing from the input: ", paste(missing,collapse=", "))
+  }
+  
+  if(includeOtherCols) {
+    cols <- union(cols, names(x))  
+  }
+  
+  write.table(x[,cols], file=filename, sep="\t", row.names=F, quote=F, 
+              col.names=header)
+  
+  return(filename)
+}
+
 #' Read blast8 file(s) outputted by BLAT
 #'
 #' Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
@@ -4053,6 +4104,11 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
              "cluster best hit without 'qEnd' or 'score' column present in ",
              "the object supplied in psl.rd :(")
       }            
+    }
+    
+    if(length(which(isthere))>1) {
+    	stop("multiple score based columns found: ", 
+    		 paste(colnames(mcols(psl.rd))[which(isthere)], collapse=","))
     }
     
     good.row <- rep(TRUE, length(psl.rd))
@@ -4816,13 +4872,7 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
   } else {     
-    
-    if(!"clusterTopHit" %in% colnames(mcols(psl.rd)) | 
-         !"clusteredPosition" %in% colnames(mcols(psl.rd))) {
-      stop("The object supplied in psl.rd parameter does not have 'clusterTopHit' ",
-           "or 'clusteredPosition' column in it. Did you run clusterSites() on it?")
-    }
-    
+        
     posID <- paste0(as.character(seqnames(psl.rd)), as.character(strand(psl.rd)))
     if("clusteredPosition" %in% colnames(mcols(psl.rd))) {
       message("Using clusteredPosition column from psl.rd as the value parameter.")
@@ -4836,6 +4886,13 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
       message("Using start(psl.rd) as the value parameter.")
       value <- start(psl.rd)
       good.row <- rep(TRUE, length(value))
+    }
+    
+    isthere <- grepl("clusterTopHit", colnames(mcols(psl.rd)), ignore.case=TRUE)
+    if(any(isthere)) { ## see if clusterTopHit column exists
+      message("Found 'clusterTopHit' column in the data. ",
+              "Using these rows for the calculation.")
+      good.row <- good.row & !mcols(psl.rd)[[which(isthere)]]
     }
     
     isthere <- grepl("isMultiHit", colnames(mcols(psl.rd)), ignore.case=TRUE)

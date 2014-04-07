@@ -2,7 +2,7 @@
 \alias{pairUpAlignments}
 \title{Pair up alignments in a GRanges object}
 \usage{
-pairUpAlignments(psl.rd = NULL, maxGapLength = 1000, sameStrand = TRUE,
+pairUpAlignments(psl.rd = NULL, maxGapLength = 2500, sameStrand = TRUE,
   parallel = TRUE)
 }
 \arguments{

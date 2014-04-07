@@ -1,0 +1,32 @@
+\name{write.psl}
+\alias{write.psl}
+\title{Write PSL file from dataframe or GRanges}
+\usage{
+write.psl(x, filename = "out.psl", header = FALSE,
+  includeOtherCols = FALSE)
+}
+\arguments{
+  \item{x}{data frame or GRanges object with required
+  columns for psl file format.}
+
+  \item{filename}{name for the output PSL file. Default is
+  "out.psl"}
+
+  \item{header}{include PSL header line. Default is FALSE.}
+
+  \item{includeOtherCols}{nclude other non PSL specific
+  columns from x in the output. Default is FALSE.}
+}
+\value{
+name of the output PSL file
+}
+\description{
+Given a data frame or GRanges object, the function write a
+tab deliminated PSL file
+}
+\seealso{
+\code{\link{read.psl}}, \code{\link{blatSeqs}},
+\code{\link{read.blast8}}, \code{\link{read.BAMasPSL}},
+\code{\link{pslToRangedObject}}
+}
+
