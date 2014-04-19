@@ -1,10 +1,11 @@
-#' Functions to process LM-PCR reads from 454/Solexa data.
+#' Functions to process LM-PCR reads from 454/Illumina data.
 #'
-#' hiReadsProcessor contains set of functions which allow users to process LM-PCR sequence data coming out of the 454/Solexa sequencer. Given an excel file containing parameters for demultiplexing and sample metadata, the functions automate trimming of adaptors and identification of the genomic product. In addition, if IntSites MySQL database is setup, the sequence attrition is loaded into respective tables for post processing setup and analysis.
+#' hiReadsProcessor contains set of functions which allow users to process single-end LM-PCR sequence data coming out of the 454/Illumina sequencer. Given an excel/txt file containing parameters for demultiplexing and sample metadata, the functions automate trimming of adaptors and identification of the genomic product. In addition, if IntSites MySQL database is setup, the sequence attrition is loaded into respective tables for post processing setup and analysis.
 #'
-#' @import Biostrings GenomicRanges foreach iterators RMySQL xlsx plyr Rsubread ShortRead
+#' @import foreach iterators xlsx Rsubread ShortRead hiAnnotator sonicLength  
 #' @docType package
 #' @name hiReadsProcessor
+#' @author Nirav V Malani
 NULL
 
 #' Read contents of a sequencing folder and make a SimpleList object
@@ -3113,8 +3114,9 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
 #'
 #' @param bamFile BAM/SAM filename, or vector of filenames, or a pattern of files to import.
 #' @param removeFile remove the file(s) supplied in bamFile paramter after importing. Default is FALSE.
+#' @param asGRanges return a GRanges object. Default is TRUE
 #'
-#' @return a GRanges object reflecting psl file type.
+#' @return a GRanges or GAlignments object reflecting psl file type.
 #'
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}, \code{\link{pairUpAlignments}}
@@ -3125,7 +3127,7 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
 #' #read.BAMasPSL(bamFile="processed.*.bam$")
 #' #read.BAMasPSL(bamFile=c("sample1hits.sam","sample2hits.sam"))
 #'
-read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE) {
+read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE, asGRanges=TRUE) {
   if(is.null(bamFile) | length(bamFile)==0) {
     stop("bamFile parameter empty. Please supply a filename to be read.")
   }
@@ -3193,11 +3195,14 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE) {
   mcols(hits)$tNumInsert <- sapply(bore, length)
   mcols(hits)$tBaseInsert <- sapply(width(bore), sum)
   
-  hits.gr <- as(hits, "GRanges")
-  mcols(hits.gr) <- cbind(DataFrame(cigar=cigar(hits), ngap=ngap(hits)),
-                          mcols(hits))
-  hits <- hits.gr
-  rm(hits.gr)
+  if(asGRanges) {
+    message("Converting to GRanges object...")
+    hits.gr <- as(hits, "GRanges")
+    mcols(hits.gr) <- cbind(DataFrame(cigar=cigar(hits), ngap=njunc(hits)),
+                            mcols(hits))
+    hits <- hits.gr
+    rm(hits.gr)    
+  }
   
   if(removeFile) { file.remove(bamFile) }
   
