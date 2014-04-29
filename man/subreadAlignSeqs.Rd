@@ -47,16 +47,19 @@ read in by \code{\link{read.BAMasPSL}}. The workhorse
 function doing the alignment is \code{\link{align}}.
 }
 \examples{
-#indexPath <- "/usr/local/genomeIndexes/subread/hg18/hg18.subreads.index"
-#subreadAlignSeqs(dnaSeqs, indexPath, "results")
-#subreadAlignSeqs("mySeqs.fa", indexPath, "mySeqs")
-#subreadAlignSeqs("my.*.fa", indexPath)
+\dontrun{
+indexPath <- "/usr/local/genomeIndexes/subread/hg18/hg18.subreads.index"
+buildindex(basename=indexPath, reference="/usr/local/genomeIndexes/hg18.fa", memory=4000, TH_subread=1000)
+subreadAlignSeqs(dnaSeqs, indexPath, "results")
+subreadAlignSeqs("mySeqs.fa", indexPath, "mySeqs")
+subreadAlignSeqs("my.*.fa", indexPath)
+}
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}},
 \code{\link{vpairwiseAlignSeqs}}, \code{\link{blatSeqs}},
 \code{\link{read.psl}}, \code{\link{read.BAMasPSL}},
 \code{\link{read.blast8}}, \code{\link{splitSeqsToFiles}},
-\code{\link{align}}
+\code{\link{Rsubread::align}}
 }
 

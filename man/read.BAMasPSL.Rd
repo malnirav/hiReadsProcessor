@@ -2,7 +2,7 @@
 \alias{read.BAMasPSL}
 \title{Reads a BAM/SAM file and converts it into a PSL like format.}
 \usage{
-read.BAMasPSL(bamFile = NULL, removeFile = TRUE)
+read.BAMasPSL(bamFile = NULL, removeFile = TRUE, asGRanges = TRUE)
 }
 \arguments{
   \item{bamFile}{BAM/SAM filename, or vector of filenames,
@@ -10,9 +10,12 @@ read.BAMasPSL(bamFile = NULL, removeFile = TRUE)
 
   \item{removeFile}{remove the file(s) supplied in bamFile
   paramter after importing. Default is FALSE.}
+
+  \item{asGRanges}{return a GRanges object. Default is
+  TRUE}
 }
 \value{
-a GRanges object reflecting psl file type.
+a GRanges or GAlignments object reflecting psl file type.
 }
 \description{
 Given filename(s), the function reads the BAM/SAM file,

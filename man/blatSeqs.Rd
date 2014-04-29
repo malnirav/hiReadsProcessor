@@ -5,7 +5,8 @@
 blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE,
   port = 5560, host = "localhost", parallel = TRUE, gzipResults = TRUE,
   blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 5, tileSize =
-  10, repMatch = 112312, dots = 50, q = "dna", t = "dna", out = "psl"))
+  10, repMatch = 112312, dots = 50, maxDnaHits = 10, q = "dna", t = "dna", out =
+  "psl"))
 }
 \arguments{
   \item{query}{an object of DNAStringSet, a character
@@ -40,12 +41,12 @@ blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE,
   passed to gfClient/BLAT command except for 'nohead'
   option. Default: c(minIdentity=70, minScore=5,
   stepSize=5, tileSize=10, repMatch=112312, dots=50,
-  q="dna", t="dna", out="psl"). Be sure to only pass
-  parameters accepted by either BLAT or gfClient. For
-  example, if repMatch or stepSize parameters are specified
-  when using gfClient, then the function will simply ignore
-  them! The defaults are configured to align a 19bp
-  sequence with 70\% identity.}
+  maxDnaHits=10, q="dna", t="dna", out="psl"). Be sure to
+  only pass parameters accepted by either BLAT or gfClient.
+  For example, if repMatch or stepSize parameters are
+  specified when using gfClient, then the function will
+  simply ignore them! The defaults are configured to align
+  a 19bp sequence with 70\% identity.}
 }
 \value{
 a character vector of psl filenames. Each file provided is

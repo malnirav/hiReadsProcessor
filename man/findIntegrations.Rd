@@ -5,8 +5,8 @@
 findIntegrations(sampleInfo, seqType = NULL, aligner = "BLAT",
   port = 5560, host = "localhost", genomeIndices = NULL,
   parallel = TRUE, samplenames = NULL, blatParameters = c(minIdentity =
-  70, minScore = 5, stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50, q
-  = "dna", t = "dna", out = "psl"))
+  70, minScore = 5, stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50,
+  maxDnaHits = 10, out = "psl", q = "dna", t = "dna"))
 }
 \arguments{
   \item{sampleInfo}{sample information SimpleList object
