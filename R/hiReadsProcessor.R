@@ -7,7 +7,7 @@
 #' In addition, if IntSites MySQL database is setup, the sequence attrition is 
 #' loaded into respective tables for post processing setup and analysis.
 #'
-#' @import foreach iterators Rsubread hiAnnotator sonicLength plyr
+#' @import foreach iterators Rsubread Rbowtie hiAnnotator sonicLength plyr
 #' @docType package
 #' @name hiReadsProcessor
 #' @author Nirav V Malani
@@ -1253,7 +1253,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
   
   if(hits[[1]] < hits[[2]]) {
     message("There were less/no good hits found for pattern ", patternSeq,
-            "than its reverse complement...", patternSeq.rc,
+            " than its reverse complement...", patternSeq.rc,
             "\nUsing the latter to perform the searching.")
     patternSeq <- patternSeq.rc
   }
@@ -1287,8 +1287,8 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
                                                ".pair2",".pair1"))])<=5      
     } else {
       if(isFindLinker) {
-        toprint <- data.frame("Total"=sapply(sapply(linkerTrimmed[!listed], 
-                                                    "[[", "hits"), length))
+        toprint <- as.data.frame(sapply(sapply(linkerTrimmed[!listed], 
+                                               "[[", "hits"), length))
       } else {
         toprint <- as.data.frame(sapply(get(trimmedObj)[!listed], length))
       }
@@ -1319,23 +1319,58 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 
 #' Find the 5' primers and add results to SampleInfo object. 
 #'
-#' Given a sampleInfo object, the function finds 5' primers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of primer portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming.
+#' Given a sampleInfo object, the function finds 5' primers for each sample per 
+#' sector and adds the results back to the object. This is a specialized 
+#' function which depends on many other functions shown in 'see also section' 
+#' to perform specialized trimming of 5' primer/adaptor found in the sampleInfo 
+#' object. The sequence itself is never trimmed but rather coordinates of primer
+#' portion is recorded back to the object and used subsequently by 
+#' \code{\link{extractSeqs}} function to perform the trimming.
 #'
-#' @param sampleInfo sample information SimpleList object outputted from \code{\link{decodeByBarcode}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
-#' @param alignWay method to utilize for detecting the primers. One of following: "slow" (Default), or "fast". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower.
+#' @param sampleInfo sample information SimpleList object outputted from 
+#' \code{\link{decodeByBarcode}}, which holds decoded sequences for samples 
+#' per sector/quadrant along with information of sample to primer associations.
+#' @param alignWay method to utilize for detecting the primers. One of 
+#' following: "slow" (Default), or "fast". Fast, calls 
+#' \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its 
+#' core, which is less accurate with indels and mismatches but much faster. 
+#' Slow, calls \code{\link{pairwiseAlignSeqs}} and uses 
+#' \code{\link{pairwiseAlignment}} at its core, which is accurate with indels 
+#' and mismatches but slower.
 #' @param showStats toggle output of search statistics. Default is FALSE.
-#' @param doRC perform reverse complement search of the defined pattern/primer. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector. Use parallel2 for parallelization at sequence level.
-#' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
-#' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
-#' @param parallel2 perform parallelization is sequence level. Default is FALSE. Useful in cases where each sector has only one sample with numerous sequences.
-#' @param ... extra parameters to be passed to either \code{\link{vpatternMatch}} or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.
+#' @param doRC perform reverse complement search of the defined pattern/primer. 
+#' Default is FALSE.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, 
+#' then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' Parllelization is done at sample level per sector. Use parallel2 for 
+#' parallelization at sequence level.
+#' @param samplenames a vector of samplenames to process. Default is NULL, which
+#' processes all samples from sampleInfo object.
+#' @param bypassChecks skip checkpoints which detect if something was odd with 
+#' the data? Default is FALSE.
+#' @param parallel2 perform parallelization is sequence level. Default is FALSE.
+#' Useful in cases where each sector has only one sample with numerous sequences.
+#' @param ... extra parameters to be passed to either \code{\link{vpatternMatch}} 
+#' or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.
 #'
-#' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: primed
+#' @return a SimpleList object similar to sampleInfo paramter supplied with new 
+#' data added under each sector and sample. New data attributes include: primed
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note 
+#' \itemize{
+#'  \item For paired end data, qualityThreshold for pair 2 is decreased by 
+#'  0.10 to increase chances of matching primer sequence.
+#'  \item If parallel=TRUE, then be sure to have a paralle backend registered 
+#'  before running the function. One can use any of the following libraries 
+#'  compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
+#'  For example: library(doMC); registerDoMC(2)
+#' }
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+#' \code{\link{extractFeature}}, \code{\link{extractSeqs}}, 
+#' \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, 
+#' \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 #'
 #' @export
 #'
@@ -1414,15 +1449,15 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                paired=iter(isPaired[samplesToProcess]),
                                qualT=iter(primerIdentity[samplesToProcess]),                               
                                .inorder=TRUE, .errorhandling="pass", 
-                               .export=c("doRC", "alignWay", "vpairwiseAlignSeqs",
-                                         "pairwiseAlignSeqs", "parallel2"), 
+                               .export=c("doRC","alignWay","vpairwiseAlignSeqs",
+                                         "pairwiseAlignSeqs","parallel2"), 
                                .packages=c("Biostrings","foreach")) %dopar% {
                                  if(paired) {
                                    if(alignWay=="fast") {
                                      p1 <- vpairwiseAlignSeqs(subjectSeqs$pair1,
                                                               patternSeq, 
                                                               "left", 
-                                                              (qualT-.05), 
+                                                              (qualT-0.05), 
                                                               doRC=doRC, 
                                                               parallel=parallel2,
                                                               ...)
@@ -1441,14 +1476,15 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                      p2 <- vpairwiseAlignSeqs(subjectSeqs$pair2,
                                                               patternSeq,
                                                               "middle", 
-                                                              (qualT-.05), 
+                                                              (qualT-0.15), 
                                                               doRC=doRC, 
                                                               parallel=parallel2,
                                                               ...)
                                    } else if (alignWay=="slow") {
                                      p2 <- pairwiseAlignSeqs(subjectSeqs$pair2,
                                                              patternSeq,
-                                                             "middle", qualT, 
+                                                             "middle", 
+                                                             (qualT-0.1), 
                                                              doRC=doRC, 
                                                              parallel=parallel2,
                                                              ...)
@@ -1457,7 +1493,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                  } else {
                                    if(alignWay=="fast") {
                                      vpairwiseAlignSeqs(subjectSeqs, patternSeq, 
-                                                        "left", (qualT-.05), 
+                                                        "left", (qualT-0.05), 
                                                         doRC=doRC, 
                                                         parallel=parallel2, ...)
                                    } else if (alignWay=="slow") {
@@ -1486,19 +1522,22 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       }
       
       cleanit <- gc()
-      
-      if(!bypassChecks | showStats) {
-        eval(expression(trimmedObj <- "primerTrimmed", rawObj <- "decoded", 
-                        featureTrim <- "Primer", 
-                        valueColname <- "PercOfDecoded"))
-        .showFindStats()
+
+      if(length(primerTrimmed)>0) {
+        if(!bypassChecks | showStats) {
+          eval(expression(trimmedObj <- "primerTrimmed", rawObj <- "decoded", 
+                          featureTrim <- "Primer", 
+                          valueColname <- "PercOfDecoded"))
+          .showFindStats()
+        }
+        
+        ## modify metadata attribute, write primer coordinates back to 
+        ## sampleInfo object & trim
+        message("Adding primer info back to the object")
+        sampleInfo <- addFeature(sampleInfo, sector, names(primerTrimmed),
+                                 feature="primed", value=primerTrimmed)
       }
       
-      ## modify metadata attribute, write primer coordinates back to 
-      ## sampleInfo object & trim
-      message("Adding primer info back to the object")
-      sampleInfo <- addFeature(sampleInfo, sector, names(primerTrimmed),
-                               feature="primed", value=primerTrimmed)
       rm(primerTrimmed)
       cleanit <- gc()
     }
@@ -1509,22 +1548,55 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 
 #' Find the 5' LTRs and add results to SampleInfo object. 
 #'
-#' Given a sampleInfo object, the function finds 5' LTR following the primer for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 5' viral LTRs found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of LTR portion is added to primer coordinates and recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming. This function heavily relies on \code{\link{pairwiseAlignSeqs}}.
+#' Given a sampleInfo object, the function finds 5' LTR following the primer for
+#' each sample per sector and adds the results back to the object. This is a 
+#' specialized function which depends on many other functions shown in 'see also
+#' section' to perform specialized trimming of 5' viral LTRs found in the 
+#' sampleInfo object. The sequence itself is never trimmed but rather 
+#' coordinates of LTR portion is added to primer coordinates and recorded back 
+#' to the object and used subsequently by \code{\link{extractSeqs}} function to 
+#' perform the trimming. This function heavily relies on 
+#' \code{\link{pairwiseAlignSeqs}}.
 #'
-#' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}}, which holds decoded and primed sequences for samples per sector/quadrant along with information of sample to LTR associations.
-#' @param showStats toggle output of search statistics. Default is FALSE. For paired end data, stats for "pair2" is relative to decoded and/or primed reads.
-#' @param doRC perform reverse complement search of the defined pattern/LTR sequence. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
-#' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
-#' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
-#' @param parallel2 perform parallelization is sequence level. Default is FALSE. Useful in cases where each sector has only one sample with numerous sequences.
+#' @param sampleInfo sample information SimpleList object outputted from 
+#' \code{\link{findPrimers}}, which holds decoded and primed sequences for 
+#' samples per sector/quadrant along with information of sample to LTR 
+#' associations.
+#' @param showStats toggle output of search statistics. Default is FALSE. 
+#' For paired end data, stats for "pair2" is relative to decoded and/or 
+#' primed reads.
+#' @param doRC perform reverse complement search of the defined pattern/LTR 
+#' sequence. Default is FALSE.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version of foreach is ran using 
+#' \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per 
+#' sector.
+#' @param samplenames a vector of samplenames to process. Default is NULL, 
+#' which processes all samples from sampleInfo object.
+#' @param bypassChecks skip checkpoints which detect if something was odd with 
+#' the data? Default is FALSE.
+#' @param parallel2 perform parallelization is sequence level. Default is FALSE. 
+#' Useful in cases where each sector has only one sample with numerous sequences.
 #'
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
-#' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: LTRed
+#' @return a SimpleList object similar to sampleInfo paramter supplied with new 
+#' data added under each sector and sample. New data attributes include: LTRed
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note 
+#' \itemize{
+#'  \item For paired end data, qualityThreshold for pair 2 is decreased by 
+#'  0.05 to increase chances of matching LTR sequence.
+#'  \item If parallel=TRUE, then be sure to have a paralle backend registered 
+#'  before running the function. One can use any of the following libraries 
+#'  compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
+#'  For example: library(doMC); registerDoMC(2)
+#' }
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+#' \code{\link{extractFeature}}, \code{\link{extractSeqs}}, 
+#' \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, 
+#' \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 #'
 #' @export
 #'
@@ -1545,7 +1617,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
   cleanit <- gc()
   
   if(length(sectorsPrimed)==0) {
-    stop("No primed information found in sampleInfo...did you run findPrimers()?")
+    stop("No primed information found in sampleInfo. 
+         Did you run findPrimers()?")
   }
   
   for(sector in sectorsPrimed) {
@@ -1575,7 +1648,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       message("Skipping samples ", paste(skip.samples,collapse=","))
       sampleInfo <- addFeature(sampleInfo, sector, skip.samples, 
                                feature="LTRed", 
-                               value=structure(rep("SKIPPED",length(skip.samples)), 
+                               value=structure(rep("SKIPPED",
+                                                   length(skip.samples)), 
                                                names=skip.samples))
     }
     
@@ -1586,7 +1660,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
                                    feature="primed")[[sector]]
       
       ## find paired end samples...
-      ## add reads which aren't primed in pair2 for cases where reads were long, etc.
+      ## add reads which aren't primed in pair2 for cases where reads were long
       isPaired <- extractFeature(sampleInfo, sector, samplesToProcess,
                                  feature='pairedend')[[sector]]
       if(any(isPaired)) {
@@ -1624,7 +1698,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
                                 
                                 p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, 
                                                         patternSeq, "middle", 
-                                                        qualityThreshold=qualT, 
+                                                        qualityThreshold=
+                                                          (qualT-0.05), 
                                                         doRC=doRC, 
                                                         parallel=parallel2, ...)
                                 
@@ -1657,46 +1732,50 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       
       cleanit <- gc()
       
-      if(!bypassChecks | showStats) {
-        eval(expression(trimmedObj <- "ltrTrimmed", rawObj <- "primerTrimmed", 
-                        featureTrim <- "LTR", valueColname <- "PercOfPrimed"))
-        .showFindStats()
-      }
-      
-      ## modify metadata attribute, add LTR bit coordinates to primer and write back to sampleInfo object & trim...remember everything is relative to the entire read length!
-      message("Adding LTR info back to the object")
-      for(x in names(ltrTrimmed)) {
-        cat(".")
-        if(isPaired[[x]]) {
-          worked <- sapply(ltrTrimmed[[x]],length)>0
-          if(any(worked)) {
-            for(pair in names(which(worked))) {
-              primed <- sampleInfo$sectors[[sector]]$samples[[x]]$primed[[pair]]
-              rows <- names(ltrTrimmed[[x]][[pair]]) %in% names(primed)
-              primed.end <- end(primed[names(ltrTrimmed[[x]][[pair]][rows])])
+      if(length(ltrTrimmed)>0) {
+        if(!bypassChecks | showStats) {
+          eval(expression(trimmedObj <- "ltrTrimmed", rawObj <- "primerTrimmed", 
+                          featureTrim <- "LTR", valueColname <- "PercOfPrimed"))
+          .showFindStats()
+        }
+        
+        ## modify metadata attribute, add LTR bit coordinates to primer and write 
+        ## back to sampleInfo object & trim...remember everything is relative to 
+        ## the entire read length!
+        message("Adding LTR info back to the object")
+        for(x in names(ltrTrimmed)) {
+          cat(".")
+          if(isPaired[[x]]) {
+            worked <- sapply(ltrTrimmed[[x]],length)>0
+            if(any(worked)) {
+              for(pair in names(which(worked))) {
+                primed <- sampleInfo$sectors[[sector]]$samples[[x]]$primed[[pair]]
+                rows <- names(ltrTrimmed[[x]][[pair]]) %in% names(primed)
+                primed.end <- end(primed[names(ltrTrimmed[[x]][[pair]][rows])])
+                rm(primed)
+                
+                end(ltrTrimmed[[x]][[pair]][rows]) <- 
+                  end(ltrTrimmed[[x]][[pair]][rows]) + primed.end              
+                start(ltrTrimmed[[x]][[pair]][rows]) <- 
+                  start(ltrTrimmed[[x]][[pair]][rows]) + primed.end              
+                rm(primed.end)
+              }
+            }
+            sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
+          } else {
+            if(length(ltrTrimmed[[x]])>0) {
+              primed <- sampleInfo$sectors[[sector]]$samples[[x]]$primed
+              primed.end <- end(primed[names(ltrTrimmed[[x]])])
               rm(primed)
               
-              end(ltrTrimmed[[x]][[pair]][rows]) <- 
-                end(ltrTrimmed[[x]][[pair]][rows]) + primed.end              
-              start(ltrTrimmed[[x]][[pair]][rows]) <- 
-                start(ltrTrimmed[[x]][[pair]][rows]) + primed.end              
+              end(ltrTrimmed[[x]]) <- end(ltrTrimmed[[x]]) + primed.end
+              start(ltrTrimmed[[x]]) <- start(ltrTrimmed[[x]]) + primed.end
               rm(primed.end)
+              
+              sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
             }
-          }
-          sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
-        } else {
-          if(length(ltrTrimmed[[x]])>0) {
-            primed <- sampleInfo$sectors[[sector]]$samples[[x]]$primed
-            primed.end <- end(primed[names(ltrTrimmed[[x]])])
-            rm(primed)
-            
-            end(ltrTrimmed[[x]]) <- end(ltrTrimmed[[x]]) + primed.end
-            start(ltrTrimmed[[x]]) <- start(ltrTrimmed[[x]]) + primed.end
-            rm(primed.end)
-            
-            sampleInfo$sectors[[sector]]$samples[[x]]$LTRed <- ltrTrimmed[[x]]
-          }
-        }        
+          }        
+        }
       }
       rm("ltrTrimmed","primerTrimmed")
       cleanit <- gc()
@@ -1708,22 +1787,59 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 
 #' Find the 3' linkers and add results to SampleInfo object. 
 #'
-#' Given a sampleInfo object, the function finds 3' linkers for each sample per sector and adds the results back to the object. This is a specialized function which depends on many other functions shown in 'see also section' to perform specialized trimming of 3' primer/linker adaptor sequence found in the sampleInfo object. The sequence itself is never trimmed but rather coordinates of linker portion is recorded back to the object and used subsequently by \code{\link{extractSeqs}} function to perform the trimming. This function heavily relies on either \code{\link{pairwiseAlignSeqs}} or \code{\link{primerIDAlignSeqs}} depending upon whether linkers getting aligned have primerID in it or not.
+#' Given a sampleInfo object, the function finds 3' linkers for each sample per 
+#' sector and adds the results back to the object. This is a specialized 
+#' function which depends on many other functions shown in 'see also section' to
+#' perform specialized trimming of 3' primer/linker adaptor sequence found in 
+#' the sampleInfo object. The sequence itself is never trimmed but rather 
+#' coordinates of linker portion is recorded back to the object and used 
+#' subsequently by \code{\link{extractSeqs}} function to perform the trimming. 
+#' This function heavily relies on either \code{\link{pairwiseAlignSeqs}} or 
+#' \code{\link{primerIDAlignSeqs}} depending upon whether linkers getting 
+#' aligned have primerID in it or not.
 #'
-#' @param sampleInfo sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.
+#' @param sampleInfo sample information SimpleList object outputted from 
+#' \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded 
+#' sequences for samples per sector/quadrant along with information of sample 
+#' to primer associations.
 #' @param showStats toggle output of search statistics. Default is FALSE.
-#' @param doRC perform reverse complement search of the defined pattern/linker sequence. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
-#' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
-#' @param bypassChecks skip checkpoints which detect if something was odd with the data? Default is FALSE.
-#' @param parallel2 perform parallelization is sequence level. Default is FALSE. Useful in cases where each sector has only one sample with numerous sequences.
+#' @param doRC perform reverse complement search of the defined pattern/linker 
+#' sequence. Default is FALSE.
+#' @param parallel use parallel backend to perform calculation with
+#'  \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
+#'  registered, then a serial version of foreach is ran using 
+#'  \code{\link{registerDoSEQ()}}. Parllelization is done at sample level 
+#'  per sector.
+#' @param samplenames a vector of samplenames to process. Default is NULL, 
+#' which processes all samples from sampleInfo object.
+#' @param bypassChecks skip checkpoints which detect if something was odd 
+#' with the data? Default is FALSE.
+#' @param parallel2 perform parallelization is sequence level. Default is FALSE. 
+#' Useful in cases where each sector has only one sample with numerous sequences.
 #'
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
-#' @return a SimpleList object similar to sampleInfo paramter supplied with new data added under each sector and sample. New data attributes include: linkered. If linkers have primerID then, primerIDs attribute is appended as well. 
+#' @return a SimpleList object similar to sampleInfo paramter supplied with new 
+#' data added under each sector and sample. New data attributes include: 
+#' linkered. If linkers have primerID then, primerIDs attribute is appended 
+#' as well. 
 #'
-#' @note If no linker matches are found with default options, then try doRC=TRUE. If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note 
+#' \itemize{
+#'  \item For paired end data, qualityThreshold for pair 2 is increased by 
+#'  0.25 or set to 1 whichever is lower to increase quality & full match to 
+#'  linker sequence.
+#'  \item If no linker matches are found with default options, then try 
+#'  doRC=TRUE. 
+#'  \item If parallel=TRUE, then be sure to have a paralle backend registered 
+#'  before running the function. One can use any of the following libraries 
+#'  compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
+#'  For example: library(doMC); registerDoMC(2)
+#' }
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{findAndTrimSeq}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+#' \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, 
+#' \code{\link{findPrimers}}, \code{\link{extractFeature}}, 
+#' \code{\link{extractSeqs}}, \code{\link{findAndTrimSeq}}
 #'
 #' @export
 #'
@@ -1770,10 +1886,12 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
     ## check if any are primerIDed and get their identity thresholds ##
     primerIded <- extractFeature(sampleInfo, sector=sector,
                                  feature="primeridinlinker")[[sector]]        
-    primerIded.threshold1 <- extractFeature(sampleInfo, sector=sector,
-                                            feature="primeridinlinkeridentity1")[[sector]]        
-    primerIded.threshold2 <- extractFeature(sampleInfo, sector=sector, 
-                                            feature="primeridinlinkeridentity2")[[sector]]        
+    primerIded.threshold1 <- 
+      extractFeature(sampleInfo, sector=sector,
+                     feature="primeridinlinkeridentity1")[[sector]]        
+    primerIded.threshold2 <- 
+      extractFeature(sampleInfo, sector=sector, 
+                     feature="primeridinlinkeridentity2")[[sector]]        
     
     ## subset samplenames from all samples if defined ##
     samplesToProcess <- toProcessSamples[[sector]]
@@ -1800,7 +1918,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                feature="decoded")[[sector]]
       
       ## find paired end samples
-      isPaired <- extractFeature(sampleInfo, sector, feature='pairedend')[[sector]]
+      isPaired <- extractFeature(sampleInfo,sector,feature='pairedend')[[sector]]
       
       ## trim the Linkers ##
       message("\tFinding Linkers.")
@@ -1813,7 +1931,7 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                qualT2=iter(primerIded.threshold2[samplesToProcess]),
                                .inorder=TRUE, .errorhandling="pass", 
                                .export=c("doRC", "parallel2", 
-                                         "pairwiseAlignSeqs", "primerIDAlignSeqs"), 
+                                         "pairwiseAlignSeqs","primerIDAlignSeqs"), 
                                .packages=c("Biostrings","foreach")) %dopar% {        
                                  if(pIded) {
                                    if(paired) {
@@ -1833,8 +1951,10 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                                              returnUnmatched=TRUE, 
                                                              returnRejected=TRUE,
                                                              doRC=doRC, 
-                                                             qualityThreshold1=qualT1, 
-                                                             qualityThreshold2=qualT2, 
+                                                             qualityThreshold1=
+                                                               pmin(qualT1+.25,1), 
+                                                             qualityThreshold2=
+                                                               pmin(qualT2+.25,1), 
                                                              parallel=parallel2)
                                      
                                      list("pair1"=p1, "pair2"=p2)
@@ -1849,7 +1969,10 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                                        parallel=parallel2)
                                    }          
                                  } else {
-                                   ## use side="middle" since more junk sequence can be present after linker which would fail pairwiseAlignSeqs if side='right' for single end reads or "pair1"
+                                   ## use side="middle" since more junk sequence 
+                                   ## can be present after linker which would 
+                                   ## fail pairwiseAlignSeqs if side='right' for
+                                   ## single end reads or "pair1"
                                    if(paired) {
                                      p1 <- pairwiseAlignSeqs(subjectSeqs$pair1,
                                                              patternSeq, "middle", 
@@ -1859,10 +1982,12 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                                              doRC=doRC, 
                                                              parallel=parallel2)
                                      
-                                     # pair2 should end with linker, hence side='right'            
+                                     # pair2 should end with linker, 
+                                     # hence side='right'            
                                      p2 <- pairwiseAlignSeqs(subjectSeqs$pair2,
                                                              patternSeq, "right", 
-                                                             qualityThreshold=qualT, 
+                                                             qualityThreshold=
+                                                               pmin(qualT+.25,1), 
                                                              returnUnmatched=TRUE,
                                                              returnLowScored=TRUE, 
                                                              doRC=doRC, 
@@ -1899,34 +2024,35 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       }        
       
       cleanit <- gc()
-      
-      if(!bypassChecks | showStats) {
-        eval(expression(trimmedObj <- "linkerTrimmed", rawObj <- "toProcess", 
-                        featureTrim <- "Linker", 
-                        valueColname <- "PercOfDecoded"))
-        .showFindStats()
-      }
-      
-      message("Adding linker info back to the object")
-      ## modify metadata attribute and write back to sampleInfo object
-      ## for primerID based samples...write back all the returned attibutes
-      for(x in names(linkerTrimmed)) {
-        cat(".") 
-        if(isPaired[[x]]) {
-          for(y in unique(unlist(sapply(linkerTrimmed[[x]], names)))) {
-            bore <- sapply(linkerTrimmed[[x]], "[[", y)
-            newAttrName <- paste0(ifelse(y=="hits","",y),"linkered")
-            sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- bore
-            rm(bore)
-          }
-        } else {
-          for(y in names(linkerTrimmed[[x]])) {
-            newAttrName <- paste0(ifelse(y=="hits","",y),"linkered")
-            sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- 
-              linkerTrimmed[[x]][[y]]
+      if(length(linkerTrimmed)>0) {
+        if(!bypassChecks | showStats) {
+          eval(expression(trimmedObj <- "linkerTrimmed", rawObj <- "toProcess", 
+                          featureTrim <- "Linker", 
+                          valueColname <- "PercOfDecoded"))
+          .showFindStats()
+        }
+        
+        message("Adding linker info back to the object")
+        ## modify metadata attribute and write back to sampleInfo object
+        ## for primerID based samples...write back all the returned attibutes
+        for(x in names(linkerTrimmed)) {
+          cat(".") 
+          if(isPaired[[x]]) {
+            for(y in unique(unlist(sapply(linkerTrimmed[[x]], names)))) {
+              bore <- sapply(linkerTrimmed[[x]], "[[", y)
+              newAttrName <- paste0(ifelse(y=="hits","",y),"linkered")
+              sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- bore
+              rm(bore)
+            }
+          } else {
+            for(y in names(linkerTrimmed[[x]])) {
+              newAttrName <- paste0(ifelse(y=="hits","",y),"linkered")
+              sampleInfo$sectors[[sector]]$samples[[x]][[newAttrName]] <- 
+                linkerTrimmed[[x]][[y]]
+            }
           }
         }
-      }      
+      }
       rm(linkerTrimmed)
       cleanit <- gc()
     }
@@ -2355,7 +2481,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
   sectors <- res[["sectors"]]
   samplenames <- res[["samplenames"]]
   
-  if(feature=="unDecoded") {
+  if(tolower(feature)=="undecoded") {
     sapply(sectors, function(y) { 
       allmetadata <- metadata(sampleInfo$sectors[[y]])
       if("unDecodedSeqs" %in% names(allmetadata)) {
@@ -2374,16 +2500,16 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
           decoded <- decoded[[pairReturn]]
         }
         
-        if(feature!="decoded") {
+        if(tolower(feature)!="decoded") {
           # get ride of ! from feature, else R wont know what to do when making a... 
           # new object with ! in the front.
           assign(gsub("!","",feature), 
                  sampleInfo$sectors[[y]]$samples[[x]][[gsub("!","",feature)]])
         }
         
-        if(feature=="decoded") {
+        if(tolower(feature)=="decoded") {
           decoded
-        } else if (feature %in% c("genomic","genomicLinkered")) {
+        } else if (tolower(feature) %in% c("genomic","genomiclinkered")) {
           primed <- sampleInfo$sectors[[y]]$samples[[x]]$primed
           LTRed <- sampleInfo$sectors[[y]]$samples[[x]]$LTRed
           linkered <- sampleInfo$sectors[[y]]$samples[[x]]$linkered
@@ -2456,7 +2582,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
                   p
                 }, coords, ends)
                 
-                if(feature=="genomicLinkered") { 
+                if(tolower(feature)=="genomiclinkered") { 
                   stopifnot(identical(names(coords), names(linkered)))
                   coords <- mapply(function(p, l) p[names(p) %in% names(l)], 
                                    coords, linkered)
@@ -2494,7 +2620,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
                 end(coords[there][!culprits]) <- ends[!culprits]
                 end(coords[there][culprits]) <- start(coords[there][culprits])
                 
-                if(feature=="genomicLinkered") { 
+                if(tolower(feature)=="genomiclinkered") { 
                   coords <- coords[names(coords) %in% names(linkered)] 
                 }
                 
@@ -2509,7 +2635,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
             } else {
               # just retuning ranges...simply match names from decoded to the request
               if(isPaired & pairReturn=='both') {
-                if(feature=="genomicLinkered") { 
+                if(tolower(feature)=="genomiclinkered") { 
                   mapply(function(d,l) d[names(d) %in% names(l)],
                          decoded, linkered)
                 } else { ## everything past primer and LTR
@@ -2522,7 +2648,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
                   }
                 }
               } else {
-                if(feature=="genomicLinkered") { 
+                if(tolower(feature)=="genomiclinkered") { 
                   decoded[names(decoded) %in% names(linkered)]
                 } else { ## everything past primer and LTR
                   if(is.null(LTRed)) {
@@ -2536,7 +2662,8 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
           }
         } else {
           notFeature <- grepl("!",feature)
-          ## no need to trim if looking for "not" based feature since there are no coordinates for it
+          ## no need to trim if looking for "not" based feature since there are 
+          ## no coordinates for it
           if(notFeature) {
             if(isPaired & pairReturn=='both') {
               stopifnot(identical(names(decoded), 
@@ -2667,7 +2794,7 @@ extractFeature <- function(sampleInfo, sector=NULL, samplename=NULL,
   
   res <- sapply(sectors, function(y) {
     sapply(samplenames[[y]], function(x,y) { 
-      if(feature=="metadata") {
+      if(tolower(feature)=="metadata") {
         paste(names(sampleInfo$sectors[[y]]$samples[[x]]), collapse=", ")
       } else {
         res <- sampleInfo$sectors[[y]]$samples[[x]][[feature]]
@@ -3097,16 +3224,36 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
 
 #' Align sequences using Subread.
 #'
-#' Align batch of sequences using Subread against an indexed reference genome. Paired end reads are aligned independently and the validity of hits/pairs is evaluated within \code{\link{getIntegrationSites}}once the data is read in by \code{\link{read.BAMasPSL}}. The workhorse function doing the alignment is \code{\link{align}}. 
+#' Align batch of sequences using Subread against an indexed reference genome. 
+#' Paired end reads are aligned independently and the validity of hits/pairs is
+#' evaluated within \code{\link{getIntegrationSites}} once the data is read in
+#' by \code{\link{read.BAMasPSL}}. The workhorse function doing the alignment is 
+#' \code{\link{Rsubread::align}}. 
 #'
-#' @param query an object of DNAStringSet, a character vector of filename(s), or a path/pattern of fasta/fastq files to align. Default is NULL. All files are concatenated for the ease of alignment and output stored into a single BAM file.
-#' @param subject a path to the basename of an indexed genome (.subread.index) to serve as a reference or target to the query. Default is NULL. See basename parameter in \code{\link{buildindex}}
-#' @param outputfile filename to hold the alignment data. Default is "allhits". Extension '.bam' will be appended to this. 
-#' @param subreadParameters a character vector of alignment options to be passed to \code{\link{align}}. Parameters with following names will be silently ignored: index, readfile1, readfile2, input_format, output_format, output_file. Default is: c(nsubreads=15, nBestLocations=10, nthreads=4, indels=10, unique="FALSE", reportFusions="TRUE", tieBreakHamming="FALSE")
+#' @param query an object of DNAStringSet, a character vector of filename(s), 
+#' or a path/pattern of fasta/fastq files to align. Default is NULL. All files 
+#' are concatenated for the ease of alignment and output stored into a single 
+#' BAM file.
+#' @param subject a path to the basename of an indexed genome (.subread.index) 
+#' to serve as a reference or target to the query. Default is NULL. 
+#' See basename parameter in \code{\link{buildindex}}
+#' @param outputfile filename to hold the alignment data. Default is "allhits".
+#' Extension '.bam' will be appended to this. 
+#' @param subreadParameters a character vector of alignment options to be 
+#' passed to \code{\link{Rsubread::align}}. Parameters with following names will 
+#' be silently ignored: index, readfile1, readfile2, input_format,output_format,
+#' output_file. Default is: c(nsubreads=15, nBestLocations=10, nthreads=4, 
+#' indels=10, unique="FALSE", reportFusions="TRUE", tieBreakHamming="FALSE")
 #'
-#' @return name of the BAM file holding the hits. If parameters 'reportFusions' or 'indels' were passed in subreadParameters, then a named vector is returned with "hits" holding the alignment data filename, and rest are named after the parameters.
+#' @return name of the BAM file holding the hits. If parameters 'reportFusions'
+#'  or 'indels' were passed in subreadParameters, then a named vector is 
+#'  returned with "hits" holding the alignment data filename, and rest are 
+#'  named after the parameters.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{read.BAMasPSL}}, \code{\link{read.blast8}}, \code{\link{splitSeqsToFiles}}, \code{\link{Rsubread::align}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+#' \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{read.BAMasPSL}},
+#' \code{\link{read.blast8}}, \code{\link{splitSeqsToFiles}}, 
+#' \code{\link{Rsubread::align}}
 #'
 #' @export
 #'
@@ -3234,16 +3381,22 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
 
 #' Reads a BAM/SAM file and converts it into a PSL like format. 
 #'
-#' Given filename(s), the function reads the BAM/SAM file, converts into a PSL like format. Any other file format will yield errors or erroneous results.
+#' Given filename(s), the function reads the BAM/SAM file, converts into a PSL 
+#' like format. Any other file format will yield errors or erroneous results.
 #'
-#' @param bamFile BAM/SAM filename, or vector of filenames, or a pattern of files to import.
-#' @param removeFile remove the file(s) supplied in bamFile paramter after importing. Default is FALSE.
+#' @param bamFile BAM/SAM filename, or vector of filenames, or a pattern of 
+#' files to import.
+#' @param removeFile remove the file(s) supplied in bamFile paramter after 
+#' importing. Default is FALSE.
 #' @param asGRanges return a GRanges object. Default is TRUE
 #'
 #' @return a GRanges or GAlignments object reflecting psl file type.
 #'
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}, \code{\link{pairUpAlignments}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, 
+#' \code{\link{read.blast8}}, \code{\link{read.psl}}, 
+#' \code{\link{pslToRangedObject}}, \code{\link{subreadAlignSeqs}}, 
+#' \code{\link{pairUpAlignments}}
 #'
 #' @export
 #'
@@ -3338,16 +3491,29 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE, asGRanges=TRUE) {
 
 #' Pair up alignments in a GRanges object
 #'
-#' Given a GRanges object, the function uses specified gaplength parameter to pair up reads where the qName column ends with "@pairname@" which is outputted by \code{\link{extractSeqs}}.
+#' Given a GRanges object, the function uses specified gaplength parameter to 
+#' pair up reads where the qName column ends with "atpersand pairname atpersand" 
+#' which is outputted by \code{\link{extractSeqs}}.
 #'
-#' @param psl.rd a GRanges object with qNames ending in "@pairname@".
-#' @param maxGapLength maximum gap allowed between end of pair1 and start of pair2. Default is 1000 bp.
-#' @param sameStrand should pairs be aligned to the same strand or in same orientationin the reference genome? Default is TRUE. This is 'TRUE' because pair2 reads are reverseComplemented when reading in data in \code{\link{findBarcodes}}
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param psl.rd a GRanges object with qNames ending in "atpersand pairname atpersand".
+#' @param maxGapLength maximum gap allowed between end of pair1 and start of 
+#' pair2. Default is 2500 bp.
+#' @param sameStrand should pairs be aligned to the same strand or in same 
+#' orientationin the reference genome? Default is TRUE. This is 'TRUE' because 
+#' pair2 reads are reverseComplemented when reading in data in 
+#' \code{\link{findBarcodes}}
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version of foreach is ran using 
+#' \code{\link{registerDoSEQ()}}.
 #'
-#' @return a GRanges object with reads paired up denoted by "paired" column. Improper pairs or unpaired reads are returned with "paired" column as FALSE.
+#' @return a GRanges object with reads paired up denoted by "paired" column. 
+#' Improper pairs or unpaired reads are returned with "paired" column as FALSE.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{subreadAlignSeqs}}, \code{\link{read.BAMasPSL}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}}, 
+#' \code{\link{read.blast8}}, \code{\link{read.psl}}, 
+#' \code{\link{getIntegrationSites}}, \code{\link{subreadAlignSeqs}}, 
+#' \code{\link{read.BAMasPSL}}
 #'
 #' @export
 #'
@@ -4231,23 +4397,50 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
   return(psl.rd)
 }
 
-#' Cluster/Correct values within a window based on their frequency given discrete factors
+#' Cluster/Correct values within a window based on their frequency given 
+#' discrete factors
 #'
-#' Given a group of discrete factors (i.e. position ids) and integer values, the function tries to correct/cluster the integer values based on their frequency in a defined windowsize.
+#' Given a group of discrete factors (i.e. position ids) and integer values, 
+#' the function tries to correct/cluster the integer values based on their 
+#' frequency in a defined windowsize.
 #'
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined. 
-#' @param value a vector of integer with values that needs to corrected/clustered (i.e. Positions). Required if psl.rd parameter is not defined. 
-#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a GRanges object returned from \code{\link{getIntegrationSites}}. Default is NULL. 
-#' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
-#' @param windowSize size of window within which values should be corrected/clustered. Default is 5.
-#' @param byQuartile flag denoting whether quartile based technique should be employed. See notes for details. Default is TRUE.
-#' @param quartile if byQuartile=TRUE, then the quartile which serves as the threshold. Default is 0.70.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
+#' @param value a vector of integer with values that needs to corrected or 
+#' clustered (i.e. Positions). Required if psl.rd parameter is not defined. 
+#' @param grouping additional vector of grouping by which to pool the rows (i.e.
+#'  samplenames). Default is NULL.
+#' @param psl.rd a GRanges object returned from \code{\link{getIntegrationSites}}.
+#'  Default is NULL. 
+#' @param weight a numeric vector of weights to use when calculating frequency 
+#' of value by posID and grouping if specified. Default is NULL.
+#' @param windowSize size of window within which values should be corrected or 
+#' clustered. Default is 5.
+#' @param byQuartile flag denoting whether quartile based technique should be 
+#' employed. See notes for details. Default is TRUE.
+#' @param quartile if byQuartile=TRUE, then the quartile which serves as the 
+#' threshold. Default is 0.70.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, 
+#' then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. 
+#' Process is split by the grouping the column.
 #'
-#' @note The algorithm for clustering when byQuartile=TRUE is as follows: for all values in each grouping, get a distribution and test if their frequency is >= quartile threshold. For values below the quartile threshold, test if any values overlap with the ones that passed the threshold and is within the defined windowSize. If there is a match, then merge with higher value, else leave it as is. This is only useful if the distribution is wide and polynodal. When byQuartile=FALSE, for each group the values within the defined window are merged with the next highest frequently occuring value, if freuquencies are tied then lowest value is used to represent the cluster. When psl.rd is passed, then multihits are ignored and only unique sites are clustered. All multihits will be tagged as a good 'clusterTopHit'.
+#' @note The algorithm for clustering when byQuartile=TRUE is as follows: for 
+#' all values in each grouping, get a distribution and test if their frequency 
+#' is >= quartile threshold. For values below the quartile threshold, test if 
+#' any values overlap with the ones that passed the threshold and is within the 
+#' defined windowSize. If there is a match, then merge with higher value, else 
+#' leave it as is. This is only useful if the distribution is wide and polynodal. 
+#' When byQuartile=FALSE, for each group the values within the defined window 
+#' are merged with the next highest frequently occuring value, if freuquencies 
+#' are tied then lowest value is used to represent the cluster. When psl.rd is 
+#' passed, then multihits are ignored and only unique sites are clustered. All 
+#' multihits will be tagged as a good 'clusterTopHit'.
 #'
-#' @return a data frame with clusteredValues and frequency shown alongside with the original input. If psl.rd parameter is defined then a GRanges object is returned with three new columns appended at the end: clusteredPosition, clonecount, and clusterTopHit (a representative for a given cluster chosen by best scoring hit!). 
+#' @return a data frame with clusteredValues and frequency shown alongside with 
+#' the original input. If psl.rd parameter is defined then a GRanges object is 
+#' returned with three new columns appended at the end: clusteredPosition, 
+#' clonecount, and clusterTopHit (a representative for a given cluster chosen 
+#' by best scoring hit!). 
 #'
 #' @seealso \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{pslToRangedObject}}
 #'
@@ -4258,7 +4451,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
 #' #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 #'
 clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, 
-                         weight=NULL, windowSize=5, byQuartile=FALSE, 
+                         weight=NULL, windowSize=5L, byQuartile=FALSE, 
                          quartile=0.70, parallel=TRUE) {
   if(!parallel) { registerDoSEQ() }      
   if(is.null(psl.rd)) {
@@ -4322,8 +4515,8 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
       grouping 
     }
     
-    clusters <- clusterSites(posIDs[good.row], 
-                             values[good.row], 
+    clusters <- clusterSites(posID=posIDs[good.row], 
+                             value=values[good.row], 
                              grouping=grouping[good.row], 
                              weight=weight[good.row], 
                              windowSize=windowSize, 

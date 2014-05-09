@@ -20,6 +20,7 @@ Imports:
     foreach,
     iterators,
     Rsubread,
+    Rbowtie,
     hiAnnotator,
     sonicLength,
     plyr
