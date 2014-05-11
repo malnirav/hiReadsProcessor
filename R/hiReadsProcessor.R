@@ -4122,14 +4122,11 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
                                 hits.temp$score <- 
                                   with(hits.temp, 
                                        matches-misMatches-qBaseInsert-tBaseInsert)
-                                hits.temp <- arrange(hits.temp, qName, 
-                                                     plyr::desc(score))
-                                bestScore <- with(hits.temp, 
-                                                  tapply(score, qName, max))
                                 isBest <- with(hits.temp, 
-                                               score==bestScore[qName])
+                                               ave(score, qName, 
+                                                   FUN=function(x) x==max(x)))
                                 hits.temp <- hits.temp[isBest,]
-                                rm("isBest","bestScore")
+                                rm("isBest")
                               }
                               hits.temp
                             }
@@ -4138,24 +4135,26 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
   if(nrow(hits)==0) {
     stop("No hits found")
   }
-  
-  message("Ordering by qName")
-  hits <- arrange(hits, qName)
-  
+    
   ## do round two of bestScore incase any got missed in round one
   if(bestScoring) {
     message("\t cherry picking!")
-    hits$score <- with(hits, matches-misMatches-qBaseInsert-tBaseInsert)
-    hits <- arrange(hits, qName, plyr::desc(score))
-    bestScore <- with(hits, tapply(score,qName,max))
-    isBest <- with(hits, score==bestScore[qName])
+    hits$score <- with(hits, matches-misMatches-qBaseInsert-tBaseInsert)    
+    isBest <- with(hits, ave(score, qName, FUN=function(x) x==max(x)))
     hits <- hits[isBest,]
-    rm("isBest","bestScore")
+    rm("isBest")
   }
   
   if(asGRanges) {
     hits <- pslToRangedObject(hits, useTargetAsRef=TRUE)
   }
+  
+  message("Ordering by qName")
+  if(is(hits,"GRanges")) {
+    hits <- sort(hits, by=~qName, ignore.strand=TRUE)
+  } else {
+    hits <- arrange(hits, qName)
+  }  
   
   if(removeFile) { file.remove(pslFile) }
   
@@ -4286,12 +4285,16 @@ read.blast8 <- function(files=NULL, asGRanges=FALSE,
   if(nrow(hits)==0) {
     stop("No hits found")
   }
-  
-  message("Ordering by qName")
-  hits <- arrange(hits,qName)
-  
+    
   if(asGRanges) {
     hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, isblast8=TRUE)
+  }
+  
+  message("Ordering by qName")
+  if(is(hits,"GRanges")) {
+    hits <- sort(hits, by=~qName, ignore.strand=TRUE)
+  } else {
+    hits <- arrange(hits, qName)
   }
   
   if(removeFile) { file.remove(files) }
@@ -4360,12 +4363,11 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
   if(!"score" %in% colnames(mcols(psl.rd))) {
     message("Adding score column.")
     mcols(psl.rd)$score <- with(as.data.frame(mcols(psl.rd)), 
-                                matches-misMatches-qBaseInsert-tBaseInsert)
-    bestScore <- tapply(mcols(psl.rd)$score, as.character(mcols(psl.rd)$qName), 
-                        max)
-    isBest <- mcols(psl.rd)$score==bestScore[as.character(mcols(psl.rd)$qName)]
+                                matches-misMatches-qBaseInsert-tBaseInsert)     
+    isBest <- ave(mcols(psl.rd)$score, as.character(mcols(psl.rd)$qName), 
+                  FUN=function(x) x==max(x))    
     psl.rd <- psl.rd[isBest,]
-    rm("isBest","bestScore")
+    rm("isBest")
     cleanit <- gc()
   }    
   
@@ -4602,10 +4604,9 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
       # for overlapping values, merge them with the biggest respective 
       # aboveQuartile site
       pos.overlap$freq <- values(pos.ab[pos.overlap[,"subjectHits"]])$freq
-      maxs <- with(pos.overlap, tapply(freq, as.character(queryHits), max))
       pos.overlap$isMax <- with(pos.overlap, 
-                                freq == maxs[as.character(queryHits)])
-      rm(maxs)
+                                ave(freq, as.character(queryHits), 
+                                    FUN=function(x) x==max(x)))
       
       pos.overlap <- subset(pos.overlap,isMax, drop=TRUE)
       
@@ -4715,9 +4716,9 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
                          # If all frequencies are the same, then use the lowest 
                          # value to represent the cluster!
                          res$maxFreq <- with(res, pmax(q.freq, s.freq))    
-                         maxes <- with(res, tapply(maxFreq, queryHits, max))
                          res$ismaxFreq <- 
-                           with(res, maxFreq==maxes[as.character(queryHits)])        
+                           with(res, ave(maxFreq, queryHits, 
+                                         FUN=function(x) x==max(x)))        
                          
                          ## VIP step...this is what merges high value to low 
                          ## value for ties in the hash structure below!!!
@@ -4835,7 +4836,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
   rm(groups)
   
   ## get unique posIDs per readID by grouping 
-  # use tapply instead of ddply() or by() because it's a lot faster on larger datasets #
+  # use tapply instead of ddply() or by() because it's a lot faster
   counts <- with(sites, tapply(posID, paste0(grouping,readID), 
                                function(x) {
                                  uniques <- sort(unique(x))
