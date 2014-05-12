@@ -4141,7 +4141,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
     message("\t cherry picking!")
     hits$score <- with(hits, matches-misMatches-qBaseInsert-tBaseInsert)    
     isBest <- with(hits, ave(score, qName, FUN=function(x) x==max(x)))
-    hits <- hits[as.logical(isBest,]
+    hits <- hits[as.logical(isBest),]
     rm("isBest")
   }
   
