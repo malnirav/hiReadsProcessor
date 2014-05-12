@@ -4125,7 +4125,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
                                 isBest <- with(hits.temp, 
                                                ave(score, qName, 
                                                    FUN=function(x) x==max(x)))
-                                hits.temp <- hits.temp[isBest,]
+                                hits.temp <- hits.temp[as.logical(isBest),]
                                 rm("isBest")
                               }
                               hits.temp
@@ -4141,7 +4141,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
     message("\t cherry picking!")
     hits$score <- with(hits, matches-misMatches-qBaseInsert-tBaseInsert)    
     isBest <- with(hits, ave(score, qName, FUN=function(x) x==max(x)))
-    hits <- hits[isBest,]
+    hits <- hits[as.logical(isBest,]
     rm("isBest")
   }
   
@@ -4366,7 +4366,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
                                 matches-misMatches-qBaseInsert-tBaseInsert)     
     isBest <- ave(mcols(psl.rd)$score, as.character(mcols(psl.rd)$qName), 
                   FUN=function(x) x==max(x))    
-    psl.rd <- psl.rd[isBest,]
+    psl.rd <- psl.rd[as.logical(isBest),]
     rm("isBest")
     cleanit <- gc()
   }    
@@ -4607,7 +4607,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
       pos.overlap$isMax <- with(pos.overlap, 
                                 ave(freq, as.character(queryHits), 
                                     FUN=function(x) x==max(x)))
-      
+      pos.overlap$isMax <- as.logical(pos.overlap$isMax)
       pos.overlap <- subset(pos.overlap,isMax, drop=TRUE)
       
       # if there are >1 biggest respective aboveQuartile site, then choose the 
@@ -4717,8 +4717,9 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
                          # value to represent the cluster!
                          res$maxFreq <- with(res, pmax(q.freq, s.freq))    
                          res$ismaxFreq <- 
-                           with(res, ave(maxFreq, queryHits, 
-                                         FUN=function(x) x==max(x)))        
+                             as.logical(with(res, ave(maxFreq, queryHits, 
+                                                      FUN=function(x) x==max(x))))
+                         res$ismaxFreq <- as.logical(res$ismaxFreq)
                          
                          ## VIP step...this is what merges high value to low 
                          ## value for ties in the hash structure below!!!
