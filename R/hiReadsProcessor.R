@@ -3637,16 +3637,20 @@ pairUpAlignments <- function(psl.rd=NULL, maxGapLength=2500,
 
 #' Start a gfServer instance
 #'
-#' Start a gfServer indexed reference genome to align batch of sequences using BLAT gfServer/gfClient protocol.
+#' Start a gfServer indexed reference genome to align batch of sequences using 
+#' BLAT gfServer/gfClient protocol.
 #'
 #' @param seqDir absolute or relative path to the genome index (nib/2bit files).
 #' @param host name of the machine to run gfServer on. Default: localhost
 #' @param port a port number to host the gfServer with. Default is 5560.
-#' @param gfServerOpts a character vector of options to be passed to gfServer command on top of server defaults. Default: c(repMatch=112312, stepSize=5, tileSize=10). Set this to NULL to start gfServer with defaults.
+#' @param gfServerOpts a character vector of options to be passed to gfServer 
+#' command on top of server defaults. Default: c(repMatch=112312, stepSize=5, 
+#' tileSize=10, maxDnaHits=10). Set this to NULL to start gfServer with defaults.
 #'
 #' @return system command status for executing gfServer command.
 #'
-#' @seealso \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{stopgfServer}}, \code{\link{read.psl}}, 
+#' \code{\link{blatSeqs}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
@@ -3656,7 +3660,7 @@ pairUpAlignments <- function(psl.rd=NULL, maxGapLength=2500,
 #' 
 startgfServer <- function(seqDir=NULL, host="localhost", port=5560, 
                           gfServerOpts=c(repMatch=112312, stepSize=5, 
-                                         tileSize=10)) {
+                                         tileSize=10, maxDnaHits=10)) {
   if(is.null(seqDir)) {
     stop("Please define the path of nib/2bit files containing the ",
          "indexed reference sequence(s)")
@@ -3837,16 +3841,41 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 
 #' Align sequences using BLAT.
 #'
-#' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol against an indexed reference genome. Depending on parameters provided, the function either aligns batch of files to a reference genome using gfClient or takes sequences from query & subject parameters and aligns them using standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched apriori, this function will start one using \code{\link{startgfServer}} and kill it using \code{\link{stopgfServer}} upon successful execution. 
+#' Align batch of sequences using standalone BLAT or gfServer/gfClient protocol 
+#' against an indexed reference genome. Depending on parameters provided, the 
+#' function either aligns batch of files to a reference genome using gfClient or
+#' takes sequences from query & subject parameters and aligns them using 
+#' standalone BLAT. If standaloneBlat=FALSE and gfServer is not launched 
+#' apriori, this function will start one using \code{\link{startgfServer}} 
+#' and kill it using \code{\link{stopgfServer}} upon successful execution. 
 #'
-#' @param query an object of DNAStringSet, a character vector of filename(s), or a path/pattern of fasta files to BLAT. Default is NULL.
-#' @param subject an object of DNAStringSet, a character vector, or a path to an indexed genome (nibs,2bits) to serve as a reference or target to the query. Default is NULL. If the subject is a path to a nib or 2bit file, then standaloneBlat will not work!
-#' @param standaloneBlat use standalone BLAT as suppose to gfServer/gfClient protocol. Default is TRUE.
-#' @param port the same number you started the gfServer with. Required if standaloneBlat=FALSE. Default is 5560.
-#' @param host name of the machine running gfServer. Default is 'localhost' and only used when standaloneBlat=FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param query an object of DNAStringSet, a character vector of filename(s), 
+#' or a path/pattern of fasta files to BLAT. Default is NULL.
+#' @param subject an object of DNAStringSet, a character vector, or a path to 
+#' an indexed genome (nibs,2bits) to serve as a reference or target to the query.
+#' Default is NULL. If the subject is a path to a nib or 2bit file, then 
+#' standaloneBlat will not work!
+#' @param standaloneBlat use standalone BLAT as suppose to gfServer/gfClient 
+#' protocol. Default is TRUE.
+#' @param port the same number you started the gfServer with. Required if 
+#' standaloneBlat=FALSE. Default is 5560.
+#' @param host name of the machine running gfServer. Default is 'localhost' and 
+#' only used when standaloneBlat=FALSE.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, 
+#' then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param numServers launch >1 gfServer and load balance jobs? This only
+#' applies when parallel=TRUE and standaloneBlat=FALSE. Enable this option only
+#' if the machine has a lot of RAM! Option ignored if launched gfServer is found
+#' at specified host and port. Default is 1. 
 #' @param gzipResults gzip the output files? Default is TRUE.
-#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, maxDnaHits=10, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70\% identity.
+#' @param blatParameters a character vector of options to be passed to 
+#' gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70,
+#' minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, maxDnaHits=10, 
+#' q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by 
+#' either BLAT or gfClient. For example, if repMatch or stepSize parameters are 
+#' specified when using gfClient, then the function will simply ignore them! 
+#' The defaults are configured to align a 19bp sequence with 70\% identity.
 #'
 #' @return a character vector of psl filenames. Each file provided is split by number of parallel workers and with read number denoting the cut. Files are cut in smaller pieces to for the ease of read & write into a single R session. 
 #'
@@ -3861,7 +3890,8 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 #' #blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
 #'
 blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, 
-                     host="localhost", parallel=TRUE, gzipResults=TRUE, 
+                     host="localhost", parallel=TRUE, numServers=1L,
+                     gzipResults=TRUE, 
                      blatParameters=c(minIdentity=70, minScore=5, stepSize=5, 
                                       tileSize=10, repMatch=112312, dots=50, 
                                       maxDnaHits=10, q="dna", t="dna", 
@@ -4009,18 +4039,22 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   } else {
     # start the gfServer if not started already! #
     killFlag <- FALSE
-    searchCMD <- sprintf("gfServer status %s %s", host, port)
-    if(system(searchCMD,ignore.stderr=TRUE)!=0) {
-      message("Starting gfServer.")        
-      startgfServer(seqDir=subjectFile, host=host, port=port, 
-                    gfServerOpts=blatParameters[names(blatParameters) 
-                                                %in% gfServerOpts])
-      killFlag <- TRUE
-    }         
+    port <- port + 0:(numServers-1)
+    for(n in 1:numServers) {
+      searchCMD <- sprintf("gfServer status %s %s", host, port[n])
+      if(system(searchCMD,ignore.stderr=TRUE)!=0) {
+        message(sprintf("Starting gfServer # %s.", n))
+        startgfServer(seqDir=subjectFile, host=host, port=port[n], 
+                      gfServerOpts=blatParameters[names(blatParameters) 
+                                                  %in% gfServerOpts])
+        killFlag <- TRUE
+      }
+    }
     
     gfClientOpts <- blatParameters[names(blatParameters) %in% gfClientOpts]
     stopifnot(length(subjectFile)>0)
-    filenames <- foreach(x=iter(queryFiles), .inorder=FALSE, 
+    filenames <- foreach(port=iter(rep(port, length=length(queryFiles))),
+                         x=iter(queryFiles), .inorder=FALSE, 
                          .export=c("gfClientOpts","host","port",
                                    "indexFileDir","gzipResults")) %dopar% {
                                      filename.out <- paste(x, 
@@ -4055,27 +4089,74 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
     if(killFlag) {
       # stop to conserve memory #
       message("Kill gfServer.")        
-      stopgfServer(port=port)      
+      sapply(port, function(x) stopgfServer(port=x))
     }
   }
   return(unlist(filenames))
 }
 
-#' Read PSL file(s) outputted by BLAT
+#' Return PSL file columns with classes
 #'
-#' Given filename(s), the function reads the PSL file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results. Make sure there is no header row!
+#' Print out required fields & classes of PSL file format
 #'
-#' @param pslFile PSL filename, or vector of filenames, or a pattern of files to import.
-#' @param bestScoring report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.
-#' @param asGRanges return a GRanges object instead of a dataframe. Default is FALSE
-#' @param removeFile remove the PSL file(s) after importing. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
-#'
-#' @return a dataframe reflecting psl file type. If asGRanges=T, then a GRanges object.  
-#'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @param withClass return classes for each column.
+#' @return vector of PSL column names
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
+#'
+#' @export
+#'
+#' @examples 
+#' pslCols()
+pslCols <- function(withClass=TRUE) {
+  cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", 
+            "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", 
+            "qSize", "qStart", "qEnd", "tName", "tSize", "tStart", "tEnd", 
+            "blockCount", "blockSizes", "qStarts", "tStarts")
+  
+  cols.class <- c(rep("numeric",8), rep("character",2), rep("numeric",3),
+                  "character", rep("numeric",4), rep("character",3))
+  
+  if(withClass) {
+    structure(cols.class, names=cols)
+  } else {
+    cols
+  }
+}
+
+#' Read PSL file(s) outputted by BLAT
+#'
+#' Given filename(s), the function reads the PSL file format from BLAT as a 
+#' data frame and performs basic score filtering if indicated. Any other file 
+#' format will yield errors or erroneous results. Make sure there is no 
+#' header row! See required columns in \code{\link{pslCols}}.
+#'
+#' @param pslFile PSL filename, or vector of filenames, or a pattern of files 
+#' to import.
+#' @param bestScoring report only best scoring hits instead of all hits. 
+#' Default is TRUE. Score is calculated by 
+#' matches-misMatches-qBaseInsert-tBaseInsert.
+#' @param asGRanges return a GRanges object instead of a dataframe.
+#'  Default is FALSE
+#' @param removeFile remove the PSL file(s) after importing. 
+#' Default is FALSE.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version of foreach is ran using 
+#' \code{\link{registerDoSEQ()}}.
+#'
+#' @return a dataframe reflecting psl file type. If asGRanges=TRUE, 
+#' then a GRanges object.
+#'
+#' @note If parallel=TRUE, then be sure to have a paralle backend registered 
+#' before running the function. One can use any of the following libraries 
+#' compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
+#' For example: library(doMC); registerDoMC(2)
+#'
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+#' \code{\link{startgfServer}}, \code{\link{blatSeqs}}, 
+#' \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}},
+#' \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
@@ -4085,6 +4166,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
 #'
 read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE, 
                      removeFile=TRUE, parallel=FALSE) {
+  
   if(is.null(pslFile) | length(pslFile)==0) {
     stop("pslFile parameter empty. Please supply a filename to be read.")
   }
@@ -4102,21 +4184,22 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
   if(!parallel) { registerDoSEQ() }
   
   ## setup psl columns + classes
-  cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", 
-            "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", 
-            "qSize", "qStart", "qEnd", "tName", "tSize", "tStart", "tEnd", 
-            "blockCount", "blockSizes", "qStarts", "tStarts")
-  cols.class <- c(rep("numeric",8), rep("character",2), rep("numeric",3),
-                  "character", rep("numeric",4), rep("character",3))
+  cols <- pslCols()
   
   hits <- foreach(x=iter(pslFile), .inorder=FALSE, 
-                  .export=c("cols","cols.class",
-                            "bestScoring")) %dopar% {
+                  .export=c("cols","bestScoring")) %dopar% {
                               message(x)
+                              ## add extra fields incase pslx format ##
+                              ncol <- max(count.fields(x, sep = "\t"))
+                              if(ncol > length(cols)) {
+                                for(f in 1:(ncol-length(cols))) {
+                                  cols[paste0("V",f)] <- "character"
+                                }
+                              }
                               hits.temp <- read.delim(x, header=FALSE, 
-                                                      col.names=cols, 
+                                                      col.names=names(cols), 
                                                       stringsAsFactors=FALSE, 
-                                                      colClasses=cols.class)    
+                                                      colClasses=cols)    
                               if(bestScoring) {  
                                 ## do round one of bestScore here to reduce file size          
                                 hits.temp$score <- 
@@ -4151,7 +4234,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
   
   message("Ordering by qName")
   if(is(hits,"GRanges")) {
-    hits <- sort(hits, by=~qName, ignore.strand=TRUE)
+    hits <- sort(hits, by=~qName)
   } else {
     hits <- arrange(hits, qName)
   }  
@@ -4194,10 +4277,7 @@ write.psl <- function(x, filename="out.psl", header=FALSE,
   }
   
   ## PSL columns ##
-  cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", 
-            "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", 
-            "qSize", "qStart", "qEnd", "tName", "tSize", "tStart", "tEnd", 
-            "blockCount", "blockSizes", "qStarts", "tStarts")
+  cols <- pslCols(withClass=FALSE)
   
   ## missing columns ##
   missing <- setdiff(cols, names(x))   
@@ -4259,14 +4339,22 @@ read.blast8 <- function(files=NULL, asGRanges=FALSE,
   cols <- c("qName", "tName", "identity", "span", "misMatches", "gaps", 
             "qStart", "qEnd", "tStart", "tEnd", "evalue", "bitscore")
   cols.class <- c(rep("character",2), rep("numeric",10))
+  cols <- structure(cols.class, names=cols)
   
   hits <- foreach(x=iter(files), .inorder=FALSE, 
-                  .export=c("cols","cols.class", "bestScoring")) %dopar% {
+                  .export=c("cols","bestScoring")) %dopar% {
                               message(x)
+                              ## add extra fields incase pslx format ##
+                              ncol <- max(count.fields(x, sep = "\t"))
+                              if(ncol > length(cols)) {
+                                for(f in 1:(ncol-length(cols))) {
+                                  cols[paste0("V",f)] <- "character"
+                                }
+                              }
                               hits.temp <- read.delim(x, header=FALSE, 
-                                                      col.names=cols, 
+                                                      col.names=names(cols), 
                                                       stringsAsFactors=FALSE, 
-                                                      colClasses=cols.class)
+                                                      colClasses=cols)
                               hits.temp$strand <- with(hits.temp, 
                                                        ifelse(tStart>tEnd,
                                                               "-","+"))
@@ -4292,7 +4380,7 @@ read.blast8 <- function(files=NULL, asGRanges=FALSE,
   
   message("Ordering by qName")
   if(is(hits,"GRanges")) {
-    hits <- sort(hits, by=~qName, ignore.strand=TRUE)
+    hits <- sort(hits, by=~qName)
   } else {
     hits <- arrange(hits, qName)
   }
