@@ -48,8 +48,13 @@ Align a fixed length short pattern sequence (i.e. primers or adaptors) to subjec
 }
 }
 \examples{
-#pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
-#pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
+subjectSeqs <- c("CCTGAATCCTGGCAATGTCATCATC", "ATCCTGGCAATGTCATCATCAATGG",
+"ATCAGTTGTCAACGGCTAATACGCG", "ATCAATGGCGATTGCCGCGTCTGCA",
+"CCGCGTCTGCAATGTGAGGGCCTAA", "GAAGGATGCCAGTTGAAGTTCACAC")
+subjectSeqs <- xscat("AAAAAAAAAA", subjectSeqs)
+pairwiseAlignSeqs(subjectSeqs, "AAAAAAAAAA", showStats=TRUE)
+pairwiseAlignSeqs(subjectSeqs, "AAATAATAAA", showStats=TRUE,
+qualityThreshold=0.5)
 }
 \seealso{
 \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}

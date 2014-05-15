@@ -7,7 +7,8 @@
 #' In addition, if IntSites MySQL database is setup, the sequence attrition is 
 #' loaded into respective tables for post processing setup and analysis.
 #'
-#' @import foreach iterators Rsubread Rbowtie hiAnnotator sonicLength plyr
+#' @import Rsamtools RMySQL foreach iterators Rsubread Rbowtie hiAnnotator 
+#' sonicLength plyr Biostrings GenomicRanges
 #' @docType package
 #' @name hiReadsProcessor
 #' @author Nirav V Malani
@@ -768,8 +769,13 @@ findBarcodes <- decodeByBarcode
 #' @export
 #'
 #' @examples 
-#' #pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
-#' #pairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
+#' subjectSeqs <- c("CCTGAATCCTGGCAATGTCATCATC", "ATCCTGGCAATGTCATCATCAATGG", 
+#' "ATCAGTTGTCAACGGCTAATACGCG", "ATCAATGGCGATTGCCGCGTCTGCA", 
+#' "CCGCGTCTGCAATGTGAGGGCCTAA", "GAAGGATGCCAGTTGAAGTTCACAC")
+#' subjectSeqs <- xscat("AAAAAAAAAA", subjectSeqs)
+#' pairwiseAlignSeqs(subjectSeqs, "AAAAAAAAAA", showStats=TRUE)
+#' pairwiseAlignSeqs(subjectSeqs, "AAATAATAAA", showStats=TRUE, 
+#' qualityThreshold=0.5)
 #'
 pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", 
                               qualityThreshold=1, showStats=FALSE, bufferBases=5, 
@@ -846,11 +852,11 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     
     ## basically a small subset of highscored
     unmatched <- nchar(hits) <= round(nchar(patternSeq)*.1) 
-    
-    
+
     # no point in showing stats if all sequences are a potential match! #
     if(showStats & qualityThreshold!=0) {
-      message("Total of ",as.numeric(table(highscored)['FALSE']),
+      bore <- as.numeric(table(highscored)['FALSE'])
+      message("Total of ",ifelse(is.na(bore),0,bore),
               " did not have the defined pattern sequence (", patternSeq,
               ") that passed qualityThreshold on the ", side, " side")
     }
@@ -993,7 +999,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
     pattern1.hits <- pattern1.hits[!badAss]
     pattern2.hits <- pattern2.hits[!badAss]
     good.rows <- good.rows[!badAss]
-    message("Removed ", table(badAss)["TRUE"],
+    bore <- table(badAss)["TRUE"]
+    message("Removed ", ifelse(is.na(bore),0,bore),
             " read(s) for not having primerID present between pattern 1 & 2")
   }
   
@@ -1193,7 +1200,8 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
   good.row <- names(subjectSeqs2) %in% names(hits)
   
   if(showStats) {
-    message("Total of ", as.numeric(table(good.row)['FALSE']),
+    bore <- as.numeric(table(good.row)['FALSE'])    
+    message("Total of ", ifelse(is.na(bore),0,bore),
             " did not have the defined pattern sequence (", patternSeq,
             ") that passed qualityThreshold on the ", side, " side")
   }  
@@ -3016,9 +3024,8 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
   message("Reading:\n", paste(seqFilePath, collapse="\n"))
   if(any(grepl("fastq",seqFilePath,ignore.case=TRUE))) {    
     dnaSet <- sapply(seqFilePath, function(x) {
-      bore <- readFastq(x)
-      dnaSet <- sread(bore)
-      names(dnaSet) <- sub("^\\S+-(\\S+) .+$", "\\1", id(bore), perl=TRUE)
+      dnaSet <- readDNAStringSet(x, format='fastq')      
+      names(dnaSet) <- sub("^\\S+-(\\S+) .+$", "\\1", names(bore), perl=TRUE)
       if(any(duplicated(names(dnaSet)))) {
         stop("Duplicate definition lines found in file: ", x)
       }

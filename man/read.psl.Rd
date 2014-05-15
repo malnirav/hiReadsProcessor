@@ -7,30 +7,48 @@ read.psl(pslFile = NULL, bestScoring = TRUE, asGRanges = FALSE,
   removeFile = TRUE, parallel = FALSE)
 }
 \arguments{
-\item{pslFile}{PSL filename, or vector of filenames, or a pattern of files to import.}
+\item{pslFile}{PSL filename, or vector of filenames, or a pattern of files
+to import.}
 
-\item{bestScoring}{report only best scoring hits instead of all hits. Default is TRUE. Score is calculated by matches-misMatches-qBaseInsert-tBaseInsert.}
+\item{bestScoring}{report only best scoring hits instead of all hits.
+Default is TRUE. Score is calculated by
+matches-misMatches-qBaseInsert-tBaseInsert.}
 
-\item{asGRanges}{return a GRanges object instead of a dataframe. Default is FALSE}
+\item{asGRanges}{return a GRanges object instead of a dataframe.
+Default is FALSE}
 
-\item{removeFile}{remove the PSL file(s) after importing. Default is FALSE.}
+\item{removeFile}{remove the PSL file(s) after importing.
+Default is FALSE.}
 
-\item{parallel}{use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.}
+\item{parallel}{use parallel backend to perform calculation with
+\code{\link{foreach}}. Defaults to TRUE. If no parallel backend is
+registered, then a serial version of foreach is ran using
+\code{\link{registerDoSEQ()}}.}
 }
 \value{
-a dataframe reflecting psl file type. If asGRanges=T, then a GRanges object.
+a dataframe reflecting psl file type. If asGRanges=TRUE,
+then a GRanges object.
 }
 \description{
-Given filename(s), the function reads the PSL file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results. Make sure there is no header row!
+Given filename(s), the function reads the PSL file format from BLAT as a
+data frame and performs basic score filtering if indicated. Any other file
+format will yield errors or erroneous results. Make sure there is no
+header row! See required columns in \code{\link{pslCols}}.
 }
 \note{
-If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+If parallel=TRUE, then be sure to have a paralle backend registered
+before running the function. One can use any of the following libraries
+compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI.
+For example: library(doMC); registerDoMC(2)
 }
 \examples{
 #read.psl(pslFile="processed.*.psl$")
 #read.psl(pslFile=c("sample1hits.psl","sample2hits.psl"))
 }
 \seealso{
-\code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
+\code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+\code{\link{startgfServer}}, \code{\link{blatSeqs}},
+\code{\link{read.blast8}}, \code{\link{read.BAMasPSL}},
+\code{\link{pslToRangedObject}}
 }
 

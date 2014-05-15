@@ -12,11 +12,13 @@ Description: hiReadsProcessor contains set of functions which allow users to
     sequence attrition is loaded into respective tables for post processing
     setup and analysis.
 Depends:
-    ShortRead,
-    RMySQL,
+    Biostrings,
+    GenomicRanges,
     xlsx,
-    R (>= 2.10)
+    R (>= 3.0)
 Imports:
+    Rsamtools,
+    RMySQL,
     foreach,
     iterators,
     Rsubread,
@@ -28,6 +30,8 @@ License: GPL (>= 2)
 VignetteBuilder: knitr
 Suggests:
     knitr,
-    doParallel
+    doParallel,
+    testthat,
+    BiocGenerics
 biocViews: HighThroughputSequencing, Preprocessing
 LazyLoad: yes
