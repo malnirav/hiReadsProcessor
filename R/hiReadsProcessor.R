@@ -7,8 +7,8 @@
 #' In addition, if IntSites MySQL database is setup, the sequence attrition is 
 #' loaded into respective tables for post processing setup and analysis.
 #'
-#' @import Rsamtools RMySQL foreach iterators Rsubread Rbowtie hiAnnotator 
-#' sonicLength plyr Biostrings GenomicRanges
+#' @import Biostrings GenomicRanges xlsx hiAnnotator Rsamtools RMySQL Rsubread 
+#' random sonicLength plyr BiocParallel
 #' @docType package
 #' @name hiReadsProcessor
 #' @author Nirav V Malani
@@ -120,35 +120,36 @@ read.SeqFolder <- function(sequencingFolderPath=NULL, sampleInfoFilePath=NULL,
 #'  	\item sector => region/quadrant/lane of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed. For paired end data, this is basename of the FASTA/Q file holding the sample data from the LTR side. For example, files such as Lib3_L001_R2_001.fastq.gz or Lib3_L001_R2_001.fastq would be Lib3_L001_R2_001, and consequently Lib3_L001_R1_001 would be used as the second pair!
 #'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample. If providing filename as sector, then leave this blank since it is assumed that the data is already demultiplexed.
 #'  	\item primerltrsequence => DNA sequence of the viral LTR primer with/without the viral LTR sequence following the primer landing site. If already trimmed, then mark this as SKIP.
-#'  	\item samplename => Name of the sample associated with the barcode
-#'  	\item sampledescription => Detailed description of the sample
+#'  	\item sampleName => Name of the sample associated with the barcode
+#'  	\item sampleDescription => Detailed description of the sample
 #'  	\item gender => sex of the sample: male or female or NA
 #'  	\item species => species of the sample: homo sapien, mus musculus, etc.
 #'  	\item freeze => UCSC freeze to which the sample should be aligned to.
-#'  	\item linkersequence => DNA sequence of the linker adaptor following the genomic sequence. If already trimmed, then mark this as SKIP.
-#'  	\item restrictionenzyme => Restriction enzyme used for digestion and sample recovery. Can also be one of: Fragmentase or Sonication!
+#'  	\item linkerSequence => DNA sequence of the linker adaptor following the genomic sequence. If already trimmed, then mark this as SKIP.
+#'  	\item restrictionEnzyme => Restriction enzyme used for digestion and sample recovery. Can also be one of: Fragmentase or Sonication!
 #' 		}
 #'  \item Metadata Parameter Column Description:
 #'   \itemize{
-#'  	\item ltrbitsequence => DNA sequence of the viral LTR following the primer landing site. Default is last 7bps of the primerltrsequence.
-#'  	\item ltrbitidentity => percent of LTR bit sequence to match during the alignment. Default is 1.
-#'  	\item primerltridentity => percent of primer to match during the alignment. Default is .85
-#'  	\item linkeridentity => percent of linker sequence to match during the alignment. Default is 0.55. Only applies to non-primerID/random tag based linker search.
-#'  	\item primeridinlinker => whether the linker adaptor used has primerID/random tag in it? Default is FALSE.
-#'  	\item primeridinlinkeridentity1 => percent of sequence to match before the random tag. Default is 0.75. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
-#'  	\item primeridinlinkeridentity2 => percent of sequence to match after the random tag. Default is 0.50. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
+#'  	\item ltrBitSequence => DNA sequence of the viral LTR following the primer landing site. Default is last 7bps of the primerltrsequence.
+#'  	\item ltrBitIdentity => percent of LTR bit sequence to match during the alignment. Default is 1.
+#'  	\item primerLTRidentity => percent of primer to match during the alignment. Default is .85
+#'  	\item linkerIdentity => percent of linker sequence to match during the alignment. Default is 0.55. Only applies to non-primerID/random tag based linker search.
+#'  	\item primerIdInLinker => whether the linker adaptor used has primerID/random tag in it? Default is FALSE.
+#'  	\item primerIdInLinkerIdentity1 => percent of sequence to match before the random tag. Default is 0.75. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
+#'  	\item primerIdInLinkerIdentity2 => percent of sequence to match after the random tag. Default is 0.50. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
 #'  	\item celltype => celltype information associated with the sample
 #'  	\item user => name of the user who prepared or processed the sample
-#'  	\item pairedend => is the data paired end? Default is FALSE.
+#'  	\item pairedEnd => is the data paired end? Default is FALSE.
+#'    \item vectorFile => fasta file containing the vector sequence
 #' 		}
 #'  \item Processing Parameter Column Description:
 #'   \itemize{
-#'  	\item startwithin => upper bound limit of where the alignment should start within the query. Default is 3.
-#'  	\item alignratiothreshold => cuttoff for (alignment span/read length). Default is 0.7.
-#'  	\item genomicpercentidentity => cuttoff for (1-(misMatches/matches)). Default is 0.98.
-#'  	\item clustersiteswithin => cluster integration sites within a defined window size based on frequency which corrects for any sequencing errors. Default is 5.
-#'  	\item keepmultihits => whether to keep sequences/reads that return multiple best hits, aka ambiguous locations. 
-#'  	\item processingdate => the date of processing 
+#'  	\item startWithin => upper bound limit of where the alignment should start within the query. Default is 3.
+#'  	\item alignRatioThreshold => cuttoff for (alignment span/read length). Default is 0.7.
+#'  	\item genomicPercentIdentity => cuttoff for (1-(misMatches/matches)). Default is 0.98.
+#'  	\item clusterSitesWithin => cluster integration sites within a defined window size based on frequency which corrects for any sequencing errors. Default is 5.
+#'  	\item keepMultiHits => whether to keep sequences/reads that return multiple best hits, aka ambiguous locations. 
+#'  	\item processingDate => the date of processing 
 #' 		}
 #' }
 #'
@@ -177,12 +178,12 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
   metaDataCols <- c('ltrbitsequence'='', 'ltrbitidentity'=1, 
                     'primerltridentity'=.85, 'linkeridentity'=.55, 
                     'primeridinlinker'=FALSE, 'primeridinlinkeridentity1'=.75, 
-                    'primeridinlinkeridentity2'=.50, 'celltype'='', 
+                    'primeridinlinkeridentity2'=.50, 'celltype'='',
                     'user'=Sys.getenv("USER"), 'startwithin'=3, 
                     'alignratiothreshold'=.7, 'clustersiteswithin'=5, 
                     'keepmultihits'=TRUE , 'genomicpercentidentity'=.98, 
                     'processingdate'=format(Sys.time(), "%Y-%m-%d "), 
-                    'pairedend'=FALSE)
+                    'pairedend'=FALSE, 'vectorFile'='')
   
   if(grepl('.xls.?$', sampleInfoPath)) {
     sampleInfo <- unique(read.xlsx(sampleInfoPath, 
@@ -250,7 +251,7 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
                                           nchar(sampleInfo$primerltrsequence)-6, 
                                           nchar(sampleInfo$primerltrsequence))
       sampleInfo$primerltrsequence <- substr(sampleInfo$primerltrsequence, 1,
-                                        nchar(sampleInfo$primerltrsequence)-7)
+                                             nchar(sampleInfo$primerltrsequence)-7)
     } else {
       warning("No LTR bit sequence found for following samples: ",
               paste(sampleInfo$samplename[tofix], sep="", collapse=", "),
@@ -428,7 +429,7 @@ removeReadsWithNs <- function(dnaSet, maxNs=5, consecutive=TRUE) {
 #' Given a linear/vector like object, the function breaks it into equal sized chunks either by chunkSize. This is a helper function used by functions in 'See Also' section where each chunk is sent to a parallel node for processing.
 #'
 #' @param x a linear object.
-#' @param chunkSize number of rows to use per chunk of query. Defaults to length(x)/detectCores() or length(query)/getDoParWorkers() depending on parallel backend registered. 
+#' @param chunkSize number of rows to use per chunk of query. Defaults to length(x)/detectCores() or length(query)/bpworkers() depending on parallel backend registered. 
 #'
 #' @return a list of object split into chunks.
 #'
@@ -447,8 +448,8 @@ chunkize <- function(x, chunkSize = NULL) {
   chunks <- breakInChunks(length(x), 
                           ifelse(!is.null(chunkSize),
                                  length(x)/chunkSize, 
-                                 ifelse(!is.null(getDoParWorkers()), 
-                                        length(x)/getDoParWorkers(), 
+                                 ifelse(!is.null(bpworkers()), 
+                                        length(x)/bpworkers(), 
                                         length(x)/detectCores())))
   mapply(function(z, y) x[z:y], start(chunks), end(chunks), 
          SIMPLIFY = FALSE, USE.NAMES = FALSE)
@@ -748,14 +749,18 @@ findBarcodes <- decodeByBarcode
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
 #' @param returnUnmatched return sequences which had no or less than 5\% match to the patternSeq. Default is FALSE.
 #' @param returnLowScored return sequences which had quality score less than the defined qualityThreshold. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to FALSE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use BiocParallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #' @param ... extra parameters for \code{\link{pairwiseAlignment}}
 #' @note 
 #' \itemize{
 #'  \item For qualityThreshold, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2.
 #'  \item Gaps and mismatches are weighed equally with value of -1 which can be overriden by defining extra parameters 'gapOpening' & 'gapExtension'.
 #'  \item If qualityThreshold is 1, then it is a full match, if 0, then any match is accepted which is useful in searching linker sequences at 3' end. Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST/BLAT!
-#'  \item If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#'  \item If parallel=TRUE, then be sure to have a parallel backend registered 
+#'  before running the function. One can use any of the following 
+#'  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #' }
 #'
 #' @return 
@@ -786,16 +791,10 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
   
   if(parallel) {
     subjectSeqs2 <- chunkize(subjectSeqs)
-    hits <- foreach(subjectSeqs=iter(subjectSeqs2), .inorder=TRUE,
-                    .export=c("pairwiseAlignSeqs", "patternSeq", "side",
-                              "qualityThreshold", "bufferBases", "doRC", 
-                              "returnUnmatched", "returnLowScored"), 
-                    .packages="Biostrings") %dopar% {
-                      pairwiseAlignSeqs(subjectSeqs, patternSeq, side, 
-                                        qualityThreshold, FALSE, bufferBases, 
-                                        doRC, returnUnmatched, returnLowScored, 
-                                        FALSE, ...)
-                    }
+    hits <- bplapply(subjectSeqs2, function(x) 
+      pairwiseAlignSeqs(x, patternSeq, side, qualityThreshold, showStats=FALSE, 
+                        bufferBases, doRC, returnUnmatched,  returnLowScored, 
+                        parallel=FALSE, ...), BPPARAM=dp)    
     hits <- do.call(c,hits)
     if(is(hits,"CompressedIRangesList")) {
       attrs <- unique(names(hits))
@@ -852,7 +851,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     
     ## basically a small subset of highscored
     unmatched <- nchar(hits) <= round(nchar(patternSeq)*.1) 
-
+    
     # no point in showing stats if all sequences are a potential match! #
     if(showStats & qualityThreshold!=0) {
       bore <- as.numeric(table(highscored)['FALSE'])
@@ -1092,7 +1091,9 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param bufferBases use x number of bases in addition to patternSeq length to perform the search. Beneficial in cases where the pattern has homopolymers or indels compared to the subject. Default is 5. Doesn't apply when side='middle'.
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to FALSE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use BiocParallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #' @param ... extra parameters for \code{\link{vmatchPattern}} except for 'max.mismatch' since it's calculated internally using the 'qualityThreshold' parameter.
 #'
 #'
@@ -1101,7 +1102,9 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
 #'  \item For qualityThreshold, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2.
 #'  \item No indels are allowed in the function, if expecting indels then use \code{\link{pairwiseAlignSeqs}}.
 #'  \item If qualityThreshold is 1, then it is a full match, if 0, then any match is accepted which is useful in searching linker sequences at 3' end. Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST/BLAT!
-#'  \item If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#'  \item If parallel=TRUE, then be sure to have a parallel backend registered 
+#'  before running the function. One can use any of the following 
+#'  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #' }
 #' 
 #' @return IRanges object with starts, stops, and names of the aligned sequences.
@@ -1153,15 +1156,11 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
   
   if(parallel) {
     subjectSeqs2 <- chunkize(subjectSeqs2)
-    hits <- foreach(x=iter(subjectSeqs2), .inorder=TRUE, 
-                    .errorhandling="pass", 
-                    .export=c("patternSeq", names(match.call())), 
-                    .packages="Biostrings") %dopar% {
-                      maxmis <- round(nchar(patternSeq)*(1-qualityThreshold))
-                      bore <- vmatchPattern(patternSeq, x, 
-                                            max.mismatch=maxmis, ...)
-                      unlist(bore, recursive=TRUE, use.names=TRUE)              
-                    }
+    maxmis <- round(nchar(patternSeq)*(1-qualityThreshold))
+    hits <- bplapply(subjectSeqs2, function(x) {
+      bore <- vmatchPattern(patternSeq, x, max.mismatch=maxmis, ...)
+      unlist(bore, recursive=TRUE, use.names=TRUE)
+    }, BPPARAM=dp) 
     hits <- do.call(c, hits)
   } else {
     max.mm <- round(nchar(patternSeq)*(1-qualityThreshold))
@@ -1226,7 +1225,7 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. 
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search.
 #' @param qualityThreshold percent of patternSeq to match. Default is 0.50, half match. This is supplied to max.mismatch parameter of \code{\link{vcountPattern}} as round(nchar(patternSeq)*(1-qualityThreshold)).
-#' @param cores.use Number of cores to use for aligning. Only need two max! Default is 2. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param cores.use Number of cores to use for aligning. Only need two max! Default is 2. If no parallel backend is registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
 #' @return patternSeq that aligned the best. 
 #'
@@ -1242,18 +1241,14 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
   
   .checkArgs_SEQed()
   
-  if(core.use==1) { registerDoSEQ() }
+  if(core.use==1) { register(SerialParam()) }
   
   patternSeq.rc <- as.character(reverseComplement(DNAString(patternSeq)))
-  hits <- foreach(x=iter(c(patternSeq,patternSeq.rc)), .inorder=TRUE, 
-                  .errorhandling="pass", 
-                  .export=c("subjectSeqs","qualityThreshold"), 
-                  .packages="Biostrings") %dopar% {
-                    max.mm <- round(nchar(x)*(1-qualityThreshold))
-                    counts <- pmin(vcountPattern(x, subjectSeqs, 
-                                                 max.mismatch=max.mm),1)
-                    sum(counts)
-                  }
+  hits <- bplapply(c(patternSeq,patternSeq.rc), function(x) {
+    max.mm <- round(nchar(x)*(1-qualityThreshold))
+    counts <- pmin(vcountPattern(x, subjectSeqs, max.mismatch=max.mm),1)
+    sum(counts)
+  }, BPPARAM=dp)
   
   if(all(hits==0)) {
     stop("No hits found")
@@ -1348,11 +1343,10 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param doRC perform reverse complement search of the defined pattern/primer. 
 #' Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with 
-#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, 
-#' then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
-#' Parllelization is done at sample level per sector. Use parallel2 for 
-#' parallelization at sequence level.
+#' @param parallel use parallel backend to perform calculation . Defaults to TRUE. 
+#' If no parallel backend is registered, then a serial version is ran using
+#' \code{\link{SerialParam}}. Parllelization is done at sample level 
+#' per sector. Use parallel2 for parallelization at sequence level.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which
 #' processes all samples from sampleInfo object.
 #' @param bypassChecks skip checkpoints which detect if something was odd with 
@@ -1369,10 +1363,9 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' \itemize{
 #'  \item For paired end data, qualityThreshold for pair 2 is decreased by 
 #'  0.10 to increase chances of matching primer sequence.
-#'  \item If parallel=TRUE, then be sure to have a paralle backend registered 
-#'  before running the function. One can use any of the following libraries 
-#'  compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
-#'  For example: library(doMC); registerDoMC(2)
+#'  \item If parallel=TRUE, then be sure to have a parallel backend registered 
+#'  before running the function. One can use any of the following 
+#'  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #' }
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
@@ -1452,65 +1445,42 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                        feature="primerltridentity")[[sector]]
       stopifnot(length(primerIdentity)>0)
       
-      primerTrimmed <- foreach(subjectSeqs=iter(decoded[samplesToProcess]), 
-                               patternSeq=iter(ltrPrimers[samplesToProcess]),
-                               paired=iter(isPaired[samplesToProcess]),
-                               qualT=iter(primerIdentity[samplesToProcess]),                               
-                               .inorder=TRUE, .errorhandling="pass", 
-                               .export=c("doRC","alignWay","vpairwiseAlignSeqs",
-                                         "pairwiseAlignSeqs","parallel2"), 
-                               .packages=c("Biostrings","foreach")) %dopar% {
-                                 if(paired) {
-                                   if(alignWay=="fast") {
-                                     p1 <- vpairwiseAlignSeqs(subjectSeqs$pair1,
-                                                              patternSeq, 
-                                                              "left", 
-                                                              (qualT-0.05), 
-                                                              doRC=doRC, 
-                                                              parallel=parallel2,
-                                                              ...)
-                                   } else if (alignWay=="slow") {
-                                     p1 <- pairwiseAlignSeqs(subjectSeqs$pair1,
-                                                             patternSeq, 
-                                                             "left", qualT, 
-                                                             doRC=doRC, 
-                                                             parallel=parallel2,
-                                                             ...)
-                                   }                                   
-                                   
-                                   ## side needs to be middle since we dont 
-                                   ## know where in pair2 the primer can be
-                                   if(alignWay=="fast") {
-                                     p2 <- vpairwiseAlignSeqs(subjectSeqs$pair2,
-                                                              patternSeq,
-                                                              "middle", 
-                                                              (qualT-0.15), 
-                                                              doRC=doRC, 
-                                                              parallel=parallel2,
-                                                              ...)
-                                   } else if (alignWay=="slow") {
-                                     p2 <- pairwiseAlignSeqs(subjectSeqs$pair2,
-                                                             patternSeq,
-                                                             "middle", 
-                                                             (qualT-0.1), 
-                                                             doRC=doRC, 
-                                                             parallel=parallel2,
-                                                             ...)
-                                   }
-                                   list("pair1"=p1, "pair2"=p2)
-                                 } else {
-                                   if(alignWay=="fast") {
-                                     vpairwiseAlignSeqs(subjectSeqs, patternSeq, 
-                                                        "left", (qualT-0.05), 
-                                                        doRC=doRC, 
-                                                        parallel=parallel2, ...)
-                                   } else if (alignWay=="slow") {
-                                     pairwiseAlignSeqs(subjectSeqs, patternSeq, 
-                                                       "left", qualT, doRC=doRC, 
-                                                       parallel=parallel2, ...)
-                                   }                                   
-                                 }
-                               }
+      primerTrimmed <- bpmapply(function(subjectSeqs, patternSeq, paired,
+                                         qualT, ...) {
+        if(paired) {
+          if(alignWay=="fast") {
+            p1 <- vpairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, "left", 
+                                     (qualT-0.05), doRC=doRC, 
+                                     parallel=parallel2, ...)
+          } else if (alignWay=="slow") {
+            p1 <- pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, "left", 
+                                    qualT, doRC=doRC, parallel=parallel2, ...)
+          }                                   
+          
+          ## side needs to be middle since we dont 
+          ## know where in pair2 the primer can be
+          if(alignWay=="fast") {
+            p2 <- vpairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, "middle", 
+                                     (qualT-0.15), doRC=doRC,  
+                                     parallel=parallel2, ...)
+          } else if (alignWay=="slow") {
+            p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, "middle", 
+                                    (qualT-0.1), doRC=doRC, parallel=parallel2,
+                                    ...)
+          }
+          list("pair1"=p1, "pair2"=p2)
+        } else {
+          if(alignWay=="fast") {
+            vpairwiseAlignSeqs(subjectSeqs, patternSeq, "left", (qualT-0.05), 
+                               doRC=doRC, parallel=parallel2, ...)
+          } else if (alignWay=="slow") {
+            pairwiseAlignSeqs(subjectSeqs, patternSeq, "left", qualT, doRC=doRC, 
+                              parallel=parallel2, ...)
+          }                                   
+        }
+      }, decoded[samplesToProcess], ltrPrimers[samplesToProcess],
+      isPaired[samplesToProcess], primerIdentity[samplesToProcess],
+      SIMPLIFY=FALSE, USE.NAMES=FALSE, BPPARAM=dp)
       names(primerTrimmed) <- samplesToProcess
       
       ## check if any error occured during alignments ##
@@ -1530,7 +1500,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       }
       
       cleanit <- gc()
-
+      
       if(length(primerTrimmed)>0) {
         if(!bypassChecks | showStats) {
           eval(expression(trimmedObj <- "primerTrimmed", rawObj <- "decoded", 
@@ -1576,9 +1546,9 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' @param doRC perform reverse complement search of the defined pattern/LTR 
 #' sequence. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with 
-#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
-#' registered, then a serial version of foreach is ran using 
-#' \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using 
+#' \code{\link{SerialParam}}. Parllelization is done at sample level per 
 #' sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, 
 #' which processes all samples from sampleInfo object.
@@ -1595,10 +1565,9 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' \itemize{
 #'  \item For paired end data, qualityThreshold for pair 2 is decreased by 
 #'  0.05 to increase chances of matching LTR sequence.
-#'  \item If parallel=TRUE, then be sure to have a paralle backend registered 
-#'  before running the function. One can use any of the following libraries 
-#'  compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
-#'  For example: library(doMC); registerDoMC(2)
+#'  \item If parallel=TRUE, then be sure to have a parallel backend registered 
+#'  before running the function. One can use any of the following 
+#'  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #' }
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
@@ -1690,36 +1659,26 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       ltrBitIdentity <- extractFeature(sampleInfo,sector=sector,
                                        feature="ltrbitidentity")[[sector]]
       
-      ltrTrimmed <- foreach(subjectSeqs=iter(primerTrimmed[samplesToProcess]),
-                            patternSeq=iter(sampleLTRbits[samplesToProcess]),
-                            qualT=iter(ltrBitIdentity[samplesToProcess]),
-                            paired=iter(isPaired[samplesToProcess]),
-                            .inorder=TRUE, .errorhandling="pass", 
-                            .export=c("pairwiseAlignSeqs", "doRC", "parallel2"), 
-                            .packages=c("Biostrings","foreach")) %dopar% {
-                              if(paired) {
-                                p1 <- pairwiseAlignSeqs(subjectSeqs$pair1, 
-                                                        patternSeq, "left", 
-                                                        qualityThreshold=qualT, 
-                                                        doRC=doRC, 
-                                                        parallel=parallel2, ...)
-                                
-                                p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, 
-                                                        patternSeq, "middle", 
-                                                        qualityThreshold=
-                                                          (qualT-0.05), 
-                                                        doRC=doRC, 
-                                                        parallel=parallel2, ...)
-                                
-                                list("pair1"=p1, "pair2"=p2)          
-                              } else {
-                                pairwiseAlignSeqs(subjectSeqs, patternSeq, 
-                                                  "left", 
-                                                  qualityThreshold=qualT, 
-                                                  doRC=doRC, parallel=parallel2,
-                                                  ...)
-                              }        
-                            }
+      ltrTrimmed <- bpmapply(function(subjectSeqs, patternSeq, paired,
+                                      qualT, ...) {
+        if(paired) {
+          p1 <- pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, "left", 
+                                  qualityThreshold=qualT, doRC=doRC, 
+                                  parallel=parallel2, ...)
+          
+          p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, "middle", 
+                                  qualityThreshold=(qualT-0.05), doRC=doRC, 
+                                  parallel=parallel2, ...)
+          
+          list("pair1"=p1, "pair2"=p2)          
+        } else {
+          pairwiseAlignSeqs(subjectSeqs, patternSeq, "left", 
+                            qualityThreshold=qualT, doRC=doRC, 
+                            parallel=parallel2, ...)
+        }        
+      }, primerTrimmed[samplesToProcess], sampleLTRbits[samplesToProcess],
+      isPaired[samplesToProcess], ltrBitIdentity[samplesToProcess],
+      SIMPLIFY=FALSE, USE.NAMES=FALSE, BPPARAM=dp)
       names(ltrTrimmed) <- samplesToProcess
       
       ## check if any error occured during alignments ##
@@ -1814,9 +1773,9 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #' @param doRC perform reverse complement search of the defined pattern/linker 
 #' sequence. Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with
-#'  \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
-#'  registered, then a serial version of foreach is ran using 
-#'  \code{\link{registerDoSEQ()}}. Parllelization is done at sample level 
+#'  \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#'  registered, then a serial version is ran using 
+#'  \code{\link{SerialParam}}. Parllelization is done at sample level 
 #'  per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, 
 #' which processes all samples from sampleInfo object.
@@ -1838,10 +1797,9 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #'  linker sequence.
 #'  \item If no linker matches are found with default options, then try 
 #'  doRC=TRUE. 
-#'  \item If parallel=TRUE, then be sure to have a paralle backend registered 
-#'  before running the function. One can use any of the following libraries 
-#'  compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
-#'  For example: library(doMC); registerDoMC(2)
+#'  \item If parallel=TRUE, then be sure to have a parallel backend registered 
+#'  before running the function. One can use any of the following 
+#'  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #' }
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
@@ -1930,89 +1888,61 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       
       ## trim the Linkers ##
       message("\tFinding Linkers.")
-      linkerTrimmed <- foreach(subjectSeqs=iter(toProcess[samplesToProcess]),
-                               patternSeq=iter(sampleLinkers[samplesToProcess]),
-                               qualT=iter(linkerIdentity[samplesToProcess]),
-                               paired=iter(isPaired[samplesToProcess]), 
-                               pIded=iter(primerIded[samplesToProcess]),
-                               qualT1=iter(primerIded.threshold1[samplesToProcess]),
-                               qualT2=iter(primerIded.threshold2[samplesToProcess]),
-                               .inorder=TRUE, .errorhandling="pass", 
-                               .export=c("doRC", "parallel2", 
-                                         "pairwiseAlignSeqs","primerIDAlignSeqs"), 
-                               .packages=c("Biostrings","foreach")) %dopar% {        
-                                 if(pIded) {
-                                   if(paired) {
-                                     p1 <- primerIDAlignSeqs(subjectSeqs$pair1,
-                                                             patternSeq, 
-                                                             doAnchored=TRUE, 
-                                                             returnUnmatched=TRUE, 
-                                                             returnRejected=TRUE, 
-                                                             doRC=doRC, 
-                                                             qualityThreshold1=qualT1, 
-                                                             qualityThreshold2=qualT2,
-                                                             parallel=parallel2)
-                                     
-                                     p2 <- primerIDAlignSeqs(subjectSeqs$pair2,
-                                                             patternSeq, 
-                                                             doAnchored=TRUE, 
-                                                             returnUnmatched=TRUE, 
-                                                             returnRejected=TRUE,
-                                                             doRC=doRC, 
-                                                             qualityThreshold1=
-                                                               pmin(qualT1+.25,1), 
-                                                             qualityThreshold2=
-                                                               pmin(qualT2+.25,1), 
-                                                             parallel=parallel2)
-                                     
-                                     list("pair1"=p1, "pair2"=p2)
-                                   } else {
-                                     primerIDAlignSeqs(subjectSeqs, patternSeq,
-                                                       doAnchored=TRUE, 
-                                                       returnUnmatched=TRUE, 
-                                                       returnRejected=TRUE,
-                                                       doRC=doRC, 
-                                                       qualityThreshold1=qualT1,
-                                                       qualityThreshold2=qualT2, 
-                                                       parallel=parallel2)
-                                   }          
-                                 } else {
-                                   ## use side="middle" since more junk sequence 
-                                   ## can be present after linker which would 
-                                   ## fail pairwiseAlignSeqs if side='right' for
-                                   ## single end reads or "pair1"
-                                   if(paired) {
-                                     p1 <- pairwiseAlignSeqs(subjectSeqs$pair1,
-                                                             patternSeq, "middle", 
-                                                             qualityThreshold=qualT, 
-                                                             returnUnmatched=TRUE,
-                                                             returnLowScored=TRUE, 
-                                                             doRC=doRC, 
-                                                             parallel=parallel2)
-                                     
-                                     # pair2 should end with linker, 
-                                     # hence side='right'            
-                                     p2 <- pairwiseAlignSeqs(subjectSeqs$pair2,
-                                                             patternSeq, "right", 
-                                                             qualityThreshold=
-                                                               pmin(qualT+.25,1), 
-                                                             returnUnmatched=TRUE,
-                                                             returnLowScored=TRUE, 
-                                                             doRC=doRC, 
-                                                             parallel=parallel2)
-                                     
-                                     list("pair1"=p1, "pair2"=p2)
-                                   } else {
-                                     pairwiseAlignSeqs(subjectSeqs, patternSeq,
-                                                       "middle", 
-                                                       qualityThreshold=qualT, 
-                                                       returnUnmatched=TRUE, 
-                                                       returnLowScored=TRUE, 
-                                                       doRC=doRC, 
-                                                       parallel=parallel2) 
-                                   }
-                                 }        
-                               }
+      linkerTrimmed <- bpmapply(function(subjectSeqs, patternSeq, qualT,
+                                         paired, pIded, qualT1, qualT2, ...) {        
+        if(pIded) {
+          if(paired) {
+            p1 <- primerIDAlignSeqs(subjectSeqs$pair1, patternSeq, 
+                                    doAnchored=TRUE, returnUnmatched=TRUE, 
+                                    returnRejected=TRUE, doRC=doRC, 
+                                    qualityThreshold1=qualT1, 
+                                    qualityThreshold2=qualT2, 
+                                    parallel=parallel2, ...)
+            
+            p2 <- primerIDAlignSeqs(subjectSeqs$pair2, patternSeq, 
+                                    doAnchored=TRUE, returnUnmatched=TRUE, 
+                                    returnRejected=TRUE, doRC=doRC, 
+                                    qualityThreshold1=pmin(qualT1+.25,1), 
+                                    qualityThreshold2=pmin(qualT2+.25,1), 
+                                    parallel=parallel2, ...)
+            
+            list("pair1"=p1, "pair2"=p2)
+          } else {
+            primerIDAlignSeqs(subjectSeqs, patternSeq, doAnchored=TRUE, 
+                              returnUnmatched=TRUE, returnRejected=TRUE,
+                              doRC=doRC, qualityThreshold1=qualT1,
+                              qualityThreshold2=qualT2, parallel=parallel2, ...)
+          }          
+        } else {
+          ## use side="middle" since more junk sequence can be present after 
+          ## linker which would fail pairwiseAlignSeqs if side='right' for
+          ## single end reads or "pair1"
+          if(paired) {
+            p1 <- pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, "middle", 
+                                    qualityThreshold=qualT, 
+                                    returnUnmatched=TRUE, returnLowScored=TRUE, 
+                                    doRC=doRC, parallel=parallel2, ...)
+            
+            # pair2 should end with linker, hence side='right'            
+            p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, "right", 
+                                    qualityThreshold=pmin(qualT+.25,1), 
+                                    returnUnmatched=TRUE, returnLowScored=TRUE, 
+                                    doRC=doRC, parallel=parallel2, ...)
+            
+            list("pair1"=p1, "pair2"=p2)
+          } else {
+            pairwiseAlignSeqs(subjectSeqs, patternSeq, "middle", 
+                              qualityThreshold=qualT, returnUnmatched=TRUE, 
+                              returnLowScored=TRUE, doRC=doRC, 
+                              parallel=parallel2, ...) 
+          }
+        }        
+      },
+      toProcess[samplesToProcess], sampleLinkers[samplesToProcess],
+      linkerIdentity[samplesToProcess], isPaired[samplesToProcess],
+      primerIded[samplesToProcess], primerIded.threshold1[samplesToProcess],
+      primerIded.threshold2[samplesToProcess], SIMPLIFY=FALSE, USE.NAMES=FALSE, 
+      BPPARAM=dp)      
       names(linkerTrimmed) <- samplesToProcess
       
       ## check if any error occured during alignments ##
@@ -2069,6 +1999,208 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
   return(sampleInfo)
 }
 
+#' Find vector DNA in reads and add results to SampleInfo object. 
+#'
+#' Given a sampleInfo object, the function finds vector fragments following the 
+#' LTR piece for each sample per sector and adds the results back to the object. 
+#' This is a specialized function which depends on many other functions shown
+#' in 'see also section' to perform specialized trimming of 5' viral LTRs found
+#' in the sampleInfo object. The sequence itself is never trimmed but rather 
+#' coordinates of vector portion is added to LTR coordinates and recorded back 
+#' to the object and used subsequently by \code{\link{extractSeqs}} function to 
+#' perform the trimming. This function heavily relies on \code{\link{blatSeqs}}.
+#' In order for this function to work, it needs vector sequence which is read in
+#' using 'vectorFile' metadata supplied in the sample information file in 
+#' \code{\link{read.sampleInfo}}
+#'
+#' @param sampleInfo sample information SimpleList object outputted from 
+#' \code{\link{findLTRs}}, which holds decoded, primed, and LTRed sequences for 
+#' samples per sector/quadrant.
+#' @param showStats toggle output of search statistics. Default is FALSE.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is  
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
+#' Parllelization is done at sample level per sector. Use parallel2 for 
+#' parallelization at sequence level.
+#' @param samplenames a vector of samplenames to process. Default is NULL, which
+#' processes all samples from sampleInfo object.
+#'
+#' @return a SimpleList object similar to sampleInfo paramter supplied with new 
+#' data added under each sector and sample. New data attributes include: vectored
+#'
+#' @note 
+#' \itemize{
+#'  \item If parallel=TRUE, then be sure to have a parallel backend registered 
+#'  before running the function. One can use any of the following 
+#'  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
+#' }
+#'
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}},
+#' \code{\link{extractFeature}}, \code{\link{extractSeqs}}, 
+#' \code{\link{findPrimers}}, \code{\link{findLTRs}}, 
+#' \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}},
+#' \code{\link{findAndRemoveVector}}
+#'
+#' @export
+#'
+#' @examples 
+#' #findVector(sampleInfo, showStats=TRUE)
+#'
+findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE, 
+                       samplenames=NULL) {    
+  
+  .checkArgs_SEQed()
+    
+  ## test if there are primed sequences in the sampleinfo object ##   
+  primed <- extractFeature(sampleInfo, feature="primed")
+  samplesprimed <- sapply(primed, names, simplify=FALSE)
+  sectorsPrimed <- names(which(sapply(sapply(primed, length), ">", 0)))
+  rm(primed)
+  cleanit <- gc()
+  
+  if(length(sectorsPrimed)==0) {
+    stop("No primed information found in sampleInfo. Did you run findPrimers()?")
+  }
+  
+  for(sector in sectorsPrimed) {
+    message("Processing sector ",sector)
+    
+    ## refine sample list if specific samples are supplied ##
+    samplesToProcess <- samplesprimed[[sector]]
+    if(!is.null(samplenames)) {
+      samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
+    }
+    
+    ## dont bother searching if no samples are to be processed! ##
+    if(length(samplesToProcess)>0) {
+      ## get the LTR trimmed reads ##
+      ltrTrimmed <- extractSeqs(sampleInfo, sector, samplesToProcess,
+                                feature="LTRed")[[sector]]
+      
+      ## find paired end samples...
+      ## add reads which aren't primed in pair2 for cases where reads were long
+      isPaired <- extractFeature(sampleInfo, sector, samplesToProcess,
+                                 feature='pairedend')[[sector]]
+      if(any(isPaired)) {
+        message("Getting reads from pair2 which weren't LTRed...")
+        decoded <- extractSeqs(sampleInfo, sector, names(which(isPaired)),
+                               feature="decoded", pairReturn='pair2')[[sector]]
+        rows <- intersect(names(decoded), names(ltrTrimmed))
+        
+        bore <- mapply(function(x,y) {
+          x$pair2 <- c(x$pair2, y[!names(y) %in% names(x$pair2)])
+          x
+        }, ltrTrimmed[rows], decoded[rows])
+        ltrTrimmed[rows] <- as(bore, "DataFrame")        
+        rm(bore)
+      }
+      
+      ## get the vector files ##
+      vectorFiles <- extractFeature(sampleInfo, sector, samplesToProcess,
+                                    feature='vectorfile')[[sector]]
+      
+      ## find vector bits using BLAT! ##
+      message("\tFinding Vector bits.")
+      
+      vecTrimmed <- mapply(function(subjectSeqs, paired, vectorFile) {
+        Vector <- readDNAStringSet(vectorFile)
+        if(paired) {
+          reads <- subjectSeqs$pair1
+          p1 <- findAndRemoveVector(reads, Vector, 10, TRUE, parallel)$hits
+          
+          reads <- subjectSeqs$pair2
+          p2 <- findAndRemoveVector(reads, Vector, 10, TRUE, parallel)$hits
+          
+          list("pair1"=IRanges(ranges(p1), names=p1$qNames), 
+               "pair2"=IRanges(ranges(p2), names=p2$qNames))          
+        } else {
+          p <- findAndRemoveVector(subjectSeqs, Vector, 10, TRUE, parallel)$hits
+          IRanges(ranges(p), names=p$qNames)
+        }        
+      }, ltrTrimmed[samplesToProcess], isPaired[samplesToProcess], 
+      vectorFiles[samplesToProcess], SIMPLIFY=FALSE, USE.NAMES=FALSE)
+      names(vecTrimmed) <- samplesToProcess
+      
+      ## check if any error occured during alignments ##
+      if(any(grepl("simpleError",vecTrimmed))) {
+        stop("Error encountered in LTR Trimming function",
+             paste(names(vecTrimmed[grepl("simpleError",vecTrimmed)]),
+                   collapse=", "))
+      }
+      
+      ## remove samples with no LTR hits from further processing ##
+      culprits <- grep("No hits found",vecTrimmed)
+      if(length(culprits)>0) {
+        message("Following sample(s) had no hits for LTR bit alignment: ",
+                paste(samplesToProcess[culprits],collapse=", "))
+        samplesToProcess <- samplesToProcess[-c(culprits)]
+        vecTrimmed <- vecTrimmed[-c(culprits)]
+      }    
+      
+      cleanit <- gc()
+      
+      if(length(vecTrimmed)>0) {
+        if(showStats) {
+          eval(expression(trimmedObj <- "vecTrimmed", 
+                          rawObj <- "ltrTrimmed", 
+                          featureTrim <- "Vector", 
+                          valueColname <- "PercOfLTRed"))
+          .showFindStats()
+        }
+        
+        ## modify metadata attribute, add vector bit coordinates to LTR 
+        # and write back to sampleInfo object & trim...
+        # remember everything is relative to the entire read length!
+        message("Adding vector info back to the object")
+        for(x in names(vecTrimmed)) {
+          cat(".")
+          if(isPaired[[x]]) {
+            worked <- sapply(vecTrimmed[[x]],length)>0
+            if(any(worked)) {
+              for(pair in names(which(worked))) {
+                ltred <- 
+                  sampleInfo$sectors[[sector]]$samples[[x]]$LTRed[[pair]]
+                rows <- 
+                  names(vecTrimmed[[x]][[pair]]) %in% names(ltred)
+                ltred.end <- 
+                  end(ltred[names(vecTrimmed[[x]][[pair]][rows])])
+                rm(ltred)
+                
+                end(vecTrimmed[[x]][[pair]][rows]) <- 
+                  end(vecTrimmed[[x]][[pair]][rows]) + ltred.end              
+                start(vecTrimmed[[x]][[pair]][rows]) <- 
+                  start(vecTrimmed[[x]][[pair]][rows]) + ltred.end              
+                rm(ltred.end)
+              }
+            }
+            sampleInfo$sectors[[sector]]$samples[[x]]$vectored <- 
+              vecTrimmed[[x]]
+          } else {
+            if(length(vecTrimmed[[x]])>0) {
+              ltred <- sampleInfo$sectors[[sector]]$samples[[x]]$LTRed
+              ltred.end <- end(ltred[names(vecTrimmed[[x]])])
+              rm(ltred)
+              
+              end(vecTrimmed[[x]]) <- 
+                end(vecTrimmed[[x]]) + ltred.end
+              start(vecTrimmed[[x]]) <- 
+                start(vecTrimmed[[x]]) + ltred.end
+              rm(ltred.end)
+              
+              sampleInfo$sectors[[sector]]$samples[[x]]$vectored <-
+                vecTrimmed[[x]]
+            }
+          }        
+        }
+      }
+      rm("vecTrimmed")
+      cleanit <- gc()
+    }
+  }
+  sampleInfo$callHistory <- append(sampleInfo$callHistory,match.call())
+  return(sampleInfo)
+}
+
 #' Compare LTRed/Primed sequences to all linkers. 
 #'
 #' Given a SampleInfo object, the function compares LTRed sequences from each sample per sector to all the linker sequences present in the run. The output is a summary table of counts of good matches to all the linkers per sample. 
@@ -2078,13 +2210,18 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
 #' @param qualityThreshold1 percent of first part of patternSeq to match. Default is 0.75. Only applies to primerID based linker search.
 #' @param qualityThreshold2 percent of second part of patternSeq to match. Default is 0.50. Only applies to primerID based linker search.
 #' @param doRC perform reverse complement search of the linker sequence. Default is TRUE. Highly recommended!
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Parllelization is done at sample level per sector.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
+#'  Parllelization is done at sample level per sector.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param ... extra parameters to be passed to \code{\link{pairwiseAlignment}}.
 #'
 #' @return a dataframe of counts. 
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
+#' before running the function. One can use any of the following 
+#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{findAndTrimSeq}}
 #'
@@ -2135,53 +2272,42 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
     message("\tFinding Linkers.")
     for(linkerSeq in unique(as.character(sampleLinkers))) {
       message("Checking ",linkerSeq)
-      linkerTrimmed <- foreach(x=iter(samplesToProcess), .inorder=TRUE, 
-                               .errorhandling="pass", 
-                               .export=c("linkerSeq", "toProcess.seqs", "doRC",
-                                         "qualityThreshold", "qualityThreshold1",
-                                         "qualityThreshold2", "pairwiseAlignSeqs",
-                                         "primerIDAlignSeqs", "isPaired"), 
-                               .packages="Biostrings") %dopar% {
-                                 if(length(unlist(gregexpr("N",linkerSeq)))>3) {
-                                   if(isPaired[[x]]) {
-                                     p1 <- try_default(length(primerIDAlignSeqs(
-                                       toProcess.seqs[[x]]$pair1, linkerSeq, 
-                                       qualityThreshold1, qualityThreshold2,
-                                       doRC=doRC, ...)$hits), 0, quiet=TRUE)
-                                     
-                                     p2 <- try_default(length(primerIDAlignSeqs( 
-                                       toProcess.seqs[[x]]$pair2, linkerSeq,
-                                       qualityThreshold1, qualityThreshold2,
-                                       doRC=doRC, ...)$hits), 0, quiet=TRUE)
-                                     
-                                     list("pair1"=p1, "pair2"=p2)
-                                   } else {
-                                     try_default(length(primerIDAlignSeqs(
-                                       toProcess.seqs[[x]], linkerSeq,
-                                       qualityThreshold1, qualityThreshold2,
-                                       doRC=doRC, ...)$hits), 0, quiet=TRUE)
-                                   }
-                                 } else {
-                                   if(isPaired[[x]]) {
-                                     p1 <- try_default(length(pairwiseAlignSeqs(
-                                       toProcess.seqs[[x]]$pair1, linkerSeq, 
-                                       "middle", qualityThreshold, doRC=doRC,
-                                       ...)), 0, quiet=TRUE)
-                                     
-                                     p2 <- try_default(length(pairwiseAlignSeqs(
-                                       toProcess.seqs[[x]]$pair2, linkerSeq, 
-                                       "right", qualityThreshold, doRC=doRC,
-                                       ...)), 0, quiet=TRUE)
-                                     
-                                     list("pair1"=p1, "pair2"=p2)                       
-                                   } else {
-                                     try_default(length(pairwiseAlignSeqs(
-                                       toProcess.seqs[[x]], linkerSeq,
-                                       "middle", qualityThreshold,
-                                       doRC=doRC, ...)), 0, quiet=TRUE)
-                                   }
-                                 }
-                               }
+      
+      linkerTrimmed <- bplapply(samplesToProcess, function(x) {
+        if(length(unlist(gregexpr("N",linkerSeq)))>3) {
+          if(isPaired[[x]]) {
+            p1 <- try_default(length(primerIDAlignSeqs(
+              toProcess.seqs[[x]]$pair1, linkerSeq, qualityThreshold1, 
+              qualityThreshold2, doRC=doRC, ...)$hits), 0, quiet=TRUE)
+            
+            p2 <- try_default(length(primerIDAlignSeqs( 
+              toProcess.seqs[[x]]$pair2, linkerSeq, qualityThreshold1, 
+              qualityThreshold2, doRC=doRC, ...)$hits), 0, quiet=TRUE)
+            
+            list("pair1"=p1, "pair2"=p2)
+          } else {
+            try_default(length(primerIDAlignSeqs(
+              toProcess.seqs[[x]], linkerSeq, qualityThreshold1, 
+              qualityThreshold2, doRC=doRC, ...)$hits), 0, quiet=TRUE)
+          }
+        } else {
+          if(isPaired[[x]]) {
+            p1 <- try_default(length(pairwiseAlignSeqs(
+              toProcess.seqs[[x]]$pair1, linkerSeq, "middle", qualityThreshold, 
+              doRC=doRC, ...)), 0, quiet=TRUE)
+            
+            p2 <- try_default(length(pairwiseAlignSeqs(
+              toProcess.seqs[[x]]$pair2, linkerSeq, "right", qualityThreshold, 
+              doRC=doRC, ...)), 0, quiet=TRUE)
+            
+            list("pair1"=p1, "pair2"=p2)                       
+          } else {
+            try_default(length(pairwiseAlignSeqs(
+              toProcess.seqs[[x]], linkerSeq, "middle", qualityThreshold,
+              doRC=doRC, ...)), 0, quiet=TRUE)
+          }
+        }
+      }, BPPARAM=dp)      
       names(linkerTrimmed) <- samplesToProcess
       
       isPaired <- sapply(linkerTrimmed, is.list)
@@ -2233,7 +2359,9 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
 #'
 #' @return DNAStringSet object with pattern sequence removed from the subject sequences. 
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
+#' before running the function. One can use any of the following 
+#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}
 #'
@@ -2250,7 +2378,8 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0,
   coords <- switch(alignWay,
                    fast = vpairwiseAlignSeqs(subjectSeqs, patternSeq, side,...),
                    slow = pairwiseAlignSeqs(subjectSeqs, patternSeq, side, ...),
-                   blat = blatSeqs(subjectSeqs, patternSeq, ...)
+                   blat = with(read.psl(blatSeqs(subjectSeqs, patternSeq, ...)),
+                               IRanges(qStart,qEnd))
   )
   
   res <- trimSeqs(subjectSeqs, coords, side, offBy)
@@ -2262,17 +2391,24 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0,
 
 #' Find and trim vector sequence from reads. 
 #'
-#' This function facilitates finding and trimming of long/short fragments of vector present in LM-PCR products. The algorithm looks for vector sequence present anywhere within the read and trims according longest contiguous match on either end of the read. Alignment is doing using BLAT
+#' This function facilitates finding and trimming of long/short fragments of 
+#' vector present in LM-PCR products. The algorithm looks for vector sequence 
+#' present anywhere within the read and trims according longest contiguous 
+#' match on either end of the read. Alignment is doing using BLAT
 #'
 #' @param reads DNAStringSet object containing sequences to be trimmed for vector.
 #' @param Vector DNAString object containing vector sequence to be searched in reads.
 #' @param minLength integer value dictating minimum length of trimmed sequences to return. Default is 10.
 #' @param returnCoords return the coordinates of vector start-stop for the matching reads. Defaults to FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
 #' @return DNAStringSet object with Vector sequence removed from the reads. If returnCoords=TRUE, then a list of two named elements "hits" & "reads". The first element, "hits" is a GRanges object with properties of matched region and whether it was considered valid denoted by 'good.row'. The second element, "reads" is a DNAStringSet object with Vector sequence removed from the reads.
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
+#' before running the function. One can use any of the following 
+#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{pslToRangedObject}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{findAndTrimSeq}}
 #' @export
@@ -2285,94 +2421,97 @@ findAndRemoveVector <- function(reads, Vector, minLength=10,
   
   .checkArgs_SEQed()
   
-  hits <- read.blast8(blatSeqs(query=reads, subject=Vector, parallel=parallel,
-                               blatParameters=c(stepSize = 3, tileSize = 8,
-                                                minIdentity=70, minScore=5,
-                                                repMatch = 112312, 
-                                                out = "blast8")))
-  hits$evalue <- NULL
-  hits <- reduce(pslToRangedObject(hits, useTargetAsRef=FALSE, isblast8=T),
-                 min.gapwidth=10)
-  mcols(hits)$qSize <- width(reads[as.character(seqnames(hits))])
+  hits <- read.psl(blatSeqs(query=reads, subject=Vector, parallel=parallel,
+                            blatParameters=c(stepSize=3, tileSize=8,
+                                             minIdentity=70, minScore=5,
+                                             repMatch=112312, out="psl")),
+                   bestScoring=FALSE)
+  hits <- reduce(pslToRangedObject(hits, useTargetAsRef=FALSE),
+                 min.gapwidth=10, ignore.strand=TRUE)
+  hits$qSize <- width(reads[as.character(seqnames(hits))])
   
   ## only consider hits that start or end with vector...others would be wierdos! ##
   tocheck <- start(hits) <= 10 | hits$qSize-end(hits) <= 11
   hits <- hits[tocheck]
   
-  ## queries where genomic sequence is surrounded by vector sequence (counts>1)...
-  ## we will fix these later!
-  qNames <- as.character(seqnames(hits))
-  counts <- table(qNames)
-  good.row <- !qNames %in% names(counts[counts>1])
-  widthSum <- tapply(width(hits), qNames, sum)
-  rm(counts)
-  
-  ### queries composed of recombined forms of vector
-  qSizes <- hits$qSize
-  allCovered <- qSizes==widthSum[qNames] | qSizes==widthSum[qNames]-1 | 
-    qSizes==widthSum[qNames]+1 | qSizes==widthSum[qNames]+2 | 
-    qSizes==widthSum[qNames]-2 | qSizes==widthSum[qNames]+3 | 
-    qSizes==widthSum[qNames]-3
-  rm("qSizes","widthSum")
-  
-  ### seqs w/ vector sequences with allCovered removed
-  toTrim <- reads[names(reads) %in% qNames[!allCovered]]
-  
-  ### seqs w/o any vector sequences
-  reads <- reads[!names(reads) %in% qNames] 
-  
-  ### queries where genomic sequence is either at the beginning or the end
-  hits$qEndDiff <- hits$qSize-end(hits)
-  hits$StartDiff <- start(hits)-0
-  hits2 <- hits[good.row]
-  
-  # take the side which has the higher unmatched bases to the vector sequence #
-  hits2$trueStart <- ifelse(hits2$StartDiff > hits2$qEndDiff, 0, end(hits2)+1)
-  hits2$trueEnd <- ifelse(hits2$StartDiff > hits2$qEndDiff, 
-                          start(hits2)-1, hits2$qSize)
-  hits2$good.row <- !hits2$StartDiff==hits2$qEndDiff
-  hits2$type <- "genomic either side"
-  
-  ### fix queries where genomic sequence is surrounded by vector sequence
-  if(any(!good.row)) {
-    hits.list <- split(hits[!good.row], qNames[!good.row])
-    bores <- foreach(bore = iter(hits.list), .inorder = FALSE, 
-                     .packages = c("GenomicRanges")) %dopar% {
-                       trueRange <- gaps(ranges(bore))
-                       bore$trueStart <- start(trueRange[width(trueRange)==
-                                                           max(width(trueRange))
-                                                         ])
-                       bore$trueEnd <- end(trueRange[width(trueRange)==
-                                                       max(width(trueRange))])
-                       bore$type <- "genomic in middle"
-                       bore$good.row <- TRUE
-                       bore[1,names(mcols(hits2))]
-                     }
-    hits2 <- c(hits2, do.call(c,bores))
-    rm("hits.list","bores")
-  }
-  rm("hits")
-  
-  atStart <- hits2$StartDiff<=10
-  atEnd <- hits2$qEndDiff<=10
-  
-  ### remove sequences where vector sequence is in the middle 
-  hits2$good.row[!atStart & !atEnd] <- FALSE 
-  hits2$type[!atStart & !atEnd] <- "vector in middle" 
-  good.row <- hits2$good.row
-  
-  ## extract sequence with trueStart & trueEnd 
-  trimmed <- subseq(toTrim[as.character(seqnames(hits2))[good.row]],
-                    start=hits2$trueStart[good.row]+1,
-                    end=hits2$trueEnd[good.row])
-  
-  ### combined seqs.good with trimmed ###
-  reads <- c(reads, trimmed[width(trimmed)>=minLength])
-  
-  if(returnCoords) {
-    list("hits"=hits2, "reads"=reads)
+  if(length(hits)>0) {
+    ## queries where genomic sequence is surrounded by vector sequence (counts>1)...
+    ## we will fix these later!
+    hits$qNames <- as.character(seqnames(hits))
+    counts <- table(hits$qNames)
+    hits$toCure <- hits$qNames %in% names(counts[counts>1])
+    rm(counts)
+    
+    ### queries composed of recombined forms of vector
+    widthSum <- tapply(width(hits), hits$qNames, sum)
+    hits$widthSum <- widthSum[hits$qNames]
+    rm(widthSum)    
+    hits$allCovered <- hits$qSize >= (hits$widthSum-3) & 
+      hits$qSize <= (hits$widthSum+3)
+    
+    ### seqs w/ vector fragments which are not 'allCovered' with vector
+    toTrim <- reads[names(reads) %in% hits$qNames[!hits$allCovered]]
+    
+    ### seqs w/o any vector sequences
+    reads <- reads[!names(reads) %in% hits$qNames] 
+    
+    ### queries where genomic sequence is either at the beginning or the end
+    hits$qEndDiff <- hits$qSize-end(hits)
+    hits$StartDiff <- start(hits)-0
+    cured <- hits[!hits$toCure]
+    
+    # take the side which has the higher unmatched bases to the vector sequence #
+    cured$trueStart <- ifelse(cured$StartDiff > cured$qEndDiff, 0, end(cured)+1)
+    cured$trueEnd <- ifelse(cured$StartDiff > cured$qEndDiff, 
+                            start(cured)-1, cured$qSize)
+    cured$type <- "genomic either side"
+    
+    ### fix queries where genomic sequence is surrounded by vector sequence
+    if(any(hits$toCure)) {
+      hits.list <- split(hits[hits$toCure], hits$qNames[hits$toCure])
+      bores <- bplapply(hits.list, function(bore) {        
+        trueRange <- gaps(ranges(bore))
+        bore$trueStart <- start(trueRange[width(trueRange)== 
+                                            max(width(trueRange))
+                                          ])
+        bore$trueEnd <- end(trueRange[width(trueRange)==max(width(trueRange))])
+        bore$type <- "genomic in middle"
+        bore$good.row <- TRUE
+        bore[1]        
+      })      
+      cured <- c(cured, do.call(c,bores)[,names(mcols(cured))])
+      rm("hits.list","bores")
+    }
+    rm("hits")
+    
+    atStart <- cured$StartDiff<=10
+    atEnd <- cured$qEndDiff<=10
+    
+    ### remove sequences where vector sequence is in the middle 
+    cured$toCure[!atStart & !atEnd] <- FALSE 
+    cured$type[!atStart & !atEnd] <- "vector in middle" 
+    
+    ## extract sequence with trueStart & trueEnd 
+    good.row <- !cured$toCure & !cured$allCovered
+    trimmed <- subseq(toTrim[as.character(seqnames(cured))[good.row]],
+                      start=cured$trueStart[good.row]+1,
+                      end=cured$trueEnd[good.row])
+    
+    ### combined seqs.good with trimmed ###
+    reads <- c(reads, trimmed[width(trimmed)>=minLength])
+    
+    if(returnCoords) {
+      list("hits"=cured, "reads"=reads)
+    } else {
+      reads
+    }
   } else {
-    reads
+    message("No vector hits found")
+    if(returnCoords) {
+      list("hits"="No hits found", "reads"=reads)
+    } else {
+      reads
+    }
   }
 }
 
@@ -2456,20 +2595,46 @@ trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
 
 #' Extract sequences for a feature in the sampleInfo object.
 #'
-#' Given a sampleInfo object, the function extracts sequences for a defined feature.
+#' Given a sampleInfo object, the function extracts sequences for a defined 
+#' feature.
 #'
-#' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
-#' @param sector specific sector to extract sequences from. Default is NULL, which extracts all sectors. 
-#' @param samplename specific sample to extract sequences from. Default is NULL, which extracts all samples. 
-#' @param feature which part of sequence to extract (case sensitive). Options include: primed, !primed, LTRed, !LTRed, linkered, !linkered, primerIDs, genomic, genomicLinkered, decoded, and unDecoded. If a sample was primerIDed and processed by \code{\link{primerIDAlignSeqs}}, then all the rejected and unmatched attributes can be prepended to the feature. Example: Rejectedlinkered, RejectedprimerIDslinkered, Absentlinkered, or unAnchoredprimerIDslinkered. When feature is genomic, it includes sequences which are primed, LTRed, linkered, and !linkered. The genomicLinkered is same as genomic minus the !linkered. When feature is decoded, it includes everything that demultiplexed. The '!' in front of a feature extracts the inverse. One can only get unDecoded sequences if returnUnmatched was TRUE in \code{\link{decodeByBarcode}}.
-#' @param trim whether to trim the given feature from sequences or keep it. Default is TRUE. This option is ignored for feature with '!'.
+#' @param sampleInfo sample information SimpleList object, which samples per 
+#' sector/quadrant information along with other metadata.
+#' @param sector specific sector to extract sequences from. Default is NULL, 
+#' which extracts all sectors. 
+#' @param samplename specific sample to extract sequences from. Default is NULL, 
+#' which extracts all samples. 
+#' @param feature which part of sequence to extract (case sensitive). Options 
+#' include: primed, !primed, LTRed, !LTRed, linkered, !linkered, primerIDs, 
+#' genomic, genomicLinkered, decoded, and unDecoded. If a sample was primerIDed 
+#' and processed by \code{\link{primerIDAlignSeqs}}, then all the rejected and
+#' unmatched attributes can be prepended to the feature. Example: vectored,
+#' Rejectedlinkered, RejectedprimerIDslinkered, Absentlinkered, or 
+#' unAnchoredprimerIDslinkered. When feature is genomic, it includes sequences 
+#' which are primed, LTRed, linkered, and !linkered. The genomicLinkered is same 
+#' as genomic minus the !linkered. When feature is decoded, it includes 
+#' everything that demultiplexed. The '!' in front of a feature extracts the 
+#' inverse. One can only get unDecoded sequences if returnUnmatched was TRUE in
+#' \code{\link{decodeByBarcode}}. If \code{\link{findVector}} was run and 
+#' "vectored" feature was found in the sampleInfo object, then genomic & 
+#' genomicLinkered output will have vectored reads removed.
+#' @param trim whether to trim the given feature from sequences or keep it. 
+#' Default is TRUE. This option is ignored for feature with '!'.
 #' @param minReadLength threshold for minimum length of trimmed sequences to return.
-#' @param sideReturn if trim=TRUE, which side of the sequence to return: left, middle, or right. Defaults to NULL and determined automatically. Doesn't apply to features: decoded, genomic or genomicLinkered.
-#' @param pairReturn if the data is paired end, then from which pair to return the feature. Options are "pair1", "pair2", or defaults to "both". Ignored if data is single end. 
+#' @param sideReturn if trim=TRUE, which side of the sequence to return: left, 
+#' middle, or right. Defaults to NULL and determined automatically. Doesn't 
+#' apply to features: decoded, genomic or genomicLinkered.
+#' @param pairReturn if the data is paired end, then from which pair to return 
+#' the feature. Options are "pair1", "pair2", or defaults to "both". Ignored if 
+#' data is single end. 
 #'
-#' @return a listed DNAStringSet object structed by sector then sample. Note: when feature='genomic' or 'genomicLinkered' and when data is paired end, then "pair2" includes union of reads from both pairs which found LTR.
+#' @return a listed DNAStringSet object structed by sector then sample. 
+#' Note: when feature='genomic' or 'genomicLinkered' and when data is paired end, 
+#' then "pair2" includes union of reads from both pairs which found LTR.
 #'
-#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{trimSeqs}}, \code{\link{extractFeature}}, \code{\link{getSectorsForSamples}}
+#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, 
+#' \code{\link{findLinkers}}, \code{\link{trimSeqs}}, \code{\link{extractFeature}},
+#' \code{\link{getSectorsForSamples}}
 #'
 #' @export
 #'
@@ -2478,9 +2643,8 @@ trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
 #' #extractSeqs(sampleInfo,feature="primed")
 #'
 extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, 
-                        feature="genomic",
-                        trim=TRUE, minReadLength=1, sideReturn=NULL, 
-                        pairReturn="both") {
+                        feature="genomic", trim=TRUE, minReadLength=1, 
+                        sideReturn=NULL, pairReturn="both") {
   
   .checkArgs_SEQed()
   
@@ -2521,11 +2685,13 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
           primed <- sampleInfo$sectors[[y]]$samples[[x]]$primed
           LTRed <- sampleInfo$sectors[[y]]$samples[[x]]$LTRed
           linkered <- sampleInfo$sectors[[y]]$samples[[x]]$linkered
+          vectored <- sampleInfo$sectors[[y]]$samples[[x]]$vectored
           
           if(isPaired & pairReturn!='both') {
             primed <- primed[[pairReturn]]
             LTRed <- LTRed[[pairReturn]]
             linkered <- linkered[[pairReturn]]
+            vectored <- vectored[[pairReturn]]
           }
           
           # if reads dont have LTRs...use primers instead...but throw a warning!
@@ -2537,6 +2703,16 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
           if(LTRed.test) {
             warning("LTRed information not found for",x,
                     "...using primer end as starting boundary.", immediate.=TRUE)                                
+          }
+          
+          # check vectored attribute is not null #
+          vec.test <- if(is.list(vectored)) {
+            any(sapply(vectored,is.null))
+          } else {
+            is.null(vectored)
+          }
+          if(vec.test) {
+            rm(vectored)                                
           }
           
           # test if there are any primed and/or linkered reads
@@ -2555,6 +2731,12 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
               if(isPaired & pairReturn=='both') {
                 if(LTRed.test) {
                   LTRed <- primed
+                }
+                
+                if(exists("vectored")) {                  
+                  toremove <- unlist(sapply(vectored, names), use.names=FALSE)
+                  message("Removing ",length(toremove)," vectored reads...")
+                  LTRed <- lapply(LTRed, function(p) p[!names(p) %in% toremove])
                 }
                 
                 starts <- lapply(LTRed, function(p) structure(end(p), 
@@ -2641,7 +2823,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
                 }                
               }
             } else {
-              # just retuning ranges...simply match names from decoded to the request
+              # just returning ranges...simply match names from decoded to the request
               if(isPaired & pairReturn=='both') {
                 if(tolower(feature)=="genomiclinkered") { 
                   mapply(function(d,l) d[names(d) %in% names(l)],
@@ -3025,7 +3207,7 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
   if(any(grepl("fastq",seqFilePath,ignore.case=TRUE))) {    
     dnaSet <- sapply(seqFilePath, function(x) {
       dnaSet <- readDNAStringSet(x, format='fastq')      
-      names(dnaSet) <- sub("^\\S+-(\\S+) .+$", "\\1", names(bore), perl=TRUE)
+      names(dnaSet) <- sub("^\\S+-(\\S+) .+$", "\\1", names(dnaSet), perl=TRUE)
       if(any(duplicated(names(dnaSet)))) {
         stop("Duplicate definition lines found in file: ", x)
       }
@@ -3080,15 +3262,20 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
 #' @param filePrefix prefix the filenames with a string. Default is 'processed' followed by samplename.
 #' @param prependSamplenames Prepend definition lines with samplenames. Default is TRUE. Make sure the dnaSet parameter is a named list where names are used as samplenames.
 #' @param format either fasta (the default) or fastq.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
-#' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, \code{\link{extractSeqs}}
+#' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, 
+#' \code{\link{extractSeqs}}
 #'
 #' @note
 #' \itemize{
 #'   \item Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. This is to aggregate reads from a sample which might be present in more than one sector. 
 #'   \item If data is paired end, then each pair will be written separately with designations in the filename as well as in the definition line as (at)pairX(at) appended at the end.
-#'   \item If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#'   \item If parallel=TRUE, then be sure to have a parallel backend registered 
+#'   before running the function. One can use any of the following 
+#'   \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #' }
 #'
 #' @export
@@ -3102,59 +3289,53 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
                                      parallel=FALSE) {
   stopifnot(class(dnaSet)=="list")
   
-  if(!parallel) { registerDoSEQ() }
   if(filePrefix=="") { filePrefix <- NA }
   filePath <- normalizePath(filePath, mustWork=TRUE)
   
+  dp <- if(parallel) { bpparam() } else { SerialParam() }
   for(x in seq_along(dnaSet)) {
-    foreach(outputSeqs=iter(as(dnaSet[[x]],"list")), 
-            samplename=iter(names(dnaSet[[x]])),
-            .inorder=TRUE, .errorhandling="stop", .packages="Biostrings", 
-            .export=c("filePath", "filePrefix", "prependSamplenames")) %dopar% {
-              
-              if(is.list(outputSeqs)) {
-                list.test <- any(sapply(outputSeqs, length)>0)
-              } else {
-                list.test <- length(outputSeqs)>0
-                outputSeqs <- list("tempy"=outputSeqs)
-              }
-              
-              if(list.test) {
-                for(p in names(outputSeqs)) {
-                  pairname <- ifelse(p=="tempy", NA, p)
-                  
-                  if(is.null(names(outputSeqs[[p]]))) {
-                    message("No names attribute found for ", samplename,
-                            " ... using artifically generated names")
-                    names(outputSeqs[[p]]) <- 
-                      paste("read",1:length(outputSeqs[[p]]),sep="-")
-                  }
-                  
-                  ## remove '.' at the beginning of the filename incase filePrefix is empty
-                  filename <- paste(na.omit(c(filePrefix, samplename, pairname, 
-                                              ifelse(format=="fastq", 
-                                                     "fastq", "fa"))), 
-                                    collapse=".")
-                  filename <- paste(filePath, filename, sep="/")
-                  
-                  if(prependSamplenames) {
-                    names(outputSeqs[[p]]) <- paste(samplename, 
-                                                    names(outputSeqs[[p]]), 
-                                                    sep="-")
-                  }
-                  
-                  if(p!="tempy") {
-                    names(outputSeqs[[p]]) <- paste0(names(outputSeqs[[p]]), 
-                                                     "@",pairname,"@")
-                  }
-                  
-                  writeXStringSet(outputSeqs[[p]], file=filename, format=format, 
-                                  append=TRUE) 
-                } 
-              } else {
-                message("No reads written for ", samplename)
-              } 
-            }
+    bpmapply(function(outputSeqs, samplename) {
+      if(is.list(outputSeqs)) {
+        list.test <- any(sapply(outputSeqs, length)>0)
+      } else {
+        list.test <- length(outputSeqs)>0
+        outputSeqs <- list("tempy"=outputSeqs)
+      }
+      
+      if(list.test) {
+        for(p in names(outputSeqs)) {
+          pairname <- ifelse(p=="tempy", NA, p)
+          
+          if(is.null(names(outputSeqs[[p]]))) {
+            message("No names attribute found for ", samplename,
+                    " ... using artifically generated names")
+            names(outputSeqs[[p]]) <- 
+              paste("read",1:length(outputSeqs[[p]]),sep="-")
+          }
+          
+          ## remove '.' at the beginning of the filename incase filePrefix is empty
+          filename <- paste(na.omit(c(filePrefix, samplename, pairname, 
+                                      ifelse(format=="fastq", "fastq", "fa"))), 
+                            collapse=".")
+          filename <- paste(filePath, filename, sep="/")
+          
+          if(prependSamplenames) {
+            names(outputSeqs[[p]]) <- paste(samplename, names(outputSeqs[[p]]), 
+                                            sep="-")
+          }
+          
+          if(p!="tempy") {
+            names(outputSeqs[[p]]) <- paste0(names(outputSeqs[[p]]), 
+                                             "@",pairname,"@")
+          }
+          
+          writeXStringSet(outputSeqs[[p]], file=filename, format=format, 
+                          append=TRUE) 
+        } 
+      } else {
+        message("No reads written for ", samplename)
+      }       
+    }, as(dnaSet[[x]],"list"), names(dnaSet[[x]]), BPPARAM=dp)    
   }
 }
 
@@ -3196,12 +3377,14 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
       if(is.null(Vector) | length(Vector)==0) {
         stop("Vector paramter is empty. Please supply Vector to be aligned")
       }
+      
+      if(!grepl("DNAString",class(Vector))) {
+        stop("Vector paramter is not of DNAString class")
+      }
     },
     
     if("parallel" %in% names(formals())) { 
-      if(!parallel) { 
-        registerDoSEQ() 
-      }
+      dp <- if(parallel) { bpparam() } else { SerialParam() }
     },
     
     if("sampleInfo" %in% names(formals())) { 
@@ -3224,7 +3407,35 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
 #'
 .checkArgsSetDefaults_ALIGNed <- function() {
   
-  checks <- expression()
+  checks <- expression(
+    if("pslFile" %in% names(formals()) | "files" %in% names(formals())) { 
+      if(is.null(files) | length(files)==0) {
+        stop("files parameter empty. Please supply a filename to be read.")
+      }
+      
+      if(any(grepl("\\*|\\$|\\+|\\^",files))) {
+        ## vector of filenames
+        files <- list.files(path=dirname(files), pattern=basename(files), 
+                            full.names=TRUE)      
+      }
+      
+      if(length(files)==0) { 
+        stop("No file(s) found with given paramter in files:", files) 
+      }
+    },
+
+    if("psl.rd" %in% names(formals())) {
+      if(!is.null(psl.rd)) {
+        if(length(psl.rd)==0 | !is(psl.rd,"GRanges")) {
+          stop("psl.rd paramter is empty or not a GRanges object")
+        }
+      }
+    },
+    
+    if("parallel" %in% names(formals())) { 
+      dp <- if(parallel) { bpparam() } else { SerialParam() }
+    }
+  )
   
   eval.parent(checks)
 }
@@ -3510,9 +3721,8 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE, asGRanges=TRUE) {
 #' pair2 reads are reverseComplemented when reading in data in 
 #' \code{\link{findBarcodes}}
 #' @param parallel use parallel backend to perform calculation with 
-#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
-#' registered, then a serial version of foreach is ran using 
-#' \code{\link{registerDoSEQ()}}.
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
 #' @return a GRanges object with reads paired up denoted by "paired" column. 
 #' Improper pairs or unpaired reads are returned with "paired" column as FALSE.
@@ -3526,11 +3736,11 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE, asGRanges=TRUE) {
 #'
 #' @examples 
 #' #pairUpAlignments()
-#' #pairUpAlignments()
 #'
 pairUpAlignments <- function(psl.rd=NULL, maxGapLength=2500, 
                              sameStrand=TRUE, parallel=TRUE) {
   
+  .checkArgsSetDefaults_ALIGNed()
   stopifnot("qName" %in% names(mcols(psl.rd)))
   
   ### identify pairs ###
@@ -3573,71 +3783,64 @@ pairUpAlignments <- function(psl.rd=NULL, maxGapLength=2500,
                  mcols(psl.rd)$qName %in% names(counts[counts==1]) &
                    mcols(psl.rd)$pair=='pair1')
   rows <- match(mcols(proper)$qName, mcols(bore)$qName)
-  stopifnot(identical(mcols(proper)$qName,mcols(bore)$qName[rows]))
+  stopifnot(identical(mcols(proper)$qName, mcols(bore)$qName[rows]))
   mcols(proper) <- mcols(bore[rows])
   mcols(proper)$paired <- TRUE
   
   reduced <- reduced[mcols(reduced)$qName %in% names(counts[counts!=1]),]
   psl.rd <- subset(psl.rd, 
                    mcols(psl.rd)$qName %in% names(counts[counts!=1]))    
+  rm(counts)
   
-  reduced <- GRanges(seqnames=paste(as.character(seqnames(reduced)), 
-                                    reduced$qName, sep="@tempy@"), 
-                     ranges=ranges(reduced), strand=strand(reduced), 
-                     mcols(reduced))  
-  psl.rd <- GRanges(seqnames=paste(as.character(seqnames(psl.rd)), 
-                                   psl.rd$qName, sep="@tempy@"), 
-                    ranges=ranges(psl.rd), strand=strand(psl.rd), mcols(psl.rd))
+  reduced <- split(reduced, mcols(reduced)$qName)
+  psl.rd <- split(psl.rd, mcols(psl.rd)$qName)
+  psl.rd <- psl.rd[names(reduced)]
+  stopifnot(identical(names(reduced),names(psl.rd)))
   
-  chunks <- if(parallel) {
-    makeChunks(reduced, psl.rd)
-  } else {
-    list(list(query = reduced, subject = psl.rd))
-  }
+  pair <- bpmapply(function(x,y) {
+    res <- as.data.frame(findOverlaps(x,y))
+    res$pair <- mcols(y)$pair[res$subjectHits]
+    res$qName <- mcols(y)$qName[res$subjectHits]
+    test <- aggregate(pair~qName+queryHits, data=res, 
+                      FUN=function(x) paste(sort(x), collapse=""))
+    
+    # remove cases where a pair gives rise to many reduced 
+    # regions but one may ... 
+    # contain one pair and other contains both
+    hasBoth <- subset(test, pair=="pair1pair2")
+    test <- subset(test, pair!="pair1pair2" & !qName %in% hasBoth$qName)
+    
+    # despite the collapse if each pair is yielding it's own hit 
+    # then chances are...
+    # you're on different chromosome, too far apart, or 
+    # different strands!
+    if(nrow(test)>0) {
+      unpaired <- y[subset(res, queryHits %in% test$queryHits)$subjectHits]
+      mcols(unpaired)$paired <- FALSE
+    }
+    
+    # reduced is >1 but each collapse region has both reads...
+    # hence a multihit #            
+    res <- subset(res, queryHits %in% hasBoth$queryHits)
+    if(nrow(res)>0) {
+      paired <- x[unique(res$queryHits)]
+      mcols(paired) <- mcols(y[res[res$pair=="pair1","subjectHits"]])
+      mcols(paired)$paired <- TRUE
+    }
+    
+    rm("res","test","hasBoth")
+    
+    toReturn <- c()
+    if(exists("unpaired")) {
+      toReturn <- c(toReturn, unpaired)
+    } 
+    if(exists("paired")) {
+      toReturn <- c(toReturn, paired)
+    }  
+    do.call(c, toReturn)
+  }, reduced, psl.rd, SIMPLIFY=FALSE, USE.NAMES=FALSE, BPPARAM=dp)
   
-  rm("reduced","psl.rd","counts")
-  
-  pair <- foreach(z=iter(chunks), .inorder=FALSE, 
-                  .packages="GenomicRanges") %dopar% {    
-                    res <- as.data.frame(findOverlaps(z$query, z$subject))
-                    res$pair <- mcols(z$subject)$pair[res$subjectHits]
-                    res$qName <- mcols(z$subject)$qName[res$subjectHits]
-                    test <- ddply(res,.(qName,queryHits), summarize,
-                                  pairs=paste(sort(pair),collapse=""))
-                    
-                    # remove cases where a pair gives rise to many reduced regions but one may ... 
-                    # contain one pair and other contains both
-                    hasBoth <- subset(test, pairs=="pair1pair2")
-                    test <- subset(test, pairs!="pair1pair2" & 
-                                     !qName %in% hasBoth$qName)
-                    
-                    # despite the collapse if each pair is yielding it's own hit 
-                    # then chances are...
-                    # you're on different chromosome, too far apart, or 
-                    # different strands!
-                    unpaired <- z$subject[subset(res, queryHits %in% 
-                                                   test$queryHits)$subjectHits]
-                    mcols(unpaired)$paired <- FALSE
-                    
-                    # reduced is >1 but each collapse region has both reads...
-                    # hence a multihit #            
-                    res <- subset(res, queryHits %in% hasBoth$queryHits)
-                    paired <- z$query[unique(res$queryHits)]
-                    mcols(paired) <- 
-                      mcols(z$subject[res[res$pair=="pair1","subjectHits"]])
-                    mcols(paired)$paired <- TRUE
-                    
-                    rm("res","test","hasBoth")
-                    cleanit <- gc()
-                    
-                    c(paired, unpaired)
-                  }
   pair <- suppressWarnings(do.call(c, pair))
-  
-  rm(chunks)
-  pair <- GRanges(seqnames=sub("(.+)@tempy@.+","\\1",
-                               as.character(seqnames(pair))), 
-                  ranges=ranges(pair), strand=strand(pair), mcols(pair))
   
   c(proper,pair,loners)
 }
@@ -3742,8 +3945,8 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
       if(length(dnaSetList[[x]][[y]])>0) {
         message("BLATing ",y)
         outFiles <- blatSeqs(query=dnaSetList[[x]][[y]], ...)
-        read.psl(outFiles, bestScoring=TRUE, 
-                 asGRanges=TRUE, removeFile=TRUE, parallel=FALSE)
+        read.psl(outFiles, bestScoring=TRUE, asGRanges=TRUE, removeFile=TRUE, 
+                 parallel=FALSE)
       }
     }))
   })
@@ -3754,12 +3957,15 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #' Convert psl dataframe to GRanges object using either the query or target as the reference data column. 
 #'
 #' @param x dataframe reflecting psl format
-#' @param useTargetAsRef use target(tName) or query(qName) as the chromosome or the reference data. Default is TRUE.
-#' @param isblast8 the input dataframe blast8 format output from BLAT. Default is FALSE.
+#' @param useTargetAsRef use target(tName) or query(qName) as the chromosome or 
+#' the reference data. Default is TRUE.
+#' @param isblast8 the input dataframe blast8 format output from BLAT. 
+#' Default is FALSE.
 #'
 #' @return a GRanges object reflecting psl file type.
 #'
-#' @seealso \code{\link{read.psl}}, \code{\link{read.blast8}}, \code{\link{blatListedSet}}
+#' @seealso \code{\link{read.psl}}, \code{\link{read.blast8}}, 
+#' \code{\link{blatListedSet}}
 #'
 #' @export
 #'
@@ -3790,7 +3996,8 @@ pslToRangedObject <- function(x, useTargetAsRef=TRUE, isblast8=FALSE) {
 
 #' Split DNA sequences into smaller files.
 #'
-#' Given a vector of sequences or DNAStringSet or a FASTA filename, the function splits it into smaller pieces as denoted by totalFiles parameter.
+#' Given a vector of sequences or DNAStringSet or a FASTA filename, the function 
+#' splits it into smaller pieces as denoted by totalFiles parameter.
 #'
 #' @param x a DNAStringSet object, or a FASTA filename.
 #' @param totalFiles an integer indicating how many files to create. Default is 4.
@@ -3816,9 +4023,9 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
     ## incase totalSeqs is lower than number of files to be created!
     chunks <- ifelse(chunks>0, chunks, totalSeqs) 
     
-    starts <- seq(0,totalSeqs,by=chunks) ## create chunks of starts
+    starts <- seq(0, totalSeqs, by=chunks) ## create chunks of starts    
     for(skippy in starts[starts!=totalSeqs]) {
-      filename.out <- paste(x, skippy, suffix,sep=".")
+      filename.out <- paste(x, skippy, randomStrings(1)[1], suffix, sep=".")
       ## no need to read the entire file...save memory by reading in N lines
       query.tmp <- readBStringSet(x,nrec=chunks, skip=skippy) 
       writeXStringSet(query.tmp, file=filename.out, format="fasta")            
@@ -3834,7 +4041,7 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
     stops <- unique(c(seq(chunks, totalSeqs, by=chunks), totalSeqs))
     stopifnot(length(starts)==length(stops))        
     for(skippy in 1:length(starts)) {
-      filename.out <- paste(filename, skippy, suffix,sep=".")            
+      filename.out <- paste(filename, skippy, randomStrings(1)[1], suffix, sep=".")            
       writeXStringSet(x[starts[skippy]:stops[skippy]], file=filename.out,
                       format="fasta")            
     }            
@@ -3869,8 +4076,8 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 #' @param host name of the machine running gfServer. Default is 'localhost' and 
 #' only used when standaloneBlat=FALSE.
 #' @param parallel use parallel backend to perform calculation with 
-#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, 
-#' then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is registered, 
+#' then a serial version is ran using \code{\link{SerialParam}}.
 #' @param numServers launch >1 gfServer and load balance jobs? This only
 #' applies when parallel=TRUE and standaloneBlat=FALSE. Enable this option only
 #' if the machine has a lot of RAM! Option ignored if launched gfServer is found
@@ -3961,7 +4168,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       }
       
       ## write out the subject sequences into a fasta file
-      filename.seq <- "subjectFile.fa.tempyS"
+      filename.seq <- paste("subjectFile.fa",randomStrings(1)[1],"tempyS",sep=".")      
       writeXStringSet(subject, file=filename.seq, format="fasta")                                  
       subjectFile <- filename.seq
     }
@@ -3987,7 +4194,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
           ## split the fasta files into smaller chunks for parallel BLATing
           queryFiles <- unlist(sapply(queryFiles,
                                       function(f) 
-                                        splitSeqsToFiles(f, getDoParWorkers(),
+                                        splitSeqsToFiles(f, bpworkers(),
                                                          "tempyQ")), 
                                use.names=FALSE)                    
         }
@@ -4005,29 +4212,30 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       
       ## write out the query sequences into fasta files
       if(parallel) {
-        queryFiles <- splitSeqsToFiles(query, getDoParWorkers(), "tempyQ")
+        queryFiles <- splitSeqsToFiles(query, bpworkers(), "tempyQ")
       } else {
-        queryFiles <- "queryFile.fa.tempyQ"
+        queryFiles <- paste("queryFile.fa",randomStrings(1)[1],"tempyQ",sep=".")          
         writeXStringSet(query, file=queryFiles, format="fasta")                
       }
     }
   }
   
-  ## perform the Blatting of queryFiles vs subjectFile/indexFiles using gfClient/standalone BLAT
-  if(!parallel) { registerDoSEQ() }
+  ## perform the Blatting of queryFiles vs subjectFile/indexFiles using 
+  ## gfClient/standalone BLAT  
   
   ## do some formatting ##
   queryFiles <- as.character(queryFiles)
   subjectFile <- as.character(subjectFile)
   
+  dp <- if(parallel){ bpparam() } else { SerialParam() }
+  
   ## BLAT it ##
   if(standaloneBlat) {        
     blatOpts <- blatParameters[names(blatParameters) %in% blatOpts]
     stopifnot(length(subjectFile)==1)
-    filenames <- foreach(x=iter(queryFiles), .inorder=FALSE,
-                         .export=c("blatOpts","subjectFile","gzipResults")) %dopar% {
+    filenames <- bplapply(queryFiles, function(x) {
       filename.out <- paste(x, blatOpts["out"], sep=".")
-      cmd <- paste("blat", paste(paste("-",names(blatOpts),sep=""), blatOpts, 
+      cmd <- paste("blat", paste(paste0("-",names(blatOpts)), blatOpts, 
                                  collapse=" ", sep="="), "-noHead", 
                    subjectFile, x, filename.out)
       message(cmd)
@@ -4041,8 +4249,10 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
         filename.out <- paste(filename.out, "gz", sep=".") 
       }
       filename.out
-    }
+    }, BPPARAM=dp)
+    
     if(grepl("\\.tempyS$",subjectFile)) { file.remove(subjectFile) }
+    
   } else {
     # start the gfServer if not started already! #
     killFlag <- FALSE
@@ -4060,37 +4270,25 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
     
     gfClientOpts <- blatParameters[names(blatParameters) %in% gfClientOpts]
     stopifnot(length(subjectFile)>0)
-    filenames <- foreach(port=iter(rep(port, length=length(queryFiles))),
-                         x=iter(queryFiles), .inorder=FALSE, 
-                         .export=c("gfClientOpts","host","port",
-                                   "indexFileDir","gzipResults")) %dopar% {
-                                     filename.out <- paste(x, 
-                                                           gfClientOpts["out"], 
-                                                           sep=".")
-                                     cmd <- paste("gfClient",
-                                                  paste(paste("-",
-                                                              names(gfClientOpts),
-                                                              sep=""), 
-                                                        gfClientOpts, 
-                                                        collapse=" ", 
-                                                        sep="="), "-nohead", 
-                                                  host, port, "/", x, 
-                                                  filename.out)
-                                     message(cmd)
-                                     system(cmd)
-                                     
-                                     ## no need to save splitted files!
-                                     if(grepl("\\.tempyQ$", x)) { 
-                                       file.remove(x) 
-                                     } 
-                                     
-                                     if(gzipResults) { 
-                                       system(paste("gzip", filename.out))
-                                       filename.out <- paste(filename.out, "gz", 
-                                                             sep=".") 
-                                     }
-                                     filename.out
-                                   }  
+    filenames <- bpmapply(function(port,x) {      
+      filename.out <- paste(x, gfClientOpts["out"], sep=".")
+      cmd <- paste("gfClient",
+                   paste(paste0("-", names(gfClientOpts)), gfClientOpts, 
+                         collapse=" ", sep="="), "-nohead", host, port, "/", x, 
+                   filename.out)
+      message(cmd)
+      system(cmd)
+      
+      ## no need to save splitted files!
+      if(grepl("\\.tempyQ$", x)) { file.remove(x) } 
+      
+      if(gzipResults) { 
+        system(paste("gzip", filename.out))
+        filename.out <- paste(filename.out, "gz", sep=".") 
+      }
+      filename.out      
+    }, rep(port, length=length(queryFiles)), queryFiles, 
+    SIMPLIFY=FALSE, USE.NAMES=FALSE, BPPARAM=dp)  
     
     ## only kill if the gfServer was started from within this function ## 
     if(killFlag) {
@@ -4148,17 +4346,15 @@ pslCols <- function(withClass=TRUE) {
 #' @param removeFile remove the PSL file(s) after importing. 
 #' Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with 
-#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is 
-#' registered, then a serial version of foreach is ran using 
-#' \code{\link{registerDoSEQ()}}.
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
 #' @return a dataframe reflecting psl file type. If asGRanges=TRUE, 
 #' then a GRanges object.
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered 
-#' before running the function. One can use any of the following libraries 
-#' compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. 
-#' For example: library(doMC); registerDoMC(2)
+#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
+#' before running the function. One can use any of the following 
+#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
 #' \code{\link{startgfServer}}, \code{\link{blatSeqs}}, 
@@ -4173,59 +4369,39 @@ pslCols <- function(withClass=TRUE) {
 #'
 read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE, 
                      removeFile=TRUE, parallel=FALSE) {
-  
-  if(is.null(pslFile) | length(pslFile)==0) {
-    stop("pslFile parameter empty. Please supply a filename to be read.")
-  }
-  
-  if (any(grepl("\\*|\\$|\\+|\\^",pslFile))) {
-    ## vector of filenames
-    pslFile <- list.files(path=dirname(pslFile), 
-                          pattern=basename(pslFile), full.names=TRUE)      
-  }
-  
-  if(length(pslFile)==0) { 
-    stop("No file(s) found with given paramter in pslFile:", pslFile) 
-  }
-  
-  if(!parallel) { registerDoSEQ() }
-  
+  files <- pslFile
+  .checkArgsSetDefaults_ALIGNed()
+    
   ## setup psl columns + classes
   cols <- pslCols()
   
-  hits <- foreach(x=iter(pslFile), .inorder=FALSE, 
-                  .export=c("cols","bestScoring")) %dopar% {
-                              message(x)
-                              ## add extra fields incase pslx format ##
-                              ncol <- max(count.fields(x, sep = "\t"))
-                              if(ncol > length(cols)) {
-                                for(f in 1:(ncol-length(cols))) {
-                                  cols[paste0("V",f)] <- "character"
-                                }
-                              }
-                              hits.temp <- read.delim(x, header=FALSE, 
-                                                      col.names=names(cols), 
-                                                      stringsAsFactors=FALSE, 
-                                                      colClasses=cols)    
-                              if(bestScoring) {  
-                                ## do round one of bestScore here to reduce file size          
-                                hits.temp$score <- 
-                                  with(hits.temp, 
-                                       matches-misMatches-qBaseInsert-tBaseInsert)
-                                isBest <- with(hits.temp, 
-                                               ave(score, qName, 
-                                                   FUN=function(x) x==max(x)))
-                                hits.temp <- hits.temp[as.logical(isBest),]
-                                rm("isBest")
-                              }
-                              hits.temp
-                            }
-  hits <- unique(do.call(rbind, hits))
+  hits <- bplapply(files, function(x) {
+    message(x)
+    ## add extra fields incase pslx format ##
+    ncol <- max(count.fields(x, sep = "\t"))
+    if(ncol > length(cols)) {
+      for(f in 1:(ncol-length(cols))) {
+        cols[paste0("V",f)] <- "character"
+      }
+    }
+    hits.temp <- read.delim(x, header=FALSE, col.names=names(cols), 
+                            stringsAsFactors=FALSE, colClasses=cols)    
+    if(bestScoring) {  
+      ## do round one of bestScore here to reduce file size          
+      hits.temp$score <- with(hits.temp, 
+                              matches-misMatches-qBaseInsert-tBaseInsert)
+      isBest <- with(hits.temp, ave(score, qName, FUN=function(x) x==max(x)))
+      hits.temp <- hits.temp[as.logical(isBest),]
+      rm("isBest")
+    }
+    hits.temp    
+  }, BPPARAM=dp)  
+  hits <- unique(rbind.fill(hits))
   
   if(nrow(hits)==0) {
     stop("No hits found")
   }
-    
+  
   ## do round two of bestScore incase any got missed in round one
   if(bestScoring) {
     message("\t cherry picking!")
@@ -4297,7 +4473,7 @@ write.psl <- function(x, filename="out.psl", header=FALSE,
     cols <- union(cols, names(x))  
   }
   
-  write.table(x[,cols], file=filename, sep="\t", row.names=F, quote=FALSE, 
+  write.table(x[,cols], file=filename, sep="\t", row.names=FALSE, quote=FALSE, 
               col.names=header)
   
   return(filename)
@@ -4310,11 +4486,15 @@ write.psl <- function(x, filename="out.psl", header=FALSE,
 #' @param files blast8 filename, or vector of filenames, or a pattern of files to import.
 #' @param asGRanges return a GRanges object instead of a dataframe. Default is TRUE Saves memory!
 #' @param removeFile remove the blast8 file(s) after importing. Default is FALSE.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
 #' @return a dataframe or GRanges object reflecting blast8 file type.
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
+#' before running the function. One can use any of the following 
+#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #'
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}
 #'
@@ -4326,61 +4506,44 @@ write.psl <- function(x, filename="out.psl", header=FALSE,
 #'
 read.blast8 <- function(files=NULL, asGRanges=FALSE,
                         removeFile=TRUE, parallel=FALSE) {
-  if(is.null(files) | length(files)==0) {
-    stop("files parameter empty. Please supply a filename to be read.")
-  }
   
-  if (any(grepl("\\*|\\$|\\+|\\^",files))) {
-    ## vector of filenames
-    files <- list.files(path=dirname(files), 
-                        pattern=basename(files), full.names=TRUE)
-  }
-  
-  if(length(files)==0) { 
-    stop("No file(s) found with given paramter in files:", files) 
-  }
-  
-  if(!parallel) { registerDoSEQ() }
-  
+  .checkArgsSetDefaults_ALIGNed()
+
   ## setup blast8 columns + classes
   cols <- c("qName", "tName", "identity", "span", "misMatches", "gaps", 
             "qStart", "qEnd", "tStart", "tEnd", "evalue", "bitscore")
   cols.class <- c(rep("character",2), rep("numeric",10))
   cols <- structure(cols.class, names=cols)
   
-  hits <- foreach(x=iter(files), .inorder=FALSE, 
-                  .export=c("cols","bestScoring")) %dopar% {
-                              message(x)
-                              ## add extra fields incase pslx format ##
-                              ncol <- max(count.fields(x, sep = "\t"))
-                              if(ncol > length(cols)) {
-                                for(f in 1:(ncol-length(cols))) {
-                                  cols[paste0("V",f)] <- "character"
-                                }
-                              }
-                              hits.temp <- read.delim(x, header=FALSE, 
-                                                      col.names=names(cols), 
-                                                      stringsAsFactors=FALSE, 
-                                                      colClasses=cols)
-                              hits.temp$strand <- with(hits.temp, 
-                                                       ifelse(tStart>tEnd,
-                                                              "-","+"))
-                              # switch tStart & tEnd for cases where strand=='-' 
-                              # since it's reversed in blast8 format.
-                              rows <- hits.temp$strand=='-'
-                              tstarts <- hits.temp$tEnd[rows]
-                              tends <- hits.temp$tStart[rows]
-                              hits.temp$tStart[rows] <- tstarts
-                              hits.temp$tEnd[rows] <- tends
-                              rm("tstarts","tends","rows")
-                              hits.temp
-                            }
-  hits <- unique(do.call(rbind, hits))
+  hits <- bplapply(files, function(x) {
+    message(x)
+    ## add extra fields incase pslx format ##
+    ncol <- max(count.fields(x, sep = "\t"))
+    if(ncol > length(cols)) {
+      for(f in 1:(ncol-length(cols))) {
+        cols[paste0("V",f)] <- "character"
+      }
+    }
+    hits.temp <- read.delim(x, header=FALSE, col.names=names(cols), 
+                            stringsAsFactors=FALSE, colClasses=cols)
+    hits.temp$strand <- with(hits.temp, ifelse(tStart>tEnd, "-","+"))
+    
+    # switch tStart & tEnd for cases where strand=='-' 
+    # since it's reversed in blast8 format.
+    rows <- hits.temp$strand=='-'
+    tstarts <- hits.temp$tEnd[rows]
+    tends <- hits.temp$tStart[rows]
+    hits.temp$tStart[rows] <- tstarts
+    hits.temp$tEnd[rows] <- tends
+    rm("tstarts","tends","rows")
+    hits.temp
+  }, BPPARAM=dp)
+  hits <- unique(rbind.fill(hits))
   
   if(nrow(hits)==0) {
     stop("No hits found")
   }
-    
+  
   if(asGRanges) {
     hits <- pslToRangedObject(hits, useTargetAsRef=TRUE, isblast8=TRUE)
   }
@@ -4410,7 +4573,11 @@ read.blast8 <- function(files=NULL, asGRanges=FALSE,
 #'
 #' @return a GRanges object with integration sites which passed all filtering criteria. Each filtering parameter creates a new column to flag if a sequence/read passed that filter which follows the scheme: 'pass.FilterName'. Integration Site is marked by new column named 'Position'.
 #'
-#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{startgfServer}}, \code{\link{read.psl}}, 
+#' \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, 
+#' \code{\link{findIntegrations}}, \code{\link{pslToRangedObject}}, 
+#' \code{\link{clusterSites}}, \code{\link{otuSites2}}, 
+#' \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
@@ -4420,8 +4587,7 @@ read.blast8 <- function(files=NULL, asGRanges=FALSE,
 getIntegrationSites <- function(psl.rd=NULL, startWithin=3, 
                                 alignRatioThreshold=0.7, 
                                 genomicPercentIdentity=0.98, 
-                                correctByqStart=TRUE, 
-                                oneBased=FALSE) {
+                                correctByqStart=TRUE, oneBased=FALSE) {
   stopifnot((is(psl.rd,"GRanges") | is(psl.rd,"GAlignments")) & 
               !is.null(psl.rd) & !is.null(startWithin) & length(psl.rd)!=0 &
               !is.null(alignRatioThreshold) & !is.null(genomicPercentIdentity))
@@ -4488,8 +4654,7 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
   cleanit <- gc()
   
   mcols(psl.rd)$pass.allQC <- mcols(psl.rd)$pass.percIdentity & 
-    mcols(psl.rd)$pass.alignRatio & 
-    mcols(psl.rd)$pass.startWithin
+    mcols(psl.rd)$pass.alignRatio & mcols(psl.rd)$pass.startWithin
   
   return(psl.rd)
 }
@@ -4504,10 +4669,10 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined. 
 #' @param value a vector of integer with values that needs to corrected or 
 #' clustered (i.e. Positions). Required if psl.rd parameter is not defined. 
-#' @param grouping additional vector of grouping by which to pool the rows (i.e.
-#'  samplenames). Default is NULL.
+#' @param grouping additional vector of grouping of length posID or psl.rd by 
+#' which to pool the rows (i.e. samplenames). Default is NULL. 
 #' @param psl.rd a GRanges object returned from \code{\link{getIntegrationSites}}.
-#'  Default is NULL. 
+#' Default is NULL. 
 #' @param weight a numeric vector of weights to use when calculating frequency 
 #' of value by posID and grouping if specified. Default is NULL.
 #' @param windowSize size of window within which values should be corrected or 
@@ -4517,8 +4682,8 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
 #' @param quartile if byQuartile=TRUE, then the quartile which serves as the 
 #' threshold. Default is 0.70.
 #' @param parallel use parallel backend to perform calculation with 
-#' \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, 
-#' then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}. 
 #' Process is split by the grouping the column.
 #'
 #' @note The algorithm for clustering when byQuartile=TRUE is as follows: for 
@@ -4550,7 +4715,9 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
 clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, 
                          weight=NULL, windowSize=5L, byQuartile=FALSE, 
                          quartile=0.70, parallel=TRUE) {
-  if(!parallel) { registerDoSEQ() }      
+  
+  .checkArgsSetDefaults_ALIGNed()
+  
   if(is.null(psl.rd)) {
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
@@ -4611,6 +4778,9 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     } else { 
       grouping 
     }
+
+    ## for sonic abundance ##
+    mcols(psl.rd)$groups <- grouping
     
     clusters <- clusterSites(posID=posIDs[good.row], 
                              value=values[good.row], 
@@ -4662,6 +4832,12 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     rm("isBest","bestScore","posIDs","values","groupingVals")
     cleanit <- gc()
     
+    message("Calculating sonic abundance.")   
+    psl.rd <- getSonicAbund(psl.rd=psl.rd, grouping=mcols(psl.rd)$groups,
+                            parallel=parallel)
+    
+    mcols(psl.rd)$groups <- NULL
+    
     return(psl.rd)
   }
   
@@ -4675,7 +4851,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
   rm("groups","weight2")
   
   if(byQuartile) {
-    message("Clustering by quartile: ",quartile)
+    message("Clustering by quartile: ", quartile)
     # obtain the defined quartile of frequency per posID & grouping #
     sites <- arrange(sites, posID2, value, plyr::desc(freq))
     quartiles <- with(sites,
@@ -4692,7 +4868,7 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
       pos.ab <- with(subset(sites,!belowQuartile,drop=TRUE),
                      GRanges(IRanges(start=value,width=1), 
                              seqnames=posID2, freq=freq))
-      pos.overlap <- as.data.frame(as.matrix(findOverlaps(pos.be,pos.ab,
+      pos.overlap <- as.data.frame(as.matrix(findOverlaps(pos.be, pos.ab,
                                                           maxgap=windowSize,
                                                           ignore.strand=TRUE)))
       
@@ -4764,86 +4940,71 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     
     sites <- split(sites, sites$grouping)
     
-    sites <- foreach(x=iter(sites), .inorder=FALSE, 
-                     .packages=c("GenomicRanges","plyr"), 
-                     .combine=rbind) %dopar% {
-                       
-                       ## find overlapping positions using findOverlaps() using 
-                       ## maxgap adjusted by windowSize!
-                       sites.gr <- with(x, 
-                                        GRanges(seqnames=posID2, 
-                                                IRanges(start=value, width=1), 
-                                                strand="*", freq))
-                       
-                       # the key part is ignoreSelf=TRUE,ignoreRedundant=FALSE..
-                       # helps overwrite values at later step
-                       res <- 
-                         as.data.frame(as.matrix(findOverlaps(sites.gr, 
-                                                              ignoreSelf=TRUE, 
-                                                              ignoreRedundant=FALSE,
-                                                              select="all", 
-                                                              maxgap=windowSize))) 
-                       if(nrow(res)>0) {
-                         # add accessory columns to dictate decision making!
-                         # q = query, s = subject, val = value, 
-                         # freq = frequency of query/subject
-                         res$q.val <- start(sites.gr)[res$queryHits]
-                         res$s.val <- start(sites.gr)[res$subjectHits]
-                         res$q.freq <- sites.gr$freq[res$queryHits]
-                         res$s.freq <- sites.gr$freq[res$subjectHits]
-                         res$dist <- with(res,abs(q.val-s.val))
-                         
-                         ## do safety checking!
-                         stopifnot(!any(res$dist>windowSize)) 
-
-                         # favor a lower value where frequence/cloneCount is 
-                         # tied, else use the value of the highest frequency!
-                         res$val <- with(res,
-                                         ifelse(q.freq==s.freq, 
-                                                ifelse(q.val < s.val,
-                                                       q.val,s.val), 
-                                                ifelse(q.freq >= s.freq,
-                                                       q.val,s.val))) 
-                         
-                         # For cases where there are >1 matches between query 
-                         # & subject...find the one with the highest frequency 
-                         # and merge with that.
-                         # If all frequencies are the same, then use the lowest 
-                         # value to represent the cluster!
-                         res$maxFreq <- with(res, pmax(q.freq, s.freq))    
-                         res$ismaxFreq <- 
-                             as.logical(with(res, ave(maxFreq, queryHits, 
-                                                      FUN=function(x) x==max(x))))
-                         res$ismaxFreq <- as.logical(res$ismaxFreq)
-                         
-                         ## VIP step...this is what merges high value to low 
-                         ## value for ties in the hash structure below!!!
-                         res <- arrange(res, plyr::desc(queryHits), val)
-                         clustered <- 
-                           unique(subset(res,ismaxFreq)[,c("queryHits","val")])
-                         clustered <- with(clustered, split(val, queryHits))
-                         
-                         ## make sure there is only one entry per hit
-                         ## this is useful in situations when multiple query 
-                         ## & subject are off by 1bp
-                         ## i.e. queryHits: 1,2,3,4; subjectHits: 1,2,3,4; 
-                         ## vals: 31895692 31895693 31895694 31895695
-                         clustered <- unlist(sapply(clustered, "[[", 1))        
-                         
-                         # trickle results back to sites
-                         x$clusteredValue <- x$value
-                         x$clusteredValue[as.numeric(names(clustered))] <- 
-                           as.numeric(clustered)
-                         rm("clustered","res")
-                         cleanit <- gc()
-                       } else {
-                         message("No locations found within ", windowSize, 
-                                 "bps for ",x$grouping[1],
-                                 "...no clustering performed!")
-                         x$clusteredValue <- x$value
-                       }    
-                       x
-                     }        
+    sites <- bplapply(sites, function(x) {
+      
+      ## find overlapping positions using findOverlaps() using 
+      ## maxgap adjusted by windowSize!
+      sites.gr <- with(x, GRanges(seqnames=posID2, IRanges(start=value, width=1), 
+                                  strand="*", freq))
+      
+      # the key part is ignoreSelf=TRUE,ignoreRedundant=FALSE..
+      # helps overwrite values at later step
+      res <- as.data.frame(as.matrix(findOverlaps(sites.gr, ignoreSelf=TRUE, 
+                                                  ignoreRedundant=FALSE,
+                                                  select="all", 
+                                                  maxgap=windowSize))) 
+      if(nrow(res)>0) {
+        # add accessory columns to dictate decision making!
+        # q = query, s = subject, val = value, freq = frequency of query/subject
+        res$q.val <- start(sites.gr)[res$queryHits]
+        res$s.val <- start(sites.gr)[res$subjectHits]
+        res$q.freq <- sites.gr$freq[res$queryHits]
+        res$s.freq <- sites.gr$freq[res$subjectHits]
+        res$dist <- with(res,abs(q.val-s.val))
+        
+        ## do safety checking!
+        stopifnot(!any(res$dist>windowSize)) 
+        
+        # favor a lower value where frequence/cloneCount is tied, 
+        # else use the value of the highest frequency!
+        res$val <- with(res, ifelse(q.freq==s.freq, 
+                                    ifelse(q.val < s.val, q.val, s.val), 
+                                    ifelse(q.freq >= s.freq, q.val, s.val))) 
+        
+        # For cases where there are >1 matches between query & subject...
+        # find the one with the highest frequency and merge with that.
+        # If all frequencies are the same, then use the lowest 
+        # value to represent the cluster!
+        res$maxFreq <- with(res, pmax(q.freq, s.freq))    
+        res$ismaxFreq <- as.logical(with(res, ave(maxFreq, queryHits, 
+                                                  FUN=function(x) x==max(x))))
+        res$ismaxFreq <- as.logical(res$ismaxFreq)
+        
+        ## VIP step...this is what merges high value to low 
+        ## value for ties in the hash structure below!!!
+        res <- arrange(res, plyr::desc(queryHits), val)
+        clustered <- unique(subset(res,ismaxFreq)[,c("queryHits","val")])
+        clustered <- with(clustered, split(val, queryHits))
+        
+        ## make sure there is only one entry per hit this is useful in 
+        ## situations when multiple query & subject are off by 1bp
+        ## i.e. queryHits: 1,2,3,4; subjectHits: 1,2,3,4; 
+        ## vals: 31895692 31895693 31895694 31895695
+        clustered <- unlist(sapply(clustered, "[[", 1))        
+        
+        # trickle results back to sites
+        x$clusteredValue <- x$value
+        x$clusteredValue[as.numeric(names(clustered))] <- as.numeric(clustered)
+        rm("clustered","res")
+        cleanit <- gc()
+      } else {
+        message("No locations found within ", windowSize, "bps for ",
+                x$grouping[1], "...no clustering performed!")
+        x$clusteredValue <- x$value
+      }    
+      x
+    }, BPPARAM=dp)
+    sites <- rbind.fill(sites)
   }
   
   message("\t - Adding clustered value frequencies.")
@@ -4871,8 +5032,10 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
 #'
 #' @param posID a vector of discrete positions, i.e. Chr,strand,Position.
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
-#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param grouping additional vector of grouping of length posID or psl.rd by 
+#' which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. 
+#' Default is NULL. 
 #'
 #' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions. 
 #'
@@ -4888,7 +5051,9 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
 #'
 otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, 
                      psl.rd=NULL, parallel=TRUE) {
-  if(!parallel) { registerDoSEQ() }
+  
+  .checkArgsSetDefaults_ALIGNed()
+  
   if(is.null(psl.rd)) {
     stopifnot(!is.null(posID))
     stopifnot(!is.null(readID))
@@ -4906,9 +5071,9 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
                      as.character(strand(psl.rd)), 
                      mcols(psl.rd)$clusteredPosition)
     if("qName" %in% colnames(mcols(psl.rd))) {
-      readID <- mcols(psl.rd)$qName
+      readIDs <- mcols(psl.rd)$qName
     } else if ("Sequence" %in% colnames(mcols(psl.rd))) {
-      readID <- mcols(psl.rd)$Sequence
+      readIDs <- mcols(psl.rd)$Sequence
     } else {
       stop("No readID type column found in psl.rd object.")
     }
@@ -4964,7 +5129,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
                       })
     rm(toCheck.ids)
     
-    allposIDs <- with(reads[!singles,],split(posIDs,grouping))
+    allposIDs <- with(reads[!singles,], split(posIDs,grouping))
     
     for(f in intersect(names(toCheck), names(allposIDs))) {
       # this is crucial to avoid matching things like xyzABC to xyz
@@ -4989,7 +5154,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
   reads$grouping <- as.character(reads$grouping)
   reads$posIDs <- as.character(reads$posIDs)
   reads <- split(reads, reads$grouping)
-  reads <- foreach(x=iter(reads), .inorder=FALSE, .combine=rbind) %dopar% {		
+  reads <- bplapply(reads, function(x) {		
     for(f in 1:nrow(x)) {
       if (x$check[f]) {
         posId <- x$posIDs[f]
@@ -5006,7 +5171,8 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
     }
     x$check <- NULL
     x
-  }
+  }, BPPARAM=dp)
+  reads <- rbind.fill(reads)
   
   ## trickle the OTU ids back to sites frame ##    
   ots.ids <- with(reads, split(newotuID, paste0(readID,grouping)))
@@ -5014,14 +5180,13 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
     stop("Something went wrong merging non-singletons. ",
          "Multiple OTUs assigned to one readID most likely!")
   }
-  sites$otuID <- as.numeric(unlist(ots.ids[with(sites, 
-                                                paste0(readID,grouping))]))
+  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,paste0(readID,grouping))]))
   
   stopifnot(any(!is.na(sites$otuID)))
   rm(reads)
   cleanit <- gc()
   
-  if(is.null(grouping)) { sites$grouping<-NULL }
+  if(is.null(grouping)) { sites$grouping <- NULL }
   return(sites)
 }
 
@@ -5032,10 +5197,15 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
-#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param grouping additional vector of grouping of length posID or psl.rd by 
+#' which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. 
+#' Default is NULL. 
 #' @param maxgap max distance allowed between two non-overlapping position to trigger the merging. Default is 5.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}. 
+#' Process is split by the grouping the column.
 #'
 #' @note The algorithm for making OTUs of sites is as follows: 
 #' \itemize{
@@ -5050,7 +5220,8 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #'  \item positions with no overlap are left as is with the original arbitrary ID
 #' }
 #' 
-#' @return a data frame with binned values and otuID shown alongside the original input. If psl.rd parameter is defined, then a GRanges object.
+#' @return a data frame with binned values and otuID shown alongside the 
+#' original input. If psl.rd parameter is defined, then a GRanges object.
 #'
 #' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
@@ -5062,7 +5233,9 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #'
 otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL, 
                       psl.rd=NULL, maxgap=5, parallel=TRUE) {
-  if(!parallel) { registerDoSEQ() }
+  
+  .checkArgsSetDefaults_ALIGNed()
+  
   if(is.null(psl.rd)) {
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
@@ -5174,76 +5347,63 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   if(any(mcols(sites.gr)$singles)) {
     message('Merging non-singletons with singletons if any...')    
     sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
-    sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                        .packages="GenomicRanges", .combine=c) %dopar% {
-                          sigs <- subset(x, mcols(x)$singles)
-                          nonsigs <- subset(x, !mcols(x)$singles)
-                          res <- findOverlaps(nonsigs, sigs, maxgap=maxgap, 
-                                              select="first")
-                          rows <- !is.na(res)
-                          if(any(rows)) {
-                            res <- data.frame(queryHits=which(rows), 
-                                              subjectHits=res[rows])
-                            res$sigsOTU <- mcols(sigs)$otuID[res$subjectHits]
-                            
-                            res$sigsReadID <- mcols(sigs)$readID[res$subjectHits]
-                            res$nonsigsReadID <-
-                              mcols(nonsigs)$readID[res$queryHits]
-                            
-                            res$sigPosID <- paste0(as.character(seqnames(sigs)),
-                                                   start(sigs))[res$subjectHits]
-                            res$nonsigPosID <- 
-                              paste0(as.character(seqnames(nonsigs)),
-                                     start(nonsigs))[res$queryHits]
-                            
-                            ## if >1 OTU found per nonsigsReadID...choose lowest ID ## 
-                            bore <- with(res, split(sigsOTU, nonsigsReadID))
-                            bore <- sapply(sapply(sapply(bore, unique, simplify=FALSE), 
-                                                  sort, simplify=FALSE), 
-                                           "[[", 1)
-                            res$OTU <- bore[res$nonsigsReadID]                                                        
-                            
-                            ## if >1 OTU found per nonsigPosID...choose lowest ID ##                          
-                            res$OTU2 <- res$OTU
-                            counts <- with(res, 
-                                           tapply(OTU2, nonsigPosID, 
-                                                  function(x) length(unique(x)))
-                                           )                              
-                            totest <- names(which(counts>1))
-                            while(length(totest)>0) { 
-                              #print(length(totest))
-                              for(i in totest) {
-                                rows <- res$nonsigPosID == i
-                                rows <- 
-                                  res$nonsigsReadID %in% res$nonsigsReadID[rows]
-                                rows <- rows | 
-                                  res$nonsigPosID %in% res$nonsigPosID[rows]
-                                res$OTU2[rows] <- min(res[rows,"OTU"])
-                              }
-                              counts <- 
-                                with(res, 
-                                     tapply(OTU2, nonsigPosID, 
-                                            function(x) length(unique(x))))                              
-                              totest <- names(which(counts>1))
-                            }
-                            
-                            bore <- sapply(with(res, 
-                                                split(OTU2, nonsigsReadID)),
-                                           unique)
-                            
-                            if(!is.numeric(bore)) { 
-                              ## safety check incase >1 OTU found per readID
-                              bore <- sapply(bore, min)
-                            }
-                            rows <- mcols(nonsigs)$readID %in% names(bore)
-                            mcols(nonsigs)[rows,"newotuID"] <- 
-                              bore[mcols(nonsigs)[rows,"readID"]]
-                            mcols(nonsigs)[rows,"check"] <- FALSE
-                            mcols(sigs)[mcols(sigs)$readID %in% res$sigsReadID,
-                                        "check"] <- FALSE
-                          }
-                          c(sigs,nonsigs)
-                        }
+    sites.gr <- bplapply(sites.gr.list, function(x) {
+      sigs <- subset(x, mcols(x)$singles)
+      nonsigs <- subset(x, !mcols(x)$singles)
+      res <- findOverlaps(nonsigs, sigs, maxgap=maxgap, select="first")
+      rows <- !is.na(res)
+      if(any(rows)) {
+        res <- data.frame(queryHits=which(rows), subjectHits=res[rows])
+        res$sigsOTU <- mcols(sigs)$otuID[res$subjectHits]
+        
+        res$sigsReadID <- mcols(sigs)$readID[res$subjectHits]
+        res$nonsigsReadID <- mcols(nonsigs)$readID[res$queryHits]
+        
+        res$sigPosID <- paste0(as.character(seqnames(sigs)),
+                               start(sigs))[res$subjectHits]
+        res$nonsigPosID <- 
+          paste0(as.character(seqnames(nonsigs)), start(nonsigs))[res$queryHits]
+        
+        ## if >1 OTU found per nonsigsReadID...choose lowest ID ## 
+        bore <- with(res, split(sigsOTU, nonsigsReadID))
+        bore <- sapply(sapply(sapply(bore, unique, simplify=FALSE), 
+                              sort, simplify=FALSE), 
+                       "[[", 1)
+        res$OTU <- bore[res$nonsigsReadID]                                                        
+        
+        ## if >1 OTU found per nonsigPosID...choose lowest ID ##                          
+        res$OTU2 <- res$OTU
+        counts <- with(res, 
+                       tapply(OTU2, nonsigPosID, function(x) length(unique(x)))
+        )                              
+        totest <- names(which(counts>1))
+        while(length(totest)>0) { 
+          #print(length(totest))
+          for(i in totest) {
+            rows <- res$nonsigPosID == i
+            rows <- res$nonsigsReadID %in% res$nonsigsReadID[rows]
+            rows <- rows | res$nonsigPosID %in% res$nonsigPosID[rows]
+            res$OTU2[rows] <- min(res[rows,"OTU"])
+          }
+          counts <- 
+            with(res, tapply(OTU2, nonsigPosID, function(x) length(unique(x))))                              
+          totest <- names(which(counts>1))
+        }
+        
+        bore <- sapply(with(res, split(OTU2, nonsigsReadID)), unique)
+        
+        if(!is.numeric(bore)) { 
+          ## safety check incase >1 OTU found per readID
+          bore <- sapply(bore, min)
+        }
+        rows <- mcols(nonsigs)$readID %in% names(bore)
+        mcols(nonsigs)[rows,"newotuID"] <- bore[mcols(nonsigs)[rows,"readID"]]
+        mcols(nonsigs)[rows,"check"] <- FALSE
+        mcols(sigs)[mcols(sigs)$readID %in% res$sigsReadID, "check"] <- FALSE
+      }
+      c(sigs,nonsigs)
+    }, BPPARAM=dp)
+    sites.gr <- do.call(c, sites.gr)
     rm(sites.gr.list)
   }
   mcols(sites.gr)$singles <- NULL
@@ -5254,78 +5414,68 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   goods <- subset(sites.gr, !mcols(sites.gr)$check)
   sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
   sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
-  sites.gr <- foreach(x=iter(sites.gr.list), .inorder=FALSE, .export="maxgap",
-                      .packages="GenomicRanges", .combine=c) %dopar% {		    
-                        res <- findOverlaps(x, maxgap=maxgap, ignoreSelf=TRUE,
-                                            ignoreRedundant=TRUE, select="all")
-                        if(length(res)>0) {
-                          res <- as.data.frame(res)
-                          res$queryOTU <- mcols(x)$otuID[res$queryHits]
-                          res$subjectOTU <- mcols(x)$otuID[res$subjectHits]
-                          res$subjectReadID <- mcols(x)$readID[res$subjectHits]
-                          res$subjectPosID <- paste0(as.character(seqnames(x)),
-                                                     start(x))[res$subjectHits]
-                          res$queryPosID <- paste0(as.character(seqnames(x)),
-                                                   start(x))[res$queryHits]
-                          
-                          ## if >1 OTU found per subjectReadID...choose lowest ID ## 
-                          bore <- with(res, split(queryOTU, subjectReadID))
-                          bore <- sapply(sapply(sapply(bore, unique, 
-                                                       simplify=FALSE), 
-                                                sort, simplify=FALSE), "[[", 1)
-                          res$OTU <- bore[as.character(res$subjectReadID)]                                                    
-                          
-                          ## if >1 OTU found per subjectPosID...choose lowest ID ##                          
-                          res$OTU2 <- res$OTU                        
-                          counts <- with(res, 
-                                         tapply(OTU2, subjectPosID, 
-                                                function(x) length(unique(x))))                          
-                          totest <- names(which(counts>1))
-                          
-                          while(length(totest)>0) {
-                            #print(length(totest))
-                            for(i in totest) {
-                              rows <- res$subjectPosID == i 
-                              rows <- rows | 
-                                res$subjectReadID %in% res$subjectReadID[rows]                               
-                              rows <- rows | 
-                                res$subjectOTU %in% res$subjectOTU[rows]
-                              rows <- rows | 
-                                res$subjectPosID %in% res$subjectPosID[rows]
-                              rows <- rows | 
-                                res$queryOTU %in% res$subjectOTU[rows]
-                              
-                              res$OTU2[rows] <- min(res[rows,"OTU2"])
-                            }                            
-                            counts <- with(res, 
-                                           tapply(OTU2, subjectPosID, 
-                                                  function(x) length(unique(x)))
-                                           )                          
-                            totest <- names(which(counts>1))
-                          }
-                          
-                          bore <- sapply(with(res, split(OTU2, subjectHits)),
-                                         unique)
-                          ## safety check incase >1 OTU found per subjectHits
-                          stopifnot(is.numeric(bore)) 
-                          
-                          rows <- as.numeric(names(bore))
-                          mcols(x)[rows,"newotuID"] <- as.numeric(bore)
-                          mcols(x)[rows, "check"] <- FALSE
-                          
-                          bore <- sapply(with(res, split(OTU2, subjectReadID)),
-                                         unique)
-                          if(!is.numeric(bore)) { 
-                            ## safety check incase >1 OTU found per readID
-                            bore <- sapply(bore, min)
-                          }
-                          rows <- mcols(x)$readID %in% names(bore)
-                          mcols(x)[rows,"newotuID"] <- 
-                            bore[mcols(x)[rows,"readID"]]
-                          mcols(x)[rows,"check"] <- FALSE
-                        }
-                        x
-                      }
+  sites.gr <- bplapply(sites.gr.list, function(x) {		    
+    res <- findOverlaps(x, maxgap=maxgap, ignoreSelf=TRUE, 
+                        ignoreRedundant=TRUE, select="all")
+    if(length(res)>0) {
+      res <- as.data.frame(res)
+      res$queryOTU <- mcols(x)$otuID[res$queryHits]
+      res$subjectOTU <- mcols(x)$otuID[res$subjectHits]
+      res$subjectReadID <- mcols(x)$readID[res$subjectHits]
+      res$subjectPosID <- paste0(as.character(seqnames(x)), 
+                                 start(x))[res$subjectHits]
+      res$queryPosID <- paste0(as.character(seqnames(x)), 
+                               start(x))[res$queryHits]
+      
+      ## if >1 OTU found per subjectReadID...choose lowest ID ## 
+      bore <- with(res, split(queryOTU, subjectReadID))
+      bore <- sapply(sapply(sapply(bore, unique, simplify=FALSE), 
+                            sort, simplify=FALSE), "[[", 1)
+      res$OTU <- bore[as.character(res$subjectReadID)]                                                    
+      
+      ## if >1 OTU found per subjectPosID...choose lowest ID ##                          
+      res$OTU2 <- res$OTU                        
+      counts <- with(res, 
+                     tapply(OTU2, subjectPosID, function(x) length(unique(x))))                          
+      totest <- names(which(counts>1))
+      
+      while(length(totest)>0) {
+        #print(length(totest))
+        for(i in totest) {
+          rows <- res$subjectPosID == i 
+          rows <- rows | res$subjectReadID %in% res$subjectReadID[rows]                               
+          rows <- rows | res$subjectOTU %in% res$subjectOTU[rows]
+          rows <- rows | res$subjectPosID %in% res$subjectPosID[rows]
+          rows <- rows | res$queryOTU %in% res$subjectOTU[rows]
+          
+          res$OTU2[rows] <- min(res[rows,"OTU2"])
+        }                            
+        counts <- with(res, tapply(OTU2, subjectPosID, 
+                                   function(x) length(unique(x)))
+        )                          
+        totest <- names(which(counts>1))
+      }
+      
+      bore <- sapply(with(res, split(OTU2, subjectHits)), unique)
+      ## safety check incase >1 OTU found per subjectHits
+      stopifnot(is.numeric(bore)) 
+      
+      rows <- as.numeric(names(bore))
+      mcols(x)[rows,"newotuID"] <- as.numeric(bore)
+      mcols(x)[rows, "check"] <- FALSE
+      
+      bore <- sapply(with(res, split(OTU2, subjectReadID)), unique)
+      if(!is.numeric(bore)) { 
+        ## safety check incase >1 OTU found per readID
+        bore <- sapply(bore, min)
+      }
+      rows <- mcols(x)$readID %in% names(bore)
+      mcols(x)[rows,"newotuID"] <- bore[mcols(x)[rows,"readID"]]
+      mcols(x)[rows,"check"] <- FALSE
+    }
+    x
+  }, BPPARAM=dp)
+  sites.gr <- do.call(c, sites.gr)
   sites.gr <- c(sites.gr, goods)
   rm("sites.gr.list","goods")
   cleanit <- gc()
@@ -5340,9 +5490,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
     stop("Something went wrong merging non-singletons. ",
          "Multiple OTUs assigned to one readID most likely!")
   }
-  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,
-                                                paste0(readID,grouping))],
-                                   use.names=F))
+  sites$otuID <- as.numeric(unlist(ots.ids[with(sites,paste0(readID,grouping))],
+                                   use.names=FALSE))
   
   stopifnot(any(!is.na(sites$otuID)))
   cleanit <- gc()
@@ -5362,10 +5511,15 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.
 #' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param readID a vector of read/clone names which is unique to each row, i.e. deflines.
-#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. Default is NULL. 
+#' @param grouping additional vector of grouping of length posID or psl.rd by 
+#' which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. 
+#' Default is NULL. 
 #' @param maxgap max distance allowed between two non-overlapping position to trigger the merging. Default is 5.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}. Process is split by the grouping the column.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}. 
+#' Process is split by the grouping the column.
 #'
 #' @note The algorithm for making isus of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same ISU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same ISU ID to all readIDs sharing 1 or more positions.
 #'
@@ -5381,7 +5535,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #'
 isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL, 
                      psl.rd=NULL, maxgap=5, parallel=TRUE) {
-  
+
   res <- otuSites2(posID=posID, value=value, readID=readID, grouping=grouping, 
                    psl.rd=psl.rd, maxgap=maxgap, parallel=parallel)
   
@@ -5396,20 +5550,34 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   res
 }
 
-#' Remove values/positions which are overlapping between discrete groups based on their frequency.
+#' Remove values/positions which are overlapping between discrete groups based 
+#' on their frequency.
 #'
-#' Given a group of discrete factors (i.e. position ids) and integer values, the function tests if they overlap between groups. If overlap is found, then the group having highest frequency of a given position wins, else the position is filtered out from all the groups. The main use of this function is to remove crossover sites from different samples in the data.
+#' Given a group of discrete factors (i.e. position ids) and integer values, 
+#' the function tests if they overlap between groups. If overlap is found, 
+#' then the group having highest frequency of a given position wins, else the 
+#' position is filtered out from all the groups. The main use of this function 
+#' is to remove crossover sites from different samples in the data.
 #'
 #' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.
-#' @param value a vector of integer locations/positions that needs to be binned, i.e. genomic location. Required if psl.rd parameter is not defined. 
-#' @param grouping additional vector of grouping by which to pool the rows (i.e. samplenames). Default is NULL.
-#' @param weight a numeric vector of weights to use when calculating frequency of value by posID and grouping if specified. Default is NULL.
-#' @param windowSize size of window within which values should be checked. Default is 1.
+#' @param value a vector of integer locations/positions that needs to be binned, 
+#' i.e. genomic location. Required if psl.rd parameter is not defined. 
+#' @param grouping additional vector of grouping of length posID or psl.rd by 
+#' which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param weight a numeric vector of weights to use when calculating frequency 
+#' of value by posID and grouping if specified. Default is NULL.
+#' @param windowSize size of window within which values should be checked. 
+#' Default is 1.
 #' @param psl.rd a GRanges object. Default is NULL. 
 #'
-#' @return a data frame of the original input with columns denoting whether a given row was a Candidate and isCrossover. If psl.rd parameter is defined, then a GRanges object with 'isCrossover', 'Candidate', and 'FoundIn' columns appended at the end.
+#' @return a data frame of the original input with columns denoting whether a 
+#' given row was a Candidate and isCrossover. If psl.rd parameter is defined, 
+#' then a GRanges object with 'isCrossover', 'Candidate', and 'FoundIn' columns
+#'  appended at the end.
 #'
-#' @seealso  \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
+#' @seealso  \code{\link{clusterSites}}, \code{\link{otuSites}}, 
+#' \code{\link{otuSites2}}, \code{\link{findIntegrations}}, 
+#' \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
@@ -5419,6 +5587,9 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #'
 crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, 
                            weight=NULL, windowSize=1, psl.rd=NULL) {
+  
+  .checkArgsSetDefaults_ALIGNed()
+  
   if(is.null(psl.rd)) {
     stopifnot(!is.null(posID))
     stopifnot(!is.null(value))
@@ -5532,13 +5703,21 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
 #' @param port a port number to host the gfServer with. Only used if aligner='BLAT'. Default is 5560.
 #' @param host name of the machine running gfServer. Only used if aligner='BLAT'. Default is 'localhost'.
 #' @param genomeIndices an associative character vector of freeze to full or relative path of respective of indexed genomes from BLAT(.nib or .2bit files) or Subreads(.subread.index). For example: c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"). Be sure to supply an index per freeze supplied in the sampleInfo object. Default is NULL.
-#' @param parallel use parallel backend to perform calculation with \code{\link{foreach}}. Defaults to TRUE. If no parallel backend is registered, then a serial version of foreach is ran using \code{\link{registerDoSEQ()}}.
+#' @param numServers launch >1 gfServer and load balance jobs? This only
+#' applies when parallel=TRUE and standaloneBlat=FALSE. Enable this option only
+#' if the machine has a lot of RAM! Option ignored if launched gfServer is found
+#' at specified host and port. Default is 1. 
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
 #' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70\% identity. Ignored if aligner is "Subread".
 #'
 #' @return a SimpleList object similar to sampleInfo parameter supplied with new data added under each sector and sample. New data attributes include: psl, and sites. The psl attributes holds the genomic hits per read along with QC information. The sites attribute holds the condensed integration sites where genomic hits have been clustered by the Position column and cherry picked to have each site pass all the QC steps. 
 #'
-#' @note If parallel=TRUE, then be sure to have a paralle backend registered before running the function. One can use any of the following libraries compatible with \code{\link{foreach}}: doMC, doSMP, doSNOW, doMPI. For example: library(doMC); registerDoMC(2)
+#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
+#' before running the function. One can use any of the following 
+#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 #'
 #' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{getIntegrationSites}}
 #'
@@ -5549,12 +5728,12 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
 #'
 findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
                              port=5560, host="localhost", genomeIndices=NULL,
-                             parallel=TRUE, samplenames=NULL,
-                             blatParameters = c(minIdentity = 70, minScore = 5, 
-                                                stepSize = 5, tileSize = 10, 
-                                                repMatch = 112312, dots = 50,
-                                                maxDnaHits = 10, out = "psl",
-                                                q = "dna", t = "dna")) {    
+                             numServers=1L, parallel=TRUE, samplenames=NULL,
+                             blatParameters=c(minIdentity=70, minScore=5,
+                                              stepSize=5, tileSize=10,
+                                              repMatch=112312, dots=100,
+                                              maxDnaHits=10, out="psl",
+                                              q="dna", t="dna")){
   
   .checkArgs_SEQed()
   
@@ -5631,8 +5810,7 @@ findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
     pslFile <- blatSeqs(query=paste0("processed",f,".*.fa$"), 
                         subject=genomeIndices[[f]], standaloneBlat=FALSE, 
                         host=host, port=port, parallel=parallel, 
-                        gzipResults=TRUE,
-                        blatParameters=blatParameters)                
+                        gzipResults=TRUE, blatParameters=blatParameters)                
     
     message("Cleaning!")
     # add pslFiles for later use #
@@ -5650,41 +5828,30 @@ findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
   psl <- split(psl, psl$setname)
   
   ## begin processing hits ##
-  psl.hits <- foreach(x=iter(names(psl)), .inorder=TRUE,
-                      .export=c("psl", "sampleInfo", "startwithin", 
-                                "alignratiothreshold", "genomicpercentidentity", 
-                                "clustersiteswithin", "keepmultihits",
-                                "getIntegrationSites", "clusterSites", 
-                                "isuSites"),
-                      .packages=c("GenomicRanges","plyr")) %dopar% {
-                        message("Processing ",x)
-                        
-                        # add qc info for bestscoring hits #
-                        psl.x <- 
-                          getIntegrationSites(psl[[x]], 
-                                              startWithin=startwithin[[x]], 
-                                              alignRatioThreshold=
-                                                alignratiothreshold[[x]], 
-                                              genomicPercentIdentity=
-                                                genomicpercentidentity[[x]])
-                        
-                        # filter multihits if applicable #
-                        if(!as.logical(keepmultihits[[x]])) {
-                          psl.x <- psl.x[!psl.x$isMultiHit, ]
-                        }
-                        
-                        # cluster sites by positions #
-                        psl.x <- clusterSites(psl.rd=psl.x, 
-                                              windowSize=
-                                                clustersiteswithin[[x]])
-                        
-                        # get sites ISU for tagging multihits #
-                        if(as.logical(keepmultihits[[x]])) {        
-                          psl.x <-isuSites(psl.rd=psl.x)
-                        }
-                        
-                        psl.x
-                      }
+  psl.hits <- bplapply(names(psl), function(x) {
+    message("Processing ",x)
+    
+    # add qc info for bestscoring hits #
+    psl.x <- 
+      getIntegrationSites(psl[[x]], startWithin=startwithin[[x]], 
+                          alignRatioThreshold= alignratiothreshold[[x]], 
+                          genomicPercentIdentity= genomicpercentidentity[[x]])
+    
+    # filter multihits if applicable #
+    if(!as.logical(keepmultihits[[x]])) {
+      psl.x <- psl.x[!psl.x$isMultiHit, ]
+    }
+    
+    # cluster sites by positions #
+    psl.x <- clusterSites(psl.rd=psl.x, windowSize=clustersiteswithin[[x]])
+    
+    # get sites ISU for tagging multihits #
+    if(as.logical(keepmultihits[[x]])) {        
+      psl.x <- isuSites(psl.rd=psl.x)
+    }
+    
+    psl.x
+  }, BPPARAM=dp)
   names(psl.hits) <- names(psl)
   
   message("Adding PSL hits back to the object.")
@@ -5735,7 +5902,7 @@ findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
 summary.simple <- function(sampleInfo) {
   stopifnot(is(sampleInfo,"SimpleList"))
   message("Total sectors:", paste(names(sampleInfo$sectors),collapse=","), "\n")
-  do.call(rbind, lapply(names(sampleInfo$sectors), function(sector) {
+  res <- lapply(names(sampleInfo$sectors), function(sector) {
     bore <- extractFeature(sampleInfo, sector=sector,
                            feature="samplename")[[sector]]
     res.df <- data.frame(Sector=sector, SampleName=as.character(bore))
@@ -5761,7 +5928,8 @@ summary.simple <- function(sampleInfo) {
       }
     }
     res.df        
-  }))    
+  })
+  rbind.fill(res)
 }
 
 #' Elegant summary of a sampleInfo object.
@@ -5855,4 +6023,141 @@ summary.elegant <- function(sampleInfo, samplenames=NULL) {
       cat("\n",rep("~",40),"\n")
     }
   }    
+}
+
+#' Calculate breakpoint/sonic abundance of integration sites in a population
+#'
+#' Given distinct fragment lengths per integration, the function calculates
+#' sonic abundance as described in \code{\link{sonicLength}}. This function is 
+#' called by \code{\link{clusterSites}} and needs all individual fragments 
+#' lengths per position to properly estimate the clonal abundance of an 
+#' integration sites in a given population.
+#'
+#' @param posID a vector of discrete positions, i.e. Chr,strand,Position.
+#' Required if psl.rd parameter is not defined.
+#' @param fragLen a vector of fragment length per posID. Required if 
+#' psl.rd parameter is not defined. 
+#' @param grouping additional vector of grouping of length posID or psl.rd by 
+#' which to pool the rows (i.e. samplenames). Default is NULL.
+#' @param replicateNum an optional vector of the replicate number per grouping 
+#' and posID. Default is NULL.
+#' @param psl.rd a GRanges object returned from \code{\link{getIntegrationSites}} 
+#' Default is NULL.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}. 
+#' Process is split by the grouping the column.
+#'
+#' @return a data frame with estimated sonic abundance shown alongside with the
+#' original input. If psl.rd parameter is defined then a GRanges object is 
+#' returned with a new column 'estAbund'.
+#'
+#' @note For samples isolated using traditional restriction digest method, 
+#' the abundance will be inaccurate as it is designed for sonicated or sheared
+#' sample preparation method.
+#'
+#' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}}, 
+#' \code{\link{otuSites2}}, \code{\link{findIntegrations}}, 
+#' \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
+#'
+#' @export
+#'
+#' @examples 
+#' data("A1",package='sonicLength')
+#' A1 <- droplevels(A1[1:1000,])
+#' bore <- with(A1, getSonicAbund(locations, lengths, "A", replicates))
+#' head(bore)
+#'
+getSonicAbund <- function(posID=NULL, fragLen=NULL, grouping=NULL, 
+                          replicateNum=NULL, psl.rd=NULL, parallel=TRUE) {
+  
+  .checkArgsSetDefaults_ALIGNed()
+  
+  if(is.null(psl.rd)) {
+    stopifnot(!is.null(posID))
+    stopifnot(!is.null(fragLen))
+  } else {
+    
+    ## find the abundance by Positions/ClusteredPosition ##
+    isthere <- grepl("clusteredPosition", colnames(mcols(psl.rd)), 
+                     ignore.case=TRUE)    
+    if(!any(isthere)) {
+      message("No 'clusteredPosition' column found in psl.rd.
+              Using 'Position' as an alternative...")
+      isthere <- grepl("Position", colnames(mcols(psl.rd)), ignore.case=TRUE)		
+      if(!any(isthere)) {
+        stop("No 'Position' column found in psl.rd. either...can't generate
+             posID attribute :(")
+      }            
+    }
+    isthere <- which(isthere)[1]
+    
+    if(!"qEnd" %in% colnames(mcols(psl.rd))) {
+      stop("Supplied psl.rd object does not have qEnd column")
+    }
+    
+    posIDs <- paste0(as.character(seqnames(psl.rd)), 
+                     as.character(strand(psl.rd)), 
+                     mcols(psl.rd)[[isthere]])
+    fragLens <- mcols(psl.rd)$qEnd
+    
+    grouping <- if(is.null(grouping)) { 
+      rep("A", length(psl.rd)) 
+    } else { 
+      grouping 
+    }
+    
+    replicateNum <- if(is.null(replicateNum)) { 
+      rep(1, length(psl.rd)) 
+    } else { 
+      replicateNum 
+    }
+
+    res <- getSonicAbund(posIDs, fragLens, grouping, replicateNum, 
+                         parallel=parallel)
+    
+    message("Adding sonic abundance back to psl.rd.")        
+    estAbund <- with(res, split(estAbund, paste(posID, grouping)))
+    mcols(psl.rd)$estAbund <- 0
+    mcols(psl.rd)$estAbund <- as.numeric(estAbund[paste(posIDs, grouping)])
+    
+    rm("res","estAbund","posIDs","fragLens","grouping","replicateNum")
+    cleanit <- gc()
+    return(psl.rd)
+  }
+  
+  dfr <- data.frame(posID, fragLen, grouping, row.names=NULL, 
+                    stringsAsFactors=FALSE)
+  if(!is.null(replicateNum)) {
+    dfr$replicateNum <- replicateNum
+  } else {
+    dfr$replicateNum <- 1
+  }
+    
+  counts.fragLen <- count(count(dfr, c("grouping","posID","fragLen"))[,-4],
+                          c("grouping","posID"))
+  names(counts.fragLen)[3] <- "fragLenCounts"
+  
+  dfr <- unique(dfr)
+  dfr <- split(dfr, dfr$grouping)
+  
+  res <- bplapply(dfr, function(x) {
+    dummy.theta <- structure(rep(1,length(x$posID)), names=x$posID)
+    if(length(unique(x$replicateNum))>1) {
+      siteAbund <- tryCatch(with(x, estAbund(factor(posID), fragLen, 
+                                             factor(replicateNum))),  
+                            error = function(z) list("theta"=dummy.theta))     
+    } else {
+      siteAbund <- tryCatch(with(x, estAbund(factor(posID), fragLen)),  
+                            error = function(z) list("theta"=dummy.theta))
+    }
+    x$estAbund <- round(siteAbund$theta)[x$posID]
+    x
+  }, BPPARAM=dp)
+  
+  res <- rbind.fill(res)
+  rownames(res) <- NULL
+  res <- merge(unique(res[,c("grouping","posID","estAbund")]), 
+               counts.fragLen, all.x=TRUE)
+  return(res)
 }
