@@ -18,6 +18,8 @@ Print out required fields & classes of PSL file format
 pslCols()
 }
 \seealso{
-\code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
+\code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+\code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}},
+\code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
 }
 

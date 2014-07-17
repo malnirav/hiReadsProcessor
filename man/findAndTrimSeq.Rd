@@ -15,7 +15,7 @@ findAndTrimSeq(patternSeq, subjectSeqs, side = "left", offBy = 0,
 
 \item{offBy}{integer value dictating if the trimming base should be offset by X number of bases. Default is 0.}
 
-\item{alignWay}{method to utilize for detecting the primers. One of following: "slow" (Default), "fast", or "blat". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower. Blat will use \code{\link{blatSeqs}}.}
+\item{alignWay}{method to utilize for detecting the primers. One of following: "slow" (Default), "fast", or "blat". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vmatchPattern}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower. Blat will use \code{\link{blatSeqs}}.}
 
 \item{...}{parameters to be passed to \code{\link{pairwiseAlignment}}, \code{\link{vpairwiseAlignSeqs}} or \code{\link{blatSeqs}} depending on which method is defined in 'alignWay' parameter.}
 }
@@ -31,7 +31,10 @@ before running the function. One can use any of the following
 \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 }
 \examples{
-#findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
+findAndTrimSeq(patternSeq="AGACCCTTTT",
+subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA",
+"AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=FALSE, side="left", offBy=1,
+alignWay = "slow")
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}

@@ -18,10 +18,10 @@ Default is FALSE.}
 a GRanges object reflecting psl file type.
 }
 \description{
-Convert psl dataframe to GRanges object using either the query or target as the reference data column.
+Convert psl dataframe to GRanges object using either the query or target as
+the reference data column.
 }
 \examples{
-#pslToRangedObject(psl)
 #pslToRangedObject(psl)
 #pslToRangedObject(psl, useTargetAsRef=FALSE)
 }

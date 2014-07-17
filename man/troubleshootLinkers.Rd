@@ -39,7 +39,9 @@ before running the function. One can use any of the following
 \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 }
 \examples{
-#troubleshootLinkers(sampleInfo,showStats=TRUE)
+\dontrun{
+troubleshootLinkers(sampleInfo,showStats=TRUE)
+}
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, \code{\link{findPrimers}}, \code{\link{findAndTrimSeq}}

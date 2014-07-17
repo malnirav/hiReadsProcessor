@@ -4,43 +4,73 @@
 \title{Find the integration sites and add results to SampleInfo object.}
 \usage{
 findIntegrations(sampleInfo, seqType = NULL, aligner = "BLAT",
-  port = 5560, host = "localhost", genomeIndices = NULL,
-  numServers = 1L, parallel = TRUE, samplenames = NULL,
-  blatParameters = c(minIdentity = 70, minScore = 5, stepSize = 5, tileSize =
-  10, repMatch = 112312, dots = 100, maxDnaHits = 10, out = "psl", q = "dna", t
-  = "dna"))
+  genomeIndices = NULL, samplenames = NULL, parallel = TRUE,
+  autoOptimize = FALSE, doSonic = FALSE, doISU = FALSE, ...)
 }
 \arguments{
-\item{sampleInfo}{sample information SimpleList object outputted from \code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered sequences for samples per sector/quadrant along with metadata.}
+\item{sampleInfo}{sample information SimpleList object outputted from
+\code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered
+sequences for samples per sector/quadrant along with metadata.}
 
-\item{seqType}{which type of sequence to align and find integration sites for. Default is NULL and determined automatically based on type of restriction enzyme or isolation method used. If restriction enzyme is Fragmentase or Mu, then this parameter is set to genomicLinkered, else it is genomic. Any one of following options are valid: genomic, genomicLinkered, decoded, primed, LTRed, linkered.}
+\item{seqType}{which type of sequence to align and find integration sites.
+Default is NULL and determined automatically based on type of restriction
+enzyme or isolation method used. If restriction enzyme is Fragmentase, MuA,
+Sonication, or Sheared then this parameter is set to genomicLinkered, else
+it is genomic. Any one of following options are valid: genomic,
+genomicLinkered, decoded, primed, LTRed, linkered.}
 
-\item{aligner}{which aligner to use: BLAT(default) or Subread. Use 'Subread' for illumina data.}
+\item{aligner}{which aligner to use: BLAT(default) or Subread.}
 
-\item{port}{a port number to host the gfServer with. Only used if aligner='BLAT'. Default is 5560.}
+\item{genomeIndices}{an associative character vector of freeze to full or
+relative path of respective of indexed genomes from BLAT(.nib or .2bit files)
+or Subreads(.subread.index). For example: c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit").
+Be sure to supply an index per freeze supplied in the sampleInfo object.
+Default is NULL.}
 
-\item{host}{name of the machine running gfServer. Only used if aligner='BLAT'. Default is 'localhost'.}
-
-\item{genomeIndices}{an associative character vector of freeze to full or relative path of respective of indexed genomes from BLAT(.nib or .2bit files) or Subreads(.subread.index). For example: c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"). Be sure to supply an index per freeze supplied in the sampleInfo object. Default is NULL.}
-
-\item{numServers}{launch >1 gfServer and load balance jobs? This only
-applies when parallel=TRUE and standaloneBlat=FALSE. Enable this option only
-if the machine has a lot of RAM! Option ignored if launched gfServer is found
-at specified host and port. Default is 1.}
+\item{samplenames}{a vector of samplenames to process. Default is NULL,
+which processes all samples from sampleInfo object.}
 
 \item{parallel}{use parallel backend to perform calculation with
 \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is
 registered, then a serial version is ran using \code{\link{SerialParam}}.}
 
-\item{samplenames}{a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.}
+\item{autoOptimize}{if aligner='BLAT', then should the blatParameters be
+automatically optimized based on the reads? Default is FALSE. When TRUE,
+following parameters are adjusted within the supplied blatParameters vector:
+stepSize, tileSize, minScore, minIdentity. This parameter is useful
+when aligning reads of various lengths to the genome.
+Optimization is done using only read lengths. In beta phase!}
 
-\item{blatParameters}{a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70\% identity. Ignored if aligner is "Subread".}
+\item{doSonic}{calculate integration sites abundance using breakpoints.
+See \code{\link{getSonicAbund}} for more details. Default is FALSE.}
+
+\item{doISU}{calculate integration site unit for multihits.
+See \code{\link{isuSites}} for more details. Default is FALSE.}
+
+\item{...}{additional parameters to be passed to \code{\link{blatSeqs}} or
+\code{\link{subreadAlignSeqs}} depending on aligner parameter chosen.}
 }
 \value{
-a SimpleList object similar to sampleInfo parameter supplied with new data added under each sector and sample. New data attributes include: psl, and sites. The psl attributes holds the genomic hits per read along with QC information. The sites attribute holds the condensed integration sites where genomic hits have been clustered by the Position column and cherry picked to have each site pass all the QC steps.
+a SimpleList object similar to sampleInfo parameter supplied with
+new data added under each sector and sample. New data attributes include:
+psl, and sites. The psl attributes holds the genomic hits per read along
+with QC information. The sites attribute holds the condensed integration
+sites where genomic hits have been clustered by the Position column and
+cherry picked to have each site pass all the QC steps.
 }
 \description{
-Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which aligns, finds best hit per read per sample, cluster sites, and assign ISU IDs. Depending on the aligner chosen, it calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.
+Given a SampleInfo object, the function finds integration sites for each
+sample using their respective settings and adds the results back to the
+object. This is an all-in-one function which aligns, finds best hit per
+read per sample, cluster sites, and assign ISU IDs. Depending on the aligner
+chosen, it calls \code{\link{blatSeqs}} or \code{\link{subreadAlignSeqs}},
+\code{\link{read.psl}}, \code{\link{getIntegrationSites}},
+\code{\link{clusterSites}}, \code{\link{otuSites}}.
+There must be linkered reads within the sampleInfo
+object in order to use this function using the default parameters. If you are
+planning on BLATing non-linkered reads, then change the seqType to one of
+accepted options for the 'feature' parameter of \code{\link{extractSeqs}},
+except for '!' based features.
 }
 \note{
 If parallel=TRUE, then be sure to have a parallel backend registered
@@ -48,9 +78,16 @@ before running the function. One can use any of the following
 \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 }
 \examples{
-#findIntegrations(sampleInfo)
+\dontrun{
+findIntegrations(sampleInfo, numServers=2)
+}
 }
 \seealso{
-\code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{getIntegrationSites}}
+\code{\link{findPrimers}}, \code{\link{findLTRs}},
+\code{\link{findLinkers}}, \code{\link{startgfServer}},
+\code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}},
+\code{\link{pslToRangedObject}}, \code{\link{clusterSites}},
+\code{\link{otuSites2}}, \code{\link{crossOverCheck}},
+\code{\link{getIntegrationSites}}, \code{\link{getSonicAbund}}
 }
 

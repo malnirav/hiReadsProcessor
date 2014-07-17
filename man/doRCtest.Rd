@@ -4,7 +4,7 @@
 \title{Test if pattern aligns better in +/- orientation.}
 \usage{
 doRCtest(subjectSeqs = NULL, patternSeq = NULL, qualityThreshold = 0.5,
-  core.use = 2)
+  parallel = TRUE)
 }
 \arguments{
 \item{subjectSeqs}{DNAStringSet object containing sequences to be searched for the pattern.}
@@ -13,7 +13,9 @@ doRCtest(subjectSeqs = NULL, patternSeq = NULL, qualityThreshold = 0.5,
 
 \item{qualityThreshold}{percent of patternSeq to match. Default is 0.50, half match. This is supplied to max.mismatch parameter of \code{\link{vcountPattern}} as round(nchar(patternSeq)*(1-qualityThreshold)).}
 
-\item{cores.use}{Number of cores to use for aligning. Only need two max! Default is 2. If no parallel backend is registered, then a serial version is ran using \code{\link{SerialParam}}.}
+\item{parallel}{use parallel backend to perform calculation with
+\code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is
+registered, then a serial version is ran using \code{\link{SerialParam}}.}
 }
 \value{
 patternSeq that aligned the best.
@@ -22,7 +24,9 @@ patternSeq that aligned the best.
 Given a fixed length pattern sequence and variable length subject sequences, the function roughly finds which orientation of pattern yields the most hits. The function doing the heavylifting is \code{\link{vcountPattern}}. This is an accessory function used in function listed under See Also section below.
 }
 \examples{
-#doRCtest(subjectSeqs,patternSeq)
+\dontrun{
+doRCtest(subjectSeqs, patternSeq)
+}
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}

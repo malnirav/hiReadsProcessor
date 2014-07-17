@@ -7,8 +7,8 @@
 #' In addition, if IntSites MySQL database is setup, the sequence attrition is 
 #' loaded into respective tables for post processing setup and analysis.
 #'
-#' @import Biostrings GenomicRanges xlsx hiAnnotator Rsamtools RMySQL Rsubread 
-#' random sonicLength plyr BiocParallel
+#' @import Biostrings GenomicAlignments xlsx hiAnnotator RMySQL Rsubread 
+#' sonicLength plyr BiocParallel
 #' @docType package
 #' @name hiReadsProcessor
 #' @author Nirav V Malani
@@ -16,32 +16,49 @@ NULL
 
 #' Read contents of a sequencing folder and make a SimpleList object
 #'
-#' Given a sequencing folder path, sample information file path, and sequence file extension pattern, the function returns a list of variables required to process the data. The function also calls \code{\link{read.sampleInfo}} which reads in sample processing metadata and formats it if needed.
+#' Given a sequencing folder path, sample information file path, and sequence 
+#' file extension pattern, the function returns a list of variables required to 
+#' process the data. The function also calls \code{\link{read.sampleInfo}} 
+#' which reads in sample processing metadata and formats it if needed.
 #'
 #' @param sequencingFolderPath full or relative path to the sequencing folder
-#' @param sampleInfoFilePath full or relative path to the sample information file, which holds samples to quadrant/lane associations along with other metadata required to trim sequences or process it. Default to NULL, where the function tries to find xls or tab deliminated txt file in the sequencing folder which sounds similar to 'sampleinfo' and present you with choices of file to select from.
-#' @param seqfilePattern regex to describe sequence file endings. See examples. Default is "\\.TCA.454Reads.fna$".
-#' @param interactive whether to prompt each time the function encounters an issue or use the defaults. Default is TRUE.
+#' @param sampleInfoFilePath full or relative path to the sample information 
+#' file, which holds samples to quadrant/lane associations along with other 
+#' metadata required to trim sequences or process it. Default to NULL, where 
+#' the function tries to find xls or tab deliminated txt file in the sequencing 
+#' folder which sounds similar to 'sampleinfo' and present you with choices of 
+#' file to select from.
+#' @param seqfilePattern regex/string to describe sequence file endings. 
+#' See examples. Default is NULL.
+#' @param interactive whether to prompt each time the function encounters an 
+#' issue or use the defaults. Default is TRUE.
 #'
-#' @return a SimpleList list which is used by other functions to process and decode the data.
+#' @return a SimpleList list which is used by other functions to process and 
+#' decode the data.
 #'
 #' @note 
 #' \itemize{
-#'   \item One must make sure that each sequencing file has sector name/number prefixed at the beginning, else \code{\link{decodeByBarcode}} will fail trying to find the filename.
-#'   \item For paired end Illumina runs, make sure the filenames include R1, R2, and I1 somewhere in the name denoting pair1, pair2, and index/barcode reads, respectively. 
+#'   \item One must make sure that each sequencing file has sector name/number 
+#'   prefixed at the beginning, else \code{\link{findBarcodes}} will fail trying 
+#'   to find the filename.
+#'   \item For paired end Illumina runs, make sure the filenames include R1, R2, 
+#'   and I1 somewhere in the name denoting pair1, pair2, and index/barcode 
+#'   reads, respectively. 
 #' }
 #'
-#' @seealso \code{\link{read.sampleInfo}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+#' @seealso \code{\link{read.sampleInfo}}, \code{\link{findBarcodes}}, 
+#' \code{\link{splitByBarcode}}
 #'
 #' @export
 #'
 #' @examples  
-#' #read.SeqFolder("~/Downloads/454Runs/2011_07_22", seqfilePattern=".+fna$")
-#' #read.SeqFolder(".", seqfilePattern=".+fastq$")
-#'
+#' \dontrun{
+#' read.SeqFolder("~/Downloads/454Runs/2011_07_22", seqfilePattern=".+fna$")
+#' read.SeqFolder(".", seqfilePattern="\\.TCA.454Reads.fna$")
+#' read.SeqFolder(".", seqfilePattern=".+fastq$")
+#' }
 read.SeqFolder <- function(sequencingFolderPath=NULL, sampleInfoFilePath=NULL, 
-                           seqfilePattern="\\.TCA.454Reads.fna$", 
-                           interactive=TRUE) {
+                           seqfilePattern=NULL, interactive=TRUE) {
   if(is.null(sequencingFolderPath)) {
     stop("No Sequencing Folder Path provided.")
   }
@@ -107,36 +124,69 @@ read.SeqFolder <- function(sequencingFolderPath=NULL, sampleInfoFilePath=NULL,
 
 #' Read a sample information file and format appropriate metadata.
 #'
-#' Given a sample information file, the function checks if it includes required information to process samples present on each sector/quadrant/region/lane. The function also adds other columns required for processing with default values if not already defined ahead of time.
+#' Given a sample information file, the function checks if it includes required 
+#' information to process samples present on each sector/quadrant/region/lane. 
+#' The function also adds other columns required for processing with default 
+#' values if not already defined ahead of time.
 #'
-#' @param sampleInfoFilePath full or relative path to the sample information file, which holds samples to quadrant/lane associations along with other metadata required to trim sequences or process it. 
-#' @param splitBySector split the data frame into a list by sector column. Default is TRUE.
-#' @param interactive whether to prompt each time the function encounters an issue, or use the defaults. Default is TRUE.
+#' @param sampleInfoPath full or relative path to the sample information file, 
+#' which holds samples to quadrant/lane associations along with other metadata 
+#' required to trim sequences or process it. 
+#' @param splitBySector split the data frame into a list by sector column. 
+#' Default is TRUE.
+#' @param interactive whether to prompt each time the function encounters an 
+#' issue, or use the defaults. Default is TRUE.
 #'
 #' @details
 #' \itemize{
 #'  \item Required Column Description:
 #'    \itemize{
-#'  	\item sector => region/quadrant/lane of the sequencing plate the sample comes from. If files have been split by samples apriori, then the filename associated per sample without the extension. If this is a filename, then be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}} or \code{\link{decodeByBarcode}}, since contents of this column is pasted together with 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} to find the appropriate file needed. For paired end data, this is basename of the FASTA/Q file holding the sample data from the LTR side. For example, files such as Lib3_L001_R2_001.fastq.gz or Lib3_L001_R2_001.fastq would be Lib3_L001_R2_001, and consequently Lib3_L001_R1_001 would be used as the second pair!
-#'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample. If providing filename as sector, then leave this blank since it is assumed that the data is already demultiplexed.
-#'  	\item primerltrsequence => DNA sequence of the viral LTR primer with/without the viral LTR sequence following the primer landing site. If already trimmed, then mark this as SKIP.
+#'  	\item sector => region/quadrant/lane of the sequencing plate the sample 
+#'    comes from. If files have been split by samples apriori, then the filename
+#'    associated per sample without the extension. If this is a filename, then 
+#'    be sure to enable 'alreadyDecoded' parameter in \code{\link{findBarcodes}}, 
+#'    since contents of this column is pasted together with 'seqfilePattern' 
+#'    parameter in \code{\link{read.SeqFolder}} to find the appropriate file 
+#'    needed. For paired end data, this is basename of the FASTA/Q file holding 
+#'    the sample data from the LTR side. For example, files such as 
+#'    Lib3_L001_R2_001.fastq.gz or Lib3_L001_R2_001.fastq would be 
+#'    Lib3_L001_R2_001, and consequently Lib3_L001_R1_001 would be used as the 
+#'    second pair!
+#'  	\item barcode => unique 4-12bp DNA sequence which identifies the sample. 
+#'    If providing filename as sector, then leave this blank since it is assumed 
+#'    that the data is already demultiplexed.
+#'  	\item primerltrsequence => DNA sequence of the viral LTR primer 
+#'    with/without the viral LTR sequence following the primer landing site. 
+#'    If already trimmed, then mark this as SKIP.
 #'  	\item sampleName => Name of the sample associated with the barcode
 #'  	\item sampleDescription => Detailed description of the sample
 #'  	\item gender => sex of the sample: male or female or NA
 #'  	\item species => species of the sample: homo sapien, mus musculus, etc.
 #'  	\item freeze => UCSC freeze to which the sample should be aligned to.
-#'  	\item linkerSequence => DNA sequence of the linker adaptor following the genomic sequence. If already trimmed, then mark this as SKIP.
-#'  	\item restrictionEnzyme => Restriction enzyme used for digestion and sample recovery. Can also be one of: Fragmentase or Sonication!
+#'  	\item linkerSequence => DNA sequence of the linker adaptor following the 
+#'    genomic sequence. If already trimmed, then mark this as SKIP.
+#'  	\item restrictionEnzyme => Restriction enzyme used for digestion and 
+#'    sample recovery. Can also be one of: Fragmentase or Sonication!
 #' 		}
 #'  \item Metadata Parameter Column Description:
 #'   \itemize{
-#'  	\item ltrBitSequence => DNA sequence of the viral LTR following the primer landing site. Default is last 7bps of the primerltrsequence.
-#'  	\item ltrBitIdentity => percent of LTR bit sequence to match during the alignment. Default is 1.
-#'  	\item primerLTRidentity => percent of primer to match during the alignment. Default is .85
-#'  	\item linkerIdentity => percent of linker sequence to match during the alignment. Default is 0.55. Only applies to non-primerID/random tag based linker search.
-#'  	\item primerIdInLinker => whether the linker adaptor used has primerID/random tag in it? Default is FALSE.
-#'  	\item primerIdInLinkerIdentity1 => percent of sequence to match before the random tag. Default is 0.75. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
-#'  	\item primerIdInLinkerIdentity2 => percent of sequence to match after the random tag. Default is 0.50. Only applies to primerID/random tag based linker search and when primeridinlinker is TRUE.
+#'  	\item ltrBitSequence => DNA sequence of the viral LTR following the 
+#'    primer landing site. Default is last 7bps of the primerltrsequence.
+#'  	\item ltrBitIdentity => percent of LTR bit sequence to match during the 
+#'    alignment. Default is 1.
+#'  	\item primerLTRidentity => percent of primer to match during the 
+#'    alignment. Default is .85
+#'  	\item linkerIdentity => percent of linker sequence to match during the 
+#'    alignment. Default is 0.55. Only applies to non-primerID/random tag based 
+#'    linker search.
+#'  	\item primerIdInLinker => whether the linker adaptor used has 
+#'    primerID/random tag in it? Default is FALSE.
+#'  	\item primerIdInLinkerIdentity1 => percent of sequence to match before 
+#'    the random tag. Default is 0.75. Only applies to primerID/random tag 
+#'    based linker search and when primeridinlinker is TRUE.
+#'  	\item primerIdInLinkerIdentity2 => percent of sequence to match after the 
+#'    random tag. Default is 0.50. Only applies to primerID/random tag based 
+#'    linker search and when primeridinlinker is TRUE.
 #'  	\item celltype => celltype information associated with the sample
 #'  	\item user => name of the user who prepared or processed the sample
 #'  	\item pairedEnd => is the data paired end? Default is FALSE.
@@ -144,24 +194,33 @@ read.SeqFolder <- function(sequencingFolderPath=NULL, sampleInfoFilePath=NULL,
 #' 		}
 #'  \item Processing Parameter Column Description:
 #'   \itemize{
-#'  	\item startWithin => upper bound limit of where the alignment should start within the query. Default is 3.
-#'  	\item alignRatioThreshold => cuttoff for (alignment span/read length). Default is 0.7.
-#'  	\item genomicPercentIdentity => cuttoff for (1-(misMatches/matches)). Default is 0.98.
-#'  	\item clusterSitesWithin => cluster integration sites within a defined window size based on frequency which corrects for any sequencing errors. Default is 5.
-#'  	\item keepMultiHits => whether to keep sequences/reads that return multiple best hits, aka ambiguous locations. 
+#'  	\item startWithin => upper bound limit of where the alignment should 
+#'    start within the query. Default is 3.
+#'  	\item alignRatioThreshold => cuttoff for (alignment span/read length). 
+#'    Default is 0.7.
+#'  	\item genomicPercentIdentity => cuttoff for (1-(misMatches/matches)). 
+#'    Default is 0.98.
+#'  	\item clusterSitesWithin => cluster integration sites within a defined 
+#'    window size based on frequency which corrects for any sequencing errors. 
+#'    Default is 5.
+#'  	\item keepMultiHits => whether to keep sequences/reads that return 
+#'    multiple best hits, aka ambiguous locations. 
 #'  	\item processingDate => the date of processing 
 #' 		}
 #' }
 #'
-#' @return if splitBySector=TRUE, then an object of SimpleList named by quadrant/lane information defined in sampleInfo file, else a dataframe.
+#' @return if splitBySector=TRUE, then an object of SimpleList named by 
+#' quadrant/lane information defined in sampleInfo file, else a dataframe.
 #'
-#' @seealso \code{\link{read.SeqFolder}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+#' @seealso \code{\link{read.SeqFolder}}, \code{\link{findBarcodes}}, 
+#' \code{\link{splitByBarcode}}
 #'
 #' @export
 #'
 #' @examples  
-#' #read.sampleInfo("~/sampleInfo.xls")
-#'
+#' \dontrun{
+#' read.sampleInfo("~/sampleInfo.xls")
+#' }
 read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE, 
                             interactive=TRUE) {
   ## read file and make sampleInfo object with sample to metadata associations
@@ -327,13 +386,14 @@ read.sampleInfo <- function(sampleInfoPath=NULL, splitBySector=TRUE,
 #' @return DNAStringSet object with names describing frequency of repeat.
 #'
 #' @seealso \code{\link{replicateReads}}, \code{\link{removeReadsWithNs}}, 
-#' \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+#' \code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 #'
 #' @export
 #'
 #' @examples  
-#' #dereplicateReads(dnaSet)
-#'
+#' \dontrun{
+#' dereplicateReads(dnaSet)
+#' }
 dereplicateReads <- function(dnaSet) {
   stopifnot(is(dnaSet,"DNAStringSet"))
   if(is.null(names(dnaSet))) {
@@ -365,13 +425,14 @@ dereplicateReads <- function(dnaSet) {
 #' @return DNAStringSet object.
 #'
 #' @seealso \code{\link{dereplicateReads}}, \code{\link{removeReadsWithNs}},
-#' \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+#' \code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 #'
 #' @export
 #'
 #' @examples  
-#' #replicateReads(decoded)
-#'
+#' \dontrun{
+#' replicateReads(decoded)
+#' }
 replicateReads <- function(dnaSet, counts=NULL) {
   stopifnot(is(dnaSet,"DNAStringSet"))
   if(is.null(counts)) {
@@ -407,13 +468,14 @@ replicateReads <- function(dnaSet, counts=NULL) {
 #' @return DNAStringSet object.
 #'
 #' @seealso \code{\link{dereplicateReads}}, \code{\link{replicateReads}},
-#' \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+#' \code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 #'
 #' @export
 #'
 #' @examples  
-#' #removeReadsWithNs(dnaSet)
-#'
+#' \dontrun{
+#' removeReadsWithNs(dnaSet)
+#' }
 removeReadsWithNs <- function(dnaSet, maxNs=5, consecutive=TRUE) {
   if(consecutive) {
     good.row <- grepl(paste(rep("N",maxNs), collapse=""), dnaSet, fixed=TRUE)
@@ -457,7 +519,7 @@ chunkize <- function(x, chunkSize = NULL) {
 
 #' Split DNAStringSet object using first X number of bases defined by a vector.
 #'
-#' Given a character vector of barcodes/MID to sample association and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{decodeByBarcode}} or \code{\link{findBarcodes}}
+#' Given a character vector of barcodes/MID to sample association and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{findBarcodes}}
 #'
 #' @param barcodesSample a character vector of barcodes to sample name associations. Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)
 #' @param dnaSet DNAStringSet object to evaluate. 
@@ -467,15 +529,16 @@ chunkize <- function(x, chunkSize = NULL) {
 #'
 #' @return DNAStringSet object split by sample name found in barcodesSample.
 #'
-#' @seealso \code{\link{decodeByBarcode}}, \code{\link{dereplicateReads}},
+#' @seealso \code{\link{findBarcodes}}, \code{\link{dereplicateReads}},
 #' \code{\link{replicateReads}}
 #'
 #' @export
 #'
 #' @examples 
-#' #splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, 
+#' \dontrun{
+#' splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, 
 #' showStats=TRUE, returnUnmatched=TRUE)
-#'
+#' }
 splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL, 
                            showStats=FALSE, returnUnmatched=FALSE) {
   if(is.null(barcodesSample) | length(barcodesSample)==0) {
@@ -538,31 +601,55 @@ splitByBarcode <- function(barcodesSample, dnaSet, trimFrom=NULL,
 #'
 #' Given a sample information object, the function reads in the raw fasta/fastq file, demultiplexes reads by their barcodes, and appends it back to the sampleInfo object. Calls \code{\link{splitByBarcode}} to perform the actual splitting of file by barcode sequences. If supplied with a character vector and reads themselves, the function behaves a bit differently. See the examples.
 #'
-#' @param sampleInfo sample information SimpleList object created using \code{\link{read.sampleInfo}}, which holds barcodes and sample names per sector/quadrant/lane or a character vector of barcodes to sample name associations. Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)
-#' @param sector If sampleInfo is a SimpleList object, then a numeric/character value or vector representing sector(s) in sampleInfo. Optionally if on high memory machine sector='all' will decode/demultiplex sequences from all sectors/quadrants. This option is ignored if sampleInfo is a character vector. Default is NULL. 
-#' @param dnaSet DNAStringSet object containing sequences to be decoded or demultiplexed. Default is NULL. If sampleInfo is a SimpleList object, then reads are automatically extracted using \code{\link{read.seqsFromSector}} and parameters defined in sampleInfo object.
+#' @param sampleInfo sample information SimpleList object created using 
+#' \code{\link{read.sampleInfo}}, which holds barcodes and sample names per 
+#' sector/quadrant/lane or a character vector of barcodes to sample name 
+#' associations. Ex: c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2",...)
+#' @param sector If sampleInfo is a SimpleList object, then a numeric/character 
+#' value or vector representing sector(s) in sampleInfo. Optionally if on high 
+#' memory machine sector='all' will decode/demultiplex sequences from all 
+#' sectors/quadrants. This option is ignored if sampleInfo is a character vector. 
+#' Default is NULL. 
+#' @param dnaSet DNAStringSet object containing sequences to be decoded or 
+#' demultiplexed. Default is NULL. If sampleInfo is a SimpleList object, then 
+#' reads are automatically extracted using \code{\link{read.seqsFromSector}} 
+#' and parameters defined in sampleInfo object.
 #' @param showStats toggle output of search statistics. Default is FALSE.
-#' @param returnUnmatched return unmatched sequences. Returns results as a list where x[["unDecodedSeqs"]] has culprits. Default is FALSE.
-#' @param dereplicate return dereplicated sequences. Calls \code{\link{dereplicateReads}}, which appends counts=X to sequence names/deflines. Default is FALSE. Not applicable for paired end data since it can cause insyncronicity.
-#' @param alreadyDecoded if reads have be already decoded and split into respective files per sample and 'seqfilePattern' parameter in \code{\link{read.SeqFolder}} is set to reading sample files and not the sector files, then set this to TRUE. Default is FALSE. Enabling this parameter skips the barcode detection step and loads the sequence file as is into the sampleInfo object. 
+#' @param returnUnmatched return unmatched sequences. Returns results as a list 
+#' where x[["unDecodedSeqs"]] has culprits. Default is FALSE.
+#' @param dereplicate return dereplicated sequences. Calls 
+#' \code{\link{dereplicateReads}}, which appends counts=X to sequence 
+#' names/deflines. Default is FALSE. Not applicable for paired end data since 
+#' it can cause insyncronicity.
+#' @param alreadyDecoded if reads have be already decoded and split into 
+#' respective files per sample and 'seqfilePattern' parameter in 
+#' \code{\link{read.SeqFolder}} is set to reading sample files and not the 
+#' sector files, then set this to TRUE. Default is FALSE. Enabling this 
+#' parameter skips the barcode detection step and loads the sequence file as is 
+#' into the sampleInfo object. 
 #'
-#' @return If sampleInfo is an object of SimpleList then decoded sequences are appeneded to respective sample slots, else a named list of DNAStringSet object. If returnUnmatched=TRUE, then x[["unDecodedSeqs"]] has the unmatched sequences.
+#' @return If sampleInfo is an object of SimpleList then decoded sequences are 
+#' appeneded to respective sample slots, else a named list of DNAStringSet 
+#' object. If returnUnmatched=TRUE, then x[["unDecodedSeqs"]] has the 
+#' unmatched sequences.
 #'
 #' @seealso \code{\link{splitByBarcode}}, \code{\link{dereplicateReads}},
 #' \code{\link{replicateReads}}
 #'
 #' @export
 #'
-#' @aliases findBarcodes
+#' @aliases decodeByBarcode
 #' 
 #' @examples 
-#' #findBarcodes(sampleInfo,showStats=TRUE)
-#' #decodeByBarcode(sampleInfo,showStats=TRUE)
-#' #decodeByBarcode(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet, showStats=TRUE, returnUnmatched=TRUE)
-#'
-decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL, 
-                            showStats=FALSE, returnUnmatched=FALSE, 
-                            dereplicate=FALSE, alreadyDecoded=FALSE) {
+#' \dontrun{
+#' findBarcodes(sampleInfo,showStats=TRUE)
+#' findBarcodes(sampleInfo,showStats=TRUE)
+#' findBarcodes(sampleInfo=c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), 
+#' dnaSet, showStats=TRUE, returnUnmatched=TRUE)
+#' }
+findBarcodes <- function(sampleInfo, sector=NULL, dnaSet=NULL, 
+                         showStats=FALSE, returnUnmatched=FALSE, 
+                         dereplicate=FALSE, alreadyDecoded=FALSE) {
   
   ## tried PDict()...and its slower than this awesome code! ##    
   if(is(sampleInfo,"SimpleList")) {
@@ -726,15 +813,14 @@ decodeByBarcode <- function(sampleInfo, sector=NULL, dnaSet=NULL,
   } else {
     decoded <- splitByBarcode(sampleInfo, dnaSet, trimFrom=NULL, 
                               showStats=showStats, 
-                              returnUnmatched=returnUnmatched, 
-                              dereplicate=dereplicate)
+                              returnUnmatched=returnUnmatched)
     cleanit <- gc()
   }
   return(decoded)
 }
 
 #' @export
-findBarcodes <- decodeByBarcode
+decodeByBarcode <- findBarcodes
 
 #' Align a short pattern to variable length target sequences.
 #'
@@ -747,17 +833,26 @@ findBarcodes <- decodeByBarcode
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param bufferBases use x number of bases in addition to patternSeq length to perform the search. Beneficial in cases where the pattern has homopolymers or indels compared to the subject. Default is 5. Doesn't apply when side='middle'.
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
-#' @param returnUnmatched return sequences which had no or less than 5\% match to the patternSeq. Default is FALSE.
-#' @param returnLowScored return sequences which had quality score less than the defined qualityThreshold. Default is FALSE.
-#' @param parallel use BiocParallel backend to perform calculation with 
+#' @param returnUnmatched return sequences which had no or less than 5\% match 
+#' to the patternSeq. Default is FALSE.
+#' @param returnLowScored return sequences which had quality score less than 
+#' the defined qualityThreshold. Default is FALSE.
+#' @param parallel use parallel backend to perform calculation with 
 #' \code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is 
 #' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #' @param ... extra parameters for \code{\link{pairwiseAlignment}}
 #' @note 
 #' \itemize{
-#'  \item For qualityThreshold, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2.
-#'  \item Gaps and mismatches are weighed equally with value of -1 which can be overriden by defining extra parameters 'gapOpening' & 'gapExtension'.
-#'  \item If qualityThreshold is 1, then it is a full match, if 0, then any match is accepted which is useful in searching linker sequences at 3' end. Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST/BLAT!
+#'  \item For qualityThreshold, the alignment score is calculated by 
+#'  (matches*2)-(mismatches+gaps) which programatically translates to 
+#'  round(nchar(patternSeq)*qualityThreshold)*2.
+#'  \item Gaps and mismatches are weighed equally with value of -1 which can 
+#'  be overriden by defining extra parameters 'gapOpening' & 'gapExtension'.
+#'  \item If qualityThreshold is 1, then it is a full match, if 0, then any 
+#'  match is accepted which is useful in searching linker sequences at 3' end. 
+#'  Beware, this function only searches for the pattern sequence in one 
+#'  orientation. If you are expecting to find the pattern in both orientation, 
+#'  you might be better off using BLAST/BLAT!
 #'  \item If parallel=TRUE, then be sure to have a parallel backend registered 
 #'  before running the function. One can use any of the following 
 #'  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
@@ -766,10 +861,15 @@ findBarcodes <- decodeByBarcode
 #' @return 
 #' \itemize{
 #'  \item IRanges object with starts, stops, and names of the aligned sequences. 
-#'  \item If returnLowScored or returnUnmatched = T, then a CompressedIRangesList where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed to match qualityThreshold hits, and x[["Absent"]] has the hits where the aligned bit is <=10\% match to the patternSeq.
+#'  \item If returnLowScored or returnUnmatched = T, then a CompressedIRangesList 
+#'  where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed 
+#'  to match qualityThreshold hits, and x[["Absent"]] has the hits where the 
+#'  aligned bit is <=10\% match to the patternSeq.
 #' }
 #'
-#' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
+#' @seealso \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, 
+#' \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}},
+#' \code{\link{findAndRemoveVector}}
 #'
 #' @export
 #'
@@ -795,7 +895,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
       pairwiseAlignSeqs(x, patternSeq, side, qualityThreshold, showStats=FALSE, 
                         bufferBases, doRC, returnUnmatched,  returnLowScored, 
                         parallel=FALSE, ...), BPPARAM=dp)    
-    hits <- do.call(c,hits)
+    hits <- do.call(c, hits)
     if(is(hits,"CompressedIRangesList")) {
       attrs <- unique(names(hits))
       hits <- sapply(attrs, 
@@ -805,6 +905,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
       hits
     }
   } else {
+    qualityThreshold <- as.numeric(qualityThreshold)
     
     ## only get the relevant side of subject sequence with extra bufferBases to 
     ## account for indels/mismatches & save memory while searching and avoid 
@@ -834,7 +935,9 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     
     ## search both ways to test which side yields more hits!
     if(doRC) {
-      patternSeq <- doRCtest(subjectSeqs2, patternSeq, qualityThreshold)            
+      patternSeq <- tryCatch(doRCtest(subjectSeqs2, patternSeq, 
+                                      qualityThreshold),
+                             error=function(e) patternSeq)
     }
     
     ## type=overlap is best for primer trimming...see Biostrings Alignment vignette
@@ -848,6 +951,10 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     
     scores <- round(score(hits))
     highscored <- scores >= round(nchar(patternSeq)*qualityThreshold)*2
+    
+    if(!any(highscored)) {
+      stop("No hits found which passed the qualityThreshold")
+    }
     
     ## basically a small subset of highscored
     unmatched <- nchar(hits) <= round(nchar(patternSeq)*.1) 
@@ -871,7 +978,7 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
     
     ## no need to test if there were any multiple hits since pairwiseAlignment 
     ## will only output one optimal alignment...see the man page.
-    if(!returnLowScored & !returnUnmatched) {
+    if(!returnLowScored & !returnUnmatched) {      
       hits <- hits[highscored]
     } else {
       hitstoreturn <- IRangesList("hits"=hits[highscored])
@@ -927,15 +1034,20 @@ pairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
 #' @export
 #'
 #' @examples 
-#' #primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
-#' #primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold1=0.5)
-#'
+#' \dontrun{
+#' primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
+#' primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, 
+#' qualityThreshold1=0.5)
+#' }
 primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, 
                               qualityThreshold1=0.75, qualityThreshold2=0.50, 
                               doAnchored=FALSE, doRC=TRUE, returnUnmatched=FALSE, 
                               returnRejected=FALSE, showStats=FALSE, ...) {
   
   .checkArgs_SEQed()
+  
+  qualityThreshold1 <- as.numeric(qualityThreshold1)
+  qualityThreshold2 <- as.numeric(qualityThreshold2)
   
   ## make sure there are Ns in the patternSeq for considering primerIDs
   if(length(unlist(gregexpr("N",patternSeq)))<4) {
@@ -946,7 +1058,8 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
   ## Get the right orientation of the supplied patternSeq to peform proper search 
   ## at later two step search phase. 
   if(doRC) {
-    patternSeq <- doRCtest(subjectSeqs, patternSeq)            
+    patternSeq <- tryCatch(doRCtest(subjectSeqs, patternSeq),
+                           error=function(e) patternSeq)
   }
   
   primerIDpos <- unlist(gregexpr("N", patternSeq))
@@ -1091,7 +1204,7 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' @param showStats toggle output of search statistics. Default is FALSE.
 #' @param bufferBases use x number of bases in addition to patternSeq length to perform the search. Beneficial in cases where the pattern has homopolymers or indels compared to the subject. Default is 5. Doesn't apply when side='middle'.
 #' @param doRC perform reverse complement search of the defined pattern. Default is TRUE.
-#' @param parallel use BiocParallel backend to perform calculation with 
+#' @param parallel use parallel backend to perform calculation with 
 #' \code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is 
 #' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #' @param ... extra parameters for \code{\link{vmatchPattern}} except for 'max.mismatch' since it's calculated internally using the 'qualityThreshold' parameter.
@@ -1109,19 +1222,25 @@ primerIDAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' 
 #' @return IRanges object with starts, stops, and names of the aligned sequences.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, 
+#' \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, 
+#' \code{\link{findAndRemoveVector}}
 #'
 #' @export
 #'
 #' @examples 
-#' #vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
-#' #vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
-#'
+#' \dontrun{
+#' vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
+#' vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, 
+#' qualityThreshold=0.5)
+#' }
 vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left", 
                                qualityThreshold=1, showStats=FALSE, 
                                bufferBases=5, doRC=TRUE, parallel=FALSE, ...) {
   
   .checkArgs_SEQed()
+  
+  qualityThreshold <- as.numeric(qualityThreshold)
   
   ## Only get the relevant side of subject sequence with extra bufferBases to...
   ## account for indels/mismatches & save memory while searching & avoid searching...
@@ -1151,7 +1270,9 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
   
   ## search both ways to test which side yields more hits!        
   if(doRC) {        
-    patternSeq <- doRCtest(subjectSeqs2, patternSeq, qualityThreshold)            
+    patternSeq <- tryCatch(doRCtest(subjectSeqs2, patternSeq,
+                                    qualityThreshold),
+                           error=function(e) patternSeq)
   }
   
   if(parallel) {
@@ -1225,7 +1346,9 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern. 
 #' @param patternSeq DNAString object or a sequence containing the query sequence to search.
 #' @param qualityThreshold percent of patternSeq to match. Default is 0.50, half match. This is supplied to max.mismatch parameter of \code{\link{vcountPattern}} as round(nchar(patternSeq)*(1-qualityThreshold)).
-#' @param cores.use Number of cores to use for aligning. Only need two max! Default is 2. If no parallel backend is registered, then a serial version is ran using \code{\link{SerialParam}}.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
 #' @return patternSeq that aligned the best. 
 #'
@@ -1234,15 +1357,14 @@ vpairwiseAlignSeqs <- function(subjectSeqs=NULL, patternSeq=NULL, side="left",
 #' @export
 #'
 #' @examples 
-#' #doRCtest(subjectSeqs,patternSeq)
-#'
+#' \dontrun{
+#' doRCtest(subjectSeqs, patternSeq)
+#' }
 doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL, 
-                     qualityThreshold=0.5, core.use=2) {
+                     qualityThreshold=0.5, parallel=TRUE) {
   
   .checkArgs_SEQed()
-  
-  if(core.use==1) { register(SerialParam()) }
-  
+    
   patternSeq.rc <- as.character(reverseComplement(DNAString(patternSeq)))
   hits <- bplapply(c(patternSeq,patternSeq.rc), function(x) {
     max.mm <- round(nchar(x)*(1-qualityThreshold))
@@ -1309,8 +1431,9 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
       print(toprint)        
     },
     
-    ## if <= 5% of sequences found primers...then something is wrong with the primer sequences provided???
-    if(mean.test) {
+    ## if <= 5% of sequences found primers...then something is wrong with the 
+    ## primer sequences provided???
+    if(doTest & mean.test) {
       stop("Something seems to be wrong with the ",featureTrim,
            "s provided for each sample. On average <= 5% of sequences found ",
            ,featureTrim," match for the entire run!!!")
@@ -1331,11 +1454,11 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' \code{\link{extractSeqs}} function to perform the trimming.
 #'
 #' @param sampleInfo sample information SimpleList object outputted from 
-#' \code{\link{decodeByBarcode}}, which holds decoded sequences for samples 
+#' \code{\link{findBarcodes}}, which holds decoded sequences for samples 
 #' per sector/quadrant along with information of sample to primer associations.
 #' @param alignWay method to utilize for detecting the primers. One of 
 #' following: "slow" (Default), or "fast". Fast, calls 
-#' \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its 
+#' \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vmatchPattern}} at its 
 #' core, which is less accurate with indels and mismatches but much faster. 
 #' Slow, calls \code{\link{pairwiseAlignSeqs}} and uses 
 #' \code{\link{pairwiseAlignment}} at its core, which is accurate with indels 
@@ -1353,7 +1476,7 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' the data? Default is FALSE.
 #' @param parallel2 perform parallelization is sequence level. Default is FALSE.
 #' Useful in cases where each sector has only one sample with numerous sequences.
-#' @param ... extra parameters to be passed to either \code{\link{vpatternMatch}} 
+#' @param ... extra parameters to be passed to either \code{\link{vmatchPattern}} 
 #' or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.
 #'
 #' @return a SimpleList object similar to sampleInfo paramter supplied with new 
@@ -1376,9 +1499,10 @@ doRCtest <- function(subjectSeqs=NULL, patternSeq=NULL,
 #' @export
 #'
 #' @examples 
-#' #findPrimers(sampleInfo, showStats=TRUE)
-#' #findPrimers(sampleInfo, alignWay="slow", showStats=TRUE)
-#'
+#' \dontrun{
+#' findPrimers(sampleInfo, showStats=TRUE)
+#' findPrimers(sampleInfo, alignWay="slow", showStats=TRUE)
+#' }
 findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE, 
                         doRC=FALSE, parallel=TRUE, samplenames=NULL, 
                         bypassChecks=FALSE, parallel2=FALSE, ...) {    
@@ -1394,22 +1518,11 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
   
   if(length(sectorsDecoded)==0) {
     stop("No decoded information found in sampleInfo...",
-         "did you run decodeByBarcode()?")
+         "did you run findBarcodes()?")
   }
   
   for(sector in sectorsDecoded) {
     message("Processing sector ", sector)
-    
-    ## prepare sample to primer association ##
-    ltrPrimers <- toupper(extractFeature(sampleInfo, sector=sector,
-                                         feature="primerltrsequence")[[sector]])
-    skippers <- ltrPrimers=="SKIP"
-    if(!all(skippers) & (length(ltrPrimers[!skippers])==0 | 
-                           mean(nchar(ltrPrimers[!skippers]))<=5 | 
-                           all(is.na(ltrPrimers[!skippers])))) {
-      stop("Either the primer size is too short (<=5) or ",
-           "no primers are found in sample information object.")
-    }
     
     ## refine sample list if specific samples are supplied ##
     samplesToProcess <- samplesDecoded[[sector]]
@@ -1417,7 +1530,19 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
       samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
     }
     
+    ## prepare sample to primer association ##
+    ltrPrimers <- toupper(extractFeature(sampleInfo, sector, samplesToProcess,
+                                         feature="primerltrsequence")[[sector]])
+    
     ## find any samples which need to be skipped
+    skippers <- ltrPrimers=="SKIP"
+    if(!all(skippers) & (length(ltrPrimers[!skippers])==0 | 
+                           mean(nchar(ltrPrimers[!skippers]))<=5 | 
+                           all(is.na(ltrPrimers[!skippers])))) {
+      stop("Either the primer size is too short (<=5) or ",
+           "no primers are found in sample information object.")
+    }
+
     skip.samples <- names(which(skippers))
     if(length(skip.samples)>0) {
       samplesToProcess <- samplesToProcess[!samplesToProcess %in% skip.samples]
@@ -1428,7 +1553,7 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                                    length(skip.samples)), 
                                                names=skip.samples))
     }
-    
+
     ## dont bother searching if no samples are to be processed! ##
     if(length(samplesToProcess)>0) {			
       ## get the decoded reads ##
@@ -1453,8 +1578,10 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                      (qualT-0.05), doRC=doRC, 
                                      parallel=parallel2, ...)
           } else if (alignWay=="slow") {
-            p1 <- pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, "left", 
-                                    qualT, doRC=doRC, parallel=parallel2, ...)
+            p1 <- tryCatch(pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, 
+                                             "left", qualT, doRC=doRC, 
+                                             parallel=parallel2, ...),
+                           error=function(e) geterrmessage())
           }                                   
           
           ## side needs to be middle since we dont 
@@ -1464,9 +1591,10 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
                                      (qualT-0.15), doRC=doRC,  
                                      parallel=parallel2, ...)
           } else if (alignWay=="slow") {
-            p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, "middle", 
-                                    (qualT-0.1), doRC=doRC, parallel=parallel2,
-                                    ...)
+            p2 <- tryCatch(pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, 
+                                             "middle", (qualT-0.1), doRC=doRC, 
+                                             parallel=parallel2, ...),
+                           error=function(e) geterrmessage())
           }
           list("pair1"=p1, "pair2"=p2)
         } else {
@@ -1474,8 +1602,9 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
             vpairwiseAlignSeqs(subjectSeqs, patternSeq, "left", (qualT-0.05), 
                                doRC=doRC, parallel=parallel2, ...)
           } else if (alignWay=="slow") {
-            pairwiseAlignSeqs(subjectSeqs, patternSeq, "left", qualT, doRC=doRC, 
-                              parallel=parallel2, ...)
+            tryCatch(pairwiseAlignSeqs(subjectSeqs, patternSeq, "left", qualT, 
+                                       doRC=doRC, parallel=parallel2, ...),
+                     error=function(e) geterrmessage())
           }                                   
         }
       }, decoded[samplesToProcess], ltrPrimers[samplesToProcess],
@@ -1505,7 +1634,8 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
         if(!bypassChecks | showStats) {
           eval(expression(trimmedObj <- "primerTrimmed", rawObj <- "decoded", 
                           featureTrim <- "Primer", 
-                          valueColname <- "PercOfDecoded"))
+                          valueColname <- "PercOfDecoded",
+                          doTest <- TRUE))
           .showFindStats()
         }
         
@@ -1578,8 +1708,9 @@ findPrimers <- function(sampleInfo, alignWay="slow", showStats=FALSE,
 #' @export
 #'
 #' @examples 
-#' #findLTRs(sampleInfo,showStats=TRUE)
-#'
+#' \dontrun{
+#' findLTRs(sampleInfo, showStats=TRUE)
+#' }
 findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE, 
                      parallel=TRUE, samplenames=NULL, bypassChecks=FALSE, 
                      parallel2=FALSE, ...) {    
@@ -1601,9 +1732,17 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
   for(sector in sectorsPrimed) {
     message("Processing sector ",sector)
     
+    ## refine sample list if specific samples are supplied ##
+    samplesToProcess <- samplesprimed[[sector]]
+    if(!is.null(samplenames)) {
+      samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
+    }
+    
     ## prepare sample to LTR bit associations ##
-    sampleLTRbits <- toupper(extractFeature(sampleInfo,sector=sector,
+    sampleLTRbits <- toupper(extractFeature(sampleInfo,sector,samplesToProcess,
                                             feature="ltrbitsequence")[[sector]])
+    
+    # find any samples which need to be skipped
     skippers <- sampleLTRbits=="SKIP"
     if(!all(skippers) & (length(sampleLTRbits[!skippers])==0 | 
                            mean(nchar(sampleLTRbits[!skippers]))<=1 | 
@@ -1611,14 +1750,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       stop("Either LTR bit sequence is too short (<=1) or no LTR bits ",
            "found in sample information object.")
     }
-    
-    ## refine sample list if specific samples are supplied ##
-    samplesToProcess <- samplesprimed[[sector]]
-    if(!is.null(samplenames)) {
-      samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
-    }
-    
-    # find any samples which need to be skipped
+
     skip.samples <- names(which(skippers))
     if(length(skip.samples)>0) {
       samplesToProcess <- samplesToProcess[!samplesToProcess %in% skip.samples]
@@ -1629,7 +1761,7 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
                                                    length(skip.samples)), 
                                                names=skip.samples))
     }
-    
+
     ## dont bother searching if no samples are to be processed! ##
     if(length(samplesToProcess)>0) {
       ## get the primer trimmed reads ##
@@ -1662,19 +1794,22 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       ltrTrimmed <- bpmapply(function(subjectSeqs, patternSeq, paired,
                                       qualT, ...) {
         if(paired) {
-          p1 <- pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, "left", 
-                                  qualityThreshold=qualT, doRC=doRC, 
-                                  parallel=parallel2, ...)
+          p1 <- tryCatch(pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, 
+                                           "left", qualityThreshold=qualT, 
+                                           doRC=doRC, parallel=parallel2, ...),
+                         error=function(e) geterrmessage())
           
-          p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, "middle", 
-                                  qualityThreshold=(qualT-0.05), doRC=doRC, 
-                                  parallel=parallel2, ...)
+          p2 <- tryCatch(pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, 
+                                           "middle", qualityThreshold=(qualT-0.05), 
+                                           doRC=doRC, parallel=parallel2, ...),
+                         error=function(e) geterrmessage())
           
           list("pair1"=p1, "pair2"=p2)          
         } else {
-          pairwiseAlignSeqs(subjectSeqs, patternSeq, "left", 
-                            qualityThreshold=qualT, doRC=doRC, 
-                            parallel=parallel2, ...)
+          tryCatch(pairwiseAlignSeqs(subjectSeqs, patternSeq, "left", 
+                                     qualityThreshold=qualT, doRC=doRC, 
+                                     parallel=parallel2, ...),
+                   error=function(e) geterrmessage())
         }        
       }, primerTrimmed[samplesToProcess], sampleLTRbits[samplesToProcess],
       isPaired[samplesToProcess], ltrBitIdentity[samplesToProcess],
@@ -1702,7 +1837,8 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
       if(length(ltrTrimmed)>0) {
         if(!bypassChecks | showStats) {
           eval(expression(trimmedObj <- "ltrTrimmed", rawObj <- "primerTrimmed", 
-                          featureTrim <- "LTR", valueColname <- "PercOfPrimed"))
+                          featureTrim <- "LTR", valueColname <- "PercOfPrimed",
+                          doTest <- TRUE))
           .showFindStats()
         }
         
@@ -1810,8 +1946,9 @@ findLTRs <- function(sampleInfo, showStats=FALSE, doRC=FALSE,
 #' @export
 #'
 #' @examples 
-#' #findLinkers(sampleInfo,showStats=TRUE)
-#'
+#' \dontrun{
+#' findLinkers(sampleInfo, showStats=TRUE)
+#' }
 findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE, 
                         samplenames=NULL, bypassChecks=FALSE, 
                         parallel2=FALSE, ...) {    
@@ -1827,37 +1964,11 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
   
   if(length(sectorsDecoded)==0) {
     stop("No decoded information found in sampleInfo...",
-         "did you run findBarcodes()/decodeByBarcode()?")
+         "did you run findBarcodes()?")
   }
   
   for(sector in sectorsDecoded) {
     message("Processing sector ",sector)
-    
-    ## prepare sample to linker association ##
-    sampleLinkers <- toupper(extractFeature(sampleInfo, sector=sector,
-                                            feature="linkersequence")[[sector]])
-    skippers <- sampleLinkers=="SKIP"
-    if(!all(skippers) & (length(sampleLinkers[!skippers])==0 | 
-                           mean(nchar(sampleLinkers[!skippers]))<=10 | 
-                           all(is.na(sampleLinkers[!skippers])))) {
-      stop("Either Linker sequence is too short (<=10) or ",
-           "no Linkers found in sample information object.")
-    }
-    
-    ## get the linker quality thresholds for non primerID based samples ##
-    linkerIdentity <- extractFeature(sampleInfo, sector=sector,
-                                     feature="linkeridentity")[[sector]]
-    stopifnot(length(linkerIdentity)>0)
-    
-    ## check if any are primerIDed and get their identity thresholds ##
-    primerIded <- extractFeature(sampleInfo, sector=sector,
-                                 feature="primeridinlinker")[[sector]]        
-    primerIded.threshold1 <- 
-      extractFeature(sampleInfo, sector=sector,
-                     feature="primeridinlinkeridentity1")[[sector]]        
-    primerIded.threshold2 <- 
-      extractFeature(sampleInfo, sector=sector, 
-                     feature="primeridinlinkeridentity2")[[sector]]        
     
     ## subset samplenames from all samples if defined ##
     samplesToProcess <- toProcessSamples[[sector]]
@@ -1865,7 +1976,19 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
       samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
     }
     
+    ## prepare sample to linker association ##
+    sampleLinkers <- toupper(extractFeature(sampleInfo,sector,samplesToProcess,
+                                            feature="linkersequence")[[sector]])
+    
     # find any samples which need to be skipped
+    skippers <- sampleLinkers=="SKIP"
+    if(!all(skippers) & (length(sampleLinkers[!skippers])==0 | 
+                           mean(nchar(sampleLinkers[!skippers]))<=10 | 
+                           all(is.na(sampleLinkers[!skippers])))) {
+      stop("Either Linker sequence is too short (<=10) or ",
+           "no Linkers found in sample information object.")
+    }
+
     skip.samples <- names(which(skippers))
     if(length(skip.samples)>0) {
       samplesToProcess <- samplesToProcess[!samplesToProcess %in% skip.samples]
@@ -1876,7 +1999,22 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                                    length(skip.samples)), 
                                                names=skip.samples))
     }
+
+    ## get the linker quality thresholds for non primerID based samples ##
+    linkerIdentity <- extractFeature(sampleInfo, sector, samplesToProcess,
+                                     feature="linkeridentity")[[sector]]
+    stopifnot(length(linkerIdentity)>0)
     
+    ## check if any are primerIDed and get their identity thresholds ##
+    primerIded <- extractFeature(sampleInfo, sector, samplesToProcess,
+                                 feature="primeridinlinker")[[sector]]        
+    primerIded.threshold1 <- 
+      extractFeature(sampleInfo, sector, samplesToProcess,
+                     feature="primeridinlinkeridentity1")[[sector]]        
+    primerIded.threshold2 <- 
+      extractFeature(sampleInfo, sector, samplesToProcess,
+                     feature="primeridinlinkeridentity2")[[sector]]        
+
     ## dont bother searching if no samples are to be processed! ##
     if(length(samplesToProcess)>0) {
       
@@ -1892,49 +2030,59 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
                                          paired, pIded, qualT1, qualT2, ...) {        
         if(pIded) {
           if(paired) {
-            p1 <- primerIDAlignSeqs(subjectSeqs$pair1, patternSeq, 
-                                    doAnchored=TRUE, returnUnmatched=TRUE, 
-                                    returnRejected=TRUE, doRC=doRC, 
-                                    qualityThreshold1=qualT1, 
-                                    qualityThreshold2=qualT2, 
-                                    parallel=parallel2, ...)
+            p1 <- tryCatch(primerIDAlignSeqs(subjectSeqs$pair1, patternSeq, 
+                                             doAnchored=TRUE, returnUnmatched=TRUE, 
+                                             returnRejected=TRUE, doRC=doRC, 
+                                             qualityThreshold1=qualT1, 
+                                             qualityThreshold2=qualT2, 
+                                             parallel=parallel2, ...),
+                           error=function(e) geterrmessage())
             
-            p2 <- primerIDAlignSeqs(subjectSeqs$pair2, patternSeq, 
-                                    doAnchored=TRUE, returnUnmatched=TRUE, 
-                                    returnRejected=TRUE, doRC=doRC, 
-                                    qualityThreshold1=pmin(qualT1+.25,1), 
-                                    qualityThreshold2=pmin(qualT2+.25,1), 
-                                    parallel=parallel2, ...)
+            p2 <- tryCatch(primerIDAlignSeqs(subjectSeqs$pair2, patternSeq, 
+                                             doAnchored=TRUE, returnUnmatched=TRUE, 
+                                             returnRejected=TRUE, doRC=doRC, 
+                                             qualityThreshold1=pmin(qualT1+.25,1), 
+                                             qualityThreshold2=pmin(qualT2+.25,1), 
+                                             parallel=parallel2, ...),
+                           error=function(e) geterrmessage())
             
             list("pair1"=p1, "pair2"=p2)
           } else {
-            primerIDAlignSeqs(subjectSeqs, patternSeq, doAnchored=TRUE, 
-                              returnUnmatched=TRUE, returnRejected=TRUE,
-                              doRC=doRC, qualityThreshold1=qualT1,
-                              qualityThreshold2=qualT2, parallel=parallel2, ...)
+            tryCatch(primerIDAlignSeqs(subjectSeqs, patternSeq, doAnchored=TRUE, 
+                                       returnUnmatched=TRUE, returnRejected=TRUE,
+                                       doRC=doRC, qualityThreshold1=qualT1,
+                                       qualityThreshold2=qualT2, 
+                                       parallel=parallel2, ...),
+                     error=function(e) geterrmessage())
           }          
         } else {
           ## use side="middle" since more junk sequence can be present after 
           ## linker which would fail pairwiseAlignSeqs if side='right' for
           ## single end reads or "pair1"
           if(paired) {
-            p1 <- pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, "middle", 
-                                    qualityThreshold=qualT, 
-                                    returnUnmatched=TRUE, returnLowScored=TRUE, 
-                                    doRC=doRC, parallel=parallel2, ...)
+            p1 <- tryCatch(pairwiseAlignSeqs(subjectSeqs$pair1, patternSeq, 
+                                             "middle", qualityThreshold=qualT, 
+                                             returnUnmatched=TRUE, 
+                                             returnLowScored=TRUE, doRC=doRC, 
+                                             parallel=parallel2, ...),
+                           error=function(e) geterrmessage())
             
             # pair2 should end with linker, hence side='right'            
-            p2 <- pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, "right", 
-                                    qualityThreshold=pmin(qualT+.25,1), 
-                                    returnUnmatched=TRUE, returnLowScored=TRUE, 
-                                    doRC=doRC, parallel=parallel2, ...)
+            p2 <- tryCatch(pairwiseAlignSeqs(subjectSeqs$pair2, patternSeq, 
+                                             "right", 
+                                             qualityThreshold=pmin(qualT+.25,1), 
+                                             returnUnmatched=TRUE, 
+                                             returnLowScored=TRUE, doRC=doRC, 
+                                             parallel=parallel2, ...),
+                           error=function(e) geterrmessage())
             
             list("pair1"=p1, "pair2"=p2)
           } else {
-            pairwiseAlignSeqs(subjectSeqs, patternSeq, "middle", 
-                              qualityThreshold=qualT, returnUnmatched=TRUE, 
-                              returnLowScored=TRUE, doRC=doRC, 
-                              parallel=parallel2, ...) 
+            tryCatch(pairwiseAlignSeqs(subjectSeqs, patternSeq, "middle", 
+                                       qualityThreshold=qualT, returnUnmatched=TRUE, 
+                                       returnLowScored=TRUE, doRC=doRC, 
+                                       parallel=parallel2, ...),
+                     error=function(e) geterrmessage())
           }
         }        
       },
@@ -1966,7 +2114,8 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
         if(!bypassChecks | showStats) {
           eval(expression(trimmedObj <- "linkerTrimmed", rawObj <- "toProcess", 
                           featureTrim <- "Linker", 
-                          valueColname <- "PercOfDecoded"))
+                          valueColname <- "PercOfDecoded",
+                          doTest <- TRUE))
           .showFindStats()
         }
         
@@ -2044,8 +2193,9 @@ findLinkers <- function(sampleInfo, showStats=FALSE, doRC=FALSE, parallel=TRUE,
 #' @export
 #'
 #' @examples 
-#' #findVector(sampleInfo, showStats=TRUE)
-#'
+#' \dontrun{
+#' findVector(sampleInfo, showStats=TRUE)
+#' }
 findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE, 
                        samplenames=NULL) {    
   
@@ -2071,11 +2221,41 @@ findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE,
       samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
     }
     
+    ## get the vector files ##
+    vectorFiles <- extractFeature(sampleInfo, sector, samplesToProcess,
+                                  feature='vectorfile')[[sector]]
+    vectorFiles <- structure(file.path(sampleInfo$sequencingFolderPath, 
+                                       vectorFiles), 
+                             names=names(vectorFiles))
+    
+    # find any samples which need to be skipped #
+    # gotta use grep here because it could be a file path #
+    skippers <- grepl("SKIP$",vectorFiles)
+    names(skippers) <- names(vectorFiles)
+    if(!all(skippers) & (length(vectorFiles[!skippers])==0 | 
+                           mean(nchar(vectorFiles[!skippers]))<=1 | 
+                           all(is.na(vectorFiles[!skippers])))) {
+      stop("Problem detecting 'vectorFile' association to samples in the
+           supplied sampleInfo object.")
+    }
+    
+    skip.samples <- names(which(skippers))
+    if(length(skip.samples)>0) {
+      samplesToProcess <- samplesToProcess[!samplesToProcess %in% skip.samples]
+      message("Skipping samples ", paste(skip.samples,collapse=","))
+      sampleInfo <- addFeature(sampleInfo, sector, skip.samples, 
+                               feature="vectored", 
+                               value=structure(rep("SKIPPED",
+                                                   length(skip.samples)), 
+                                               names=skip.samples))
+    }
+
     ## dont bother searching if no samples are to be processed! ##
     if(length(samplesToProcess)>0) {
       ## get the LTR trimmed reads ##
       ltrTrimmed <- extractSeqs(sampleInfo, sector, samplesToProcess,
                                 feature="LTRed")[[sector]]
+      samplesToProcess <- names(ltrTrimmed)
       
       ## find paired end samples...
       ## add reads which aren't primed in pair2 for cases where reads were long
@@ -2094,11 +2274,7 @@ findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE,
         ltrTrimmed[rows] <- as(bore, "DataFrame")        
         rm(bore)
       }
-      
-      ## get the vector files ##
-      vectorFiles <- extractFeature(sampleInfo, sector, samplesToProcess,
-                                    feature='vectorfile')[[sector]]
-      
+
       ## find vector bits using BLAT! ##
       message("\tFinding Vector bits.")
       
@@ -2107,15 +2283,19 @@ findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE,
         if(paired) {
           reads <- subjectSeqs$pair1
           p1 <- findAndRemoveVector(reads, Vector, 10, TRUE, parallel)$hits
+          p1 <- if(is(p1,"GRanges")) 
+          { IRanges(ranges(p1), names=p1$qNames) } else { p1 }
           
           reads <- subjectSeqs$pair2
           p2 <- findAndRemoveVector(reads, Vector, 10, TRUE, parallel)$hits
+          p2 <- if(is(p2,"GRanges"))
+          { IRanges(ranges(p2), names=p2$qNames) } else { p2 }
           
-          list("pair1"=IRanges(ranges(p1), names=p1$qNames), 
-               "pair2"=IRanges(ranges(p2), names=p2$qNames))          
+          list("pair1"=p1, "pair2"=p2)          
         } else {
           p <- findAndRemoveVector(subjectSeqs, Vector, 10, TRUE, parallel)$hits
-          IRanges(ranges(p), names=p$qNames)
+          if(is(p,"GRanges"))
+          { IRanges(ranges(p), names=p$qNames) } else { p }
         }        
       }, ltrTrimmed[samplesToProcess], isPaired[samplesToProcess], 
       vectorFiles[samplesToProcess], SIMPLIFY=FALSE, USE.NAMES=FALSE)
@@ -2144,7 +2324,8 @@ findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE,
           eval(expression(trimmedObj <- "vecTrimmed", 
                           rawObj <- "ltrTrimmed", 
                           featureTrim <- "Vector", 
-                          valueColname <- "PercOfLTRed"))
+                          valueColname <- "PercOfLTRed",
+                          doTest <- FALSE))
           .showFindStats()
         }
         
@@ -2201,6 +2382,317 @@ findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE,
   return(sampleInfo)
 }
 
+#' Find the integration sites and add results to SampleInfo object. 
+#'
+#' Given a SampleInfo object, the function finds integration sites for each 
+#' sample using their respective settings and adds the results back to the 
+#' object. This is an all-in-one function which aligns, finds best hit per 
+#' read per sample, cluster sites, and assign ISU IDs. Depending on the aligner 
+#' chosen, it calls \code{\link{blatSeqs}} or \code{\link{subreadAlignSeqs}}, 
+#' \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, 
+#' \code{\link{clusterSites}}, \code{\link{otuSites}}. 
+#' There must be linkered reads within the sampleInfo 
+#' object in order to use this function using the default parameters. If you are
+#' planning on BLATing non-linkered reads, then change the seqType to one of 
+#' accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, 
+#' except for '!' based features.
+#'
+#' @param sampleInfo sample information SimpleList object outputted from 
+#' \code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered 
+#' sequences for samples per sector/quadrant along with metadata.
+#' @param seqType which type of sequence to align and find integration sites. 
+#' Default is NULL and determined automatically based on type of restriction 
+#' enzyme or isolation method used. If restriction enzyme is Fragmentase, MuA, 
+#' Sonication, or Sheared then this parameter is set to genomicLinkered, else 
+#' it is genomic. Any one of following options are valid: genomic, 
+#' genomicLinkered, decoded, primed, LTRed, linkered.
+#' @param aligner which aligner to use: BLAT(default) or Subread.
+#' @param genomeIndices an associative character vector of freeze to full or 
+#' relative path of respective of indexed genomes from BLAT(.nib or .2bit files)
+#' or Subreads(.subread.index). For example: c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"). 
+#' Be sure to supply an index per freeze supplied in the sampleInfo object. 
+#' Default is NULL.
+#' @param samplenames a vector of samplenames to process. Default is NULL, 
+#' which processes all samples from sampleInfo object.
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}.
+#' @param autoOptimize if aligner='BLAT', then should the blatParameters be 
+#' automatically optimized based on the reads? Default is FALSE. When TRUE, 
+#' following parameters are adjusted within the supplied blatParameters vector: 
+#' stepSize, tileSize, minScore, minIdentity. This parameter is useful 
+#' when aligning reads of various lengths to the genome. 
+#' Optimization is done using only read lengths. In beta phase!
+#' @param doSonic calculate integration sites abundance using breakpoints. 
+#' See \code{\link{getSonicAbund}} for more details. Default is FALSE.
+#' @param doISU calculate integration site unit for multihits. 
+#' See \code{\link{isuSites}} for more details. Default is FALSE.
+#' @param ... additional parameters to be passed to \code{\link{blatSeqs}} or 
+#' \code{\link{subreadAlignSeqs}} depending on aligner parameter chosen.
+#'
+#' @return a SimpleList object similar to sampleInfo parameter supplied with 
+#' new data added under each sector and sample. New data attributes include: 
+#' psl, and sites. The psl attributes holds the genomic hits per read along 
+#' with QC information. The sites attribute holds the condensed integration 
+#' sites where genomic hits have been clustered by the Position column and 
+#' cherry picked to have each site pass all the QC steps. 
+#'
+#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
+#' before running the function. One can use any of the following 
+#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
+#'
+#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, 
+#' \code{\link{findLinkers}}, \code{\link{startgfServer}}, 
+#' \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, 
+#' \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, 
+#' \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, 
+#' \code{\link{getIntegrationSites}}, \code{\link{getSonicAbund}}
+#'
+#' @export
+#'
+#' @examples 
+#' \dontrun{
+#' findIntegrations(sampleInfo, numServers=2)
+#' }
+findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
+                             genomeIndices=NULL, samplenames=NULL,
+                             parallel=TRUE, autoOptimize=FALSE, 
+                             doSonic=FALSE, doISU=FALSE, ...) {
+  
+  .checkArgs_SEQed()
+  
+  if(is.null(genomeIndices)) {
+    stop("No genomeIndices provided")
+  }
+  
+  ## test if there are linkered sequences in the sampleinfo object if 
+  ## specific feature/seqType is not defined ##   
+  feature <- ifelse(is.null(seqType), "linkered", seqType)
+  message("Checking for ", feature, " reads.")  	
+  featured <- extractFeature(sampleInfo, feature=feature)
+  samplesfeatured <- sapply(featured, names, simplify=FALSE)
+  sectorsfeatured <- names(which(sapply(sapply(featured,length),">",0)))
+  rm(featured)
+  cleanit <- gc()
+  
+  if(length(sectorsfeatured)==0) {
+    stop("No ", feature, " reads found in sampleInfo object provided.")
+  }
+  
+  ## subset specific samples if defined ##
+  samplesToProcess <- unlist(samplesfeatured,use.names=FALSE)
+  if(!is.null(samplenames)) {
+    samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
+  }
+  
+  message("Creating hashes of settings for aligning and processing.")
+  
+  ## setup settings hashes for aligning the genomic seqs by species & 
+  ## processing hits later
+  for(setting in c("restrictionenzyme", "freeze", "startwithin", 
+                   "alignratiothreshold", "genomicpercentidentity", 
+                   "clustersiteswithin", "keepmultihits")) {
+    setter <- extractFeature(sampleInfo, samplename=samplesToProcess, 
+                             feature=setting)
+    names(setter) <- NULL
+    setter <- unlist(setter)
+    assign(setting,setter)
+  }
+  
+  minReadLength <- 10
+
+  ## Align by respective species ##
+  alignedFiles <- c()        
+  for(f in unique(freeze)) {
+    message("Aligning to: ", f)
+    
+    message("Getting sequences to align")
+    # get sequences to align #
+    if(is.null(seqType)) {
+      wanted <- names(restrictionenzyme[!grepl("FRAG|SONIC|MU|SHEAR",
+                                               restrictionenzyme,
+                                               ignore.case=TRUE)])
+      wanted <- wanted[wanted %in% names(freeze[freeze==f])]
+      seqs <- extractSeqs(sampleInfo, samplename=wanted, 
+                          feature="genomic", strict=TRUE,
+                          minReadLength=minReadLength)
+      if(any(as.numeric(sapply(seqs,length))>0)) {
+        write.listedDNAStringSet(seqs, filePrefix=paste0("processed",f))
+      }
+      
+      wanted <- names(restrictionenzyme[grepl("FRAG|SONIC|MU|SHEAR",
+                                              restrictionenzyme,
+                                              ignore.case=TRUE)])
+      wanted <- wanted[wanted %in% names(freeze[freeze==f])]
+      seqs <- extractSeqs(sampleInfo, samplename=wanted, 
+                          feature="genomicLinkered", strict=TRUE,
+                          minReadLength=minReadLength)
+      if(any(as.numeric(sapply(seqs,length))>0)) {
+        write.listedDNAStringSet(seqs, filePrefix=paste0("processed",f))
+      }
+    } else {
+      seqs <- extractSeqs(sampleInfo, samplename=names(freeze[freeze==f]), 
+                          feature=seqType, minReadLength=minReadLength)
+      if(any(as.numeric(sapply(seqs,length))>0)) {
+        write.listedDNAStringSet(seqs, filePrefix=paste0("processed",f))
+      }
+    }
+
+    ## Align seqs ##
+    if(aligner=="BLAT") {
+      queryFiles <- list.files(pattern = paste0("^processed",f))
+      
+      # merge the extra args with blatSeq() params #
+      dots <- list(...)
+      blatArgs <- as.list(args(blatSeqs))
+      blatArgs <- head(blatArgs, -1) ## remove the last NULL
+      
+      if(length(dots)>0) {
+        for(a in names(dots)) {
+          blatArgs[[a]] <- dots[[a]]
+        }
+      }
+
+      blatParams <- eval(blatArgs$blatParameters)
+      
+      ## autoOptimize BLAT settings if enabled ##
+      if(autoOptimize) {        
+        # BLAT formula: 2*stepSize+tileSize-1
+        queryLengths <- summary(fasta.info(queryFiles, use.names=FALSE))   
+        blatParams[["tileSize"]] <- pmax(pmin(queryLengths[["Min."]],15), 8)
+        blatParams[["stepSize"]] <- pmax(round((queryLengths[["1st Qu."]]/4)),5)
+        blatParams[["minScore"]] <- queryLengths[["Min."]]
+        blatParams[["minIdentity"]] <- round(queryLengths[["Median"]]*.95)
+        blatArgs[["blatParameters"]] <- blatParams
+      }
+
+      ## start the requested number of gfServers ##
+      numServers <- blatArgs$numServers
+      blatArgs[["numServers"]] <- 1L
+      gfServerOpts <- c("tileSize","stepSize","minMatch","maxGap", "trans","log",
+                        "seqLog","syslog","logFacility","mask","repMatch",
+                        "maxDnaHits", "maxTransHits","maxNtSize","maxAsSize",
+                        "canStop")
+      port <- blatArgs$port + 0:(numServers-1)
+      for(n in 1:numServers) {
+        searchCMD <- sprintf("gfServer status %s %s", blatArgs$host, port[n])
+        if(system(searchCMD, ignore.stderr=TRUE)!=0) {
+          message(sprintf("Starting gfServer # %s.", n))
+          startgfServer(seqDir=genomeIndices[[f]], host=blatArgs$host, 
+                        port=port[n], gfServerOpts=blatParams[names(blatParams) 
+                                                              %in% gfServerOpts])
+        }
+      }
+      
+      ## align read files in parallel! ##
+      blatArgs[["standaloneBlat"]] <- FALSE
+      aFile <- bpmapply(function(port, x) {
+        blatArgs[["query"]] <- x
+        blatArgs[["subject"]] <- genomeIndices[[f]]
+        blatArgs[["port"]] <- port
+        do.call("blatSeqs", blatArgs)
+      }, rep(port, length=length(queryFiles)), queryFiles, 
+      SIMPLIFY=FALSE, USE.NAMES=FALSE, BPPARAM=dp)
+      
+      aFile <- unlist(aFile)
+      
+      ## stop the requested number of gfServers ##
+      sapply(port, function(x) stopgfServer(port=x))
+      
+    } else {
+      aFile <- subreadAlignSeqs(query=paste0("processed",f,".*.fa$"), 
+                                subject=genomeIndices[[f]], ...)   
+    }
+    
+    alignedFiles <- c(alignedFiles, aFile)
+    message("Cleaning!")
+    cleanit <- gc()
+    system(paste("rm",paste0("processed",f,".*.fa")))    
+  }
+  
+  ## read all hits and split by samples ##
+  message("Reading aligned files.")  
+  if(aligner=="BLAT") {
+    psl <- read.psl(alignedFiles, bestScoring=TRUE, asGRanges=TRUE, 
+                    removeFile=TRUE, parallel=FALSE)    
+  } else {
+    psl <- read.BAMasPSL(alignedFiles, asGRanges=TRUE, removeFile=TRUE)    
+  }
+    
+  mcols(psl)$samplename <- sub("^(.+)-(.+)$","\\1", mcols(psl)$qName)
+  psl <- split(psl, mcols(psl)$samplename)
+  cleanit <- gc()
+  
+  ## pair up alignments if sample==paired end ##
+  isPaired <- extractFeature(sampleInfo, samplename=samplesToProcess,
+                             feature='pairedend')
+  names(isPaired) <- NULL
+  isPaired <- unlist(isPaired)
+  if(any(isPaired)) {
+    for(x in names(which(isPaired))) {
+      psl[[x]] <- pairUpAlignments(psl[[x]], parallel=parallel)  
+    }    
+  }
+  
+  ## begin processing hits ##
+  psl.hits <- bplapply(names(psl), function(x) {
+    message("Processing ", x)
+    
+    # add qc info for bestscoring hits #
+    psl.x <- 
+      getIntegrationSites(psl[[x]], startWithin=startwithin[[x]], 
+                          alignRatioThreshold=alignratiothreshold[[x]], 
+                          genomicPercentIdentity=genomicpercentidentity[[x]],
+                          oneBased=TRUE)
+    
+    # filter multihits if applicable #
+    if(!as.logical(keepmultihits[[x]])) {
+      psl.x <- psl.x[!mcols(psl.x)$isMultiHit, ]
+    }
+    
+    # cluster sites by positions #
+    psl.x <- clusterSites(psl.rd=psl.x, windowSize=clustersiteswithin[[x]])
+    
+    # get sonicAbund #
+    if(doSonic) {
+      psl.x <- getSonicAbund(psl.rd=psl.x)
+    }
+
+    # get sites ISU for tagging multihits #
+    if(doISU) {        
+      psl.x <- isuSites(psl.rd=psl.x)
+    }
+    
+    psl.x
+  }, BPPARAM=dp)
+  names(psl.hits) <- names(psl)
+  
+  message("Adding PSL hits back to the object.")
+  sampleInfo <- addFeature(sampleInfo, sector=NULL, samplename=names(psl.hits),
+                           feature="psl", value=psl.hits)
+  
+  message("Adding sites back to the object.")
+  psl.hits <- sapply(psl.hits, function(x) {
+    x <- subset(x, mcols(x)$clusterTopHit & mcols(x)$pass.allQC)
+    ranges(x) <- IRanges(mcols(x)$clusteredPosition, width=1) 
+    x[, setdiff(colnames(mcols(x)), 
+                c('matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert',
+                  'qBaseInsert', 'tNumInsert', 'tBaseInsert', 'tSize', 
+                  'blockCount', 'blockSizes', 'qStarts', 'score', 'tStarts', 
+                  'pass.startWithin', 'alignRatio', 'pass.alignRatio', 
+                  'percIdentity', 'pass.percIdentity', 'pass.allQC', 
+                  'clusterTopHit', 'width', 'Position', 'clusteredPosition'))]
+  })
+  
+  sampleInfo <- addFeature(sampleInfo, sector=NULL, samplename=names(psl.hits),
+                           feature="sites", value=psl.hits)
+  
+  cleanit <- gc()
+  
+  sampleInfo$callHistory <- append(sampleInfo$callHistory,match.call())
+  return(sampleInfo)
+}
+
 #' Compare LTRed/Primed sequences to all linkers. 
 #'
 #' Given a SampleInfo object, the function compares LTRed sequences from each sample per sector to all the linker sequences present in the run. The output is a summary table of counts of good matches to all the linkers per sample. 
@@ -2228,8 +2720,9 @@ findVector <- function(sampleInfo, showStats=FALSE, parallel=TRUE,
 #' @export
 #'
 #' @examples 
-#' #troubleshootLinkers(sampleInfo,showStats=TRUE)
-#'
+#' \dontrun{
+#' troubleshootLinkers(sampleInfo,showStats=TRUE)
+#' }
 troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55, 
                                 qualityThreshold1=0.75, qualityThreshold2=0.50, 
                                 doRC=TRUE, parallel=TRUE, samplenames=NULL, 
@@ -2354,7 +2847,7 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
 #' @param subjectSeqs DNAStringSet object containing sequences to be searched for the pattern.
 #' @param side which side of the sequence to perform the search & trimming: left, right or middle. Default is 'left'.
 #' @param offBy integer value dictating if the trimming base should be offset by X number of bases. Default is 0.
-#' @param alignWay method to utilize for detecting the primers. One of following: "slow" (Default), "fast", or "blat". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower. Blat will use \code{\link{blatSeqs}}.
+#' @param alignWay method to utilize for detecting the primers. One of following: "slow" (Default), "fast", or "blat". Fast, calls \code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vmatchPattern}} at its core, which is less accurate with indels and mismatches but much faster. Slow, calls \code{\link{pairwiseAlignSeqs}} and uses \code{\link{pairwiseAlignment}} at its core, which is accurate with indels and mismatches but slower. Blat will use \code{\link{blatSeqs}}.
 #' @param ... parameters to be passed to \code{\link{pairwiseAlignment}}, \code{\link{vpairwiseAlignSeqs}} or \code{\link{blatSeqs}} depending on which method is defined in 'alignWay' parameter.
 #'
 #' @return DNAStringSet object with pattern sequence removed from the subject sequences. 
@@ -2368,10 +2861,16 @@ troubleshootLinkers <- function(sampleInfo, qualityThreshold=0.55,
 #' @export
 #'
 #' @examples 
-#' #findAndTrimSeq(patternSeq="AGACCCTTTT",subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA","AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=F, side="left", offBy=1, alignWay = "slow")
+#' findAndTrimSeq(patternSeq="AGACCCTTTT",
+#' subjectSeqs=DNAStringSet(c("AGACCCTTTTGAGCAGCAT","AGACCCTTGGTCGACTCA",
+#' "AGACCCTTTTGACGAGCTAG")), qualityThreshold=.85, doRC=FALSE, side="left", offBy=1,
+#' alignWay = "slow")
 #'
 findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0, 
                            alignWay = "slow", ...) {
+  
+  # to avoid NOTE during R cmd check #
+  removeSubjectNamesAfter <- NULL
   
   .checkArgs_SEQed()
   
@@ -2415,24 +2914,31 @@ findAndTrimSeq <- function(patternSeq, subjectSeqs, side = "left", offBy = 0,
 #'
 #' @examples 
 #' #findAndRemoveVector(reads, Vector)
-#'
+#' 
 findAndRemoveVector <- function(reads, Vector, minLength=10, 
                                 returnCoords=FALSE, parallel=TRUE) {
   
   .checkArgs_SEQed()
   
-  hits <- read.psl(blatSeqs(query=reads, subject=Vector, parallel=parallel,
-                            blatParameters=c(stepSize=3, tileSize=8,
-                                             minIdentity=70, minScore=5,
-                                             repMatch=112312, out="psl")),
-                   bestScoring=FALSE)
-  hits <- reduce(pslToRangedObject(hits, useTargetAsRef=FALSE),
-                 min.gapwidth=10, ignore.strand=TRUE)
-  hits$qSize <- width(reads[as.character(seqnames(hits))])
+  ## use tryCatch to be safe incase not reads were aligned in read.psl stops
+  ## with "No hits found"
+  hits <- tryCatch(read.psl(blatSeqs(query=reads, subject=Vector, 
+                                     parallel=parallel,
+                                     blatParameters=c(stepSize=3,tileSize=8,
+                                                      minIdentity=70,minScore=5,
+                                                      repMatch=112312,out="psl")
+                                     ), bestScoring=FALSE),
+                   error = function(z) NULL)
   
-  ## only consider hits that start or end with vector...others would be wierdos! ##
-  tocheck <- start(hits) <= 10 | hits$qSize-end(hits) <= 11
-  hits <- hits[tocheck]
+  if(!is.null(hits)) {
+    hits <- reduce(pslToRangedObject(hits, useTargetAsRef=FALSE),
+                   min.gapwidth=10, ignore.strand=TRUE)
+    hits$qSize <- width(reads[as.character(seqnames(hits))])
+    
+    ## only consider hits that start or end with vector...others would be wierdos! ##
+    tocheck <- start(hits) <= 10 | hits$qSize-end(hits) <= 11
+    hits <- hits[tocheck]
+  }
   
   if(length(hits)>0) {
     ## queries where genomic sequence is surrounded by vector sequence (counts>1)...
@@ -2478,8 +2984,9 @@ findAndRemoveVector <- function(reads, Vector, minLength=10,
         bore$type <- "genomic in middle"
         bore$good.row <- TRUE
         bore[1]        
-      })      
-      cured <- c(cured, do.call(c,bores)[,names(mcols(cured))])
+      })  
+      bores <- unlist(GRangesList(bores), use.names=FALSE)
+      cured <- c(cured, bores[,names(mcols(cured))])
       rm("hits.list","bores")
     }
     rm("hits")
@@ -2535,7 +3042,7 @@ findAndRemoveVector <- function(reads, Vector, minLength=10,
 #' @examples 
 #' #trimSeqs(dnaSet,coords)
 #' #trimSeqs(dnaSet,coords,side="left",offBy=1)
-#'
+#' 
 trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
   stopifnot(class(dnaSet) %in% c("DNAStringSet", "DNAString"))
   stopifnot(class(coords)=="IRanges")
@@ -2615,7 +3122,7 @@ trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
 #' as genomic minus the !linkered. When feature is decoded, it includes 
 #' everything that demultiplexed. The '!' in front of a feature extracts the 
 #' inverse. One can only get unDecoded sequences if returnUnmatched was TRUE in
-#' \code{\link{decodeByBarcode}}. If \code{\link{findVector}} was run and 
+#' \code{\link{findBarcodes}}. If \code{\link{findVector}} was run and 
 #' "vectored" feature was found in the sampleInfo object, then genomic & 
 #' genomicLinkered output will have vectored reads removed.
 #' @param trim whether to trim the given feature from sequences or keep it. 
@@ -2627,6 +3134,11 @@ trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
 #' @param pairReturn if the data is paired end, then from which pair to return 
 #' the feature. Options are "pair1", "pair2", or defaults to "both". Ignored if 
 #' data is single end. 
+#' @param strict this option is used when feature is either 'genomic' or
+#' 'genomicLinkered'. When a sample has no LTRed reads, primer ends are used as 
+#' starting points by default to extract the genomic part. Enabling this option
+#' will strictly ensure that only reads with primer and LTR are trimmed for the
+#' 'genomic' or 'genomicLinkered' feature. Default is FALSE.
 #'
 #' @return a listed DNAStringSet object structed by sector then sample. 
 #' Note: when feature='genomic' or 'genomicLinkered' and when data is paired end, 
@@ -2640,11 +3152,11 @@ trimSeqs <- function(dnaSet, coords, side="middle", offBy=0) {
 #'
 #' @examples 
 #' #extractSeqs(sampleInfo)
-#' #extractSeqs(sampleInfo,feature="primed")
-#'
+#' #extractSeqs(sampleInfo, feature="primed")
+#' 
 extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL, 
                         feature="genomic", trim=TRUE, minReadLength=1, 
-                        sideReturn=NULL, pairReturn="both") {
+                        sideReturn=NULL, pairReturn="both", strict=FALSE) {
   
   .checkArgs_SEQed()
   
@@ -2700,9 +3212,15 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
           } else {
             is.null(LTRed)
           }
-          if(LTRed.test) {
-            warning("LTRed information not found for",x,
-                    "...using primer end as starting boundary.", immediate.=TRUE)                                
+          
+          if(LTRed.test & strict) {
+            warning("LTRed information not found for ",x, " skipping...", 
+                    immediate.=TRUE)
+            return()
+          } else if (LTRed.test & !strict) {
+            warning("LTRed information not found for ",x,
+                    "...using primer end as starting boundary.", 
+                    immediate.=TRUE)
           }
           
           # check vectored attribute is not null #
@@ -2729,7 +3247,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
             if(trim) {
               # get all LTRed reads and make ends = size of each read
               if(isPaired & pairReturn=='both') {
-                if(LTRed.test) {
+                if(LTRed.test & !strict) {
                   LTRed <- primed
                 }
                 
@@ -2789,8 +3307,13 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
                   message("No linkered reads found for sample: ",x,"...skipping.")
                 }
               } else {
-                if(LTRed.test) {
+                if(LTRed.test & !strict) {
                   LTRed <- primed
+                }
+                
+                if(exists("vectored")) {                  
+                  message("Removing ",length(vectored)," vectored reads...")
+                  LTRed <- LTRed[!names(LTRed) %in% names(vectored)]
                 }
                 
                 starts <- structure(end(LTRed), names=names(LTRed))
@@ -2829,7 +3352,7 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
                   mapply(function(d,l) d[names(d) %in% names(l)],
                          decoded, linkered)
                 } else { ## everything past primer and LTR
-                  if(LTRed.test) {
+                  if(LTRed.test & !strict) {
                     mapply(function(d,l) d[names(d) %in% names(l)],
                            decoded, primed)
                   } else {
@@ -2965,12 +3488,15 @@ extractSeqs <- function(sampleInfo, sector=NULL, samplename=NULL,
 #'
 #' @return a list or list of lists depending upon which parameters were supplied.
 #'
-#' @seealso \code{\link{addFeature}}, \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{extractSeqs}}, \code{\link{trimSeqs}}, \code{\link{getSectorsForSamples}}
+#' @seealso \code{\link{addFeature}}, \code{\link{findPrimers}},
+#'  \code{\link{findLTRs}}, \code{\link{findLinkers}}, 
+#'  \code{\link{extractSeqs}}, \code{\link{trimSeqs}}, 
+#'  \code{\link{getSectorsForSamples}}
 #'
 #' @export
 #'
 #' @examples 
-#' #extractFeature(sampleInfo,feature="primed")
+#' #extractFeature(sampleInfo, feature="primed")
 #'
 extractFeature <- function(sampleInfo, sector=NULL, samplename=NULL, 
                            feature=NULL) {
@@ -3027,17 +3553,26 @@ extractFeature <- function(sampleInfo, sector=NULL, samplename=NULL,
 
 #' Add a specific feature/attribute to the sampleInfo object.
 #'
-#' Given a sampleInfo object, the function adds a new feature for the given samples & sectors.
+#' Given a sampleInfo object, the function adds a new feature for the 
+#' given samples & sectors.
 #'
-#' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
-#' @param sector a vector or a specific sector to add the new feature(s) to. Default is NULL, in which case the sectors are searched from samplename parameter.
-#' @param samplename a character vector or a specific sample to add the new feature(s) to. Default is NULL.
-#' @param feature a string of naming the new feature to add for the defined samplename and sector.
-#' @param value the value or a named list of samplenames & values which is assigned for the defined sector, samplename, and feature. Example: list("Sample1"="ACDTDASD")
+#' @param sampleInfo sample information SimpleList object, which samples per 
+#' sector/quadrant information along with other metadata.
+#' @param sector a vector or a specific sector to add the new feature(s) to. 
+#' Default is NULL, in which case the sectors are searched from 
+#' samplename parameter.
+#' @param samplename a character vector or a specific sample to add the new 
+#' feature(s) to. Default is NULL.
+#' @param feature a string of naming the new feature to add for the defined 
+#' samplename and sector.
+#' @param value named vector of samplenames & values which is assigned for the 
+#' defined sector, samplename, and feature. Example: c("Sample1"="ACDTDASD")
 #'
 #' @return modified sampleInfo object with new feature(s) added.
 #'
-#' @seealso \code{\link{findPrimers}}, \code{\link{extractSeqs}}, \code{\link{trimSeqs}}, \code{\link{extractFeature}}, \code{\link{getSectorsForSamples}}
+#' @seealso \code{\link{findPrimers}}, \code{\link{extractSeqs}}, 
+#' \code{\link{trimSeqs}}, \code{\link{extractFeature}}, 
+#' \code{\link{getSectorsForSamples}}
 #'
 #' @export
 #'
@@ -3060,7 +3595,7 @@ addFeature <- function(sampleInfo, sector=NULL, samplename=NULL, feature=NULL,
   if(!all(samplename %in% names(value))) {
     stop("Not all samplename(s) are found in value parameter")
   }
-  
+
   # get all sectors and samplenames in each sector or a specific sector
   res <- getSectorsForSamples(sampleInfo, sector, samplename)
   sectors <- res[["sectors"]]
@@ -3091,7 +3626,7 @@ addFeature <- function(sampleInfo, sector=NULL, samplename=NULL, feature=NULL,
 #' @export
 #'
 #' @examples 
-#' #getSectorsForSamples(sampleInfo,samplename="SampleName1")
+#' #getSectorsForSamples(sampleInfo, samplename="SampleName1")
 #'
 getSectorsForSamples <- function(sampleInfo, sector=NULL, samplename=NULL,
                                  returnDf=FALSE) {
@@ -3134,17 +3669,21 @@ getSectorsForSamples <- function(sampleInfo, sector=NULL, samplename=NULL,
   }
 }
 
-#' Read fasta/fastq given the path or sampleInfo object.
+#' Read fasta/fastq/sff given the path or sampleInfo object.
 #'
 #' Given a sequence reads file path, the function returns a DNAStringSet object.
 #'
-#' @param seqFilePath a path to fasta/fastq reads file or a sampleInfo object returned by \code{\link{read.SeqFolder}}
-#' @param sector specific sector to reads sequences from. Default is 1, and not required if seqFilePath is a direct file path rather than sampleInfo object.
-#'  @param isPaired does the sector contain paired end reads? Default is FALSE
+#' @param seqFilePath a path to fasta/fastq/sff reads file or a sampleInfo 
+#' object returned by \code{\link{read.SeqFolder}}
+#' @param sector specific sector to reads sequences from. Default is 1, and not 
+#' required if seqFilePath is a direct file path rather than sampleInfo object.
+#' @param isPaired does the sector contain paired end reads? Default is FALSE
 #'
-#' @return if isPaired is FALSE, then a DNAStringSet object, else a list of DNAStringSet objects of three elements corresponding to reads from "barcode", "pair1", and "pair2". Note: "pair2" is reverse complemented!
+#' @return if isPaired is FALSE, then a DNAStringSet object, else a list of 
+#' DNAStringSet objects of three elements corresponding to reads from 
+#' "barcode", "pair1", and "pair2". Note: "pair2" is reverse complemented!
 #'
-#' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, 
+#' @seealso \code{\link{findBarcodes}}, \code{\link{read.SeqFolder}}, 
 #' \code{\link{extractSeqs}}
 #'
 #' @export
@@ -3159,9 +3698,10 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
     seqFilePaths <- seqFilePath$seqFilePaths
     
     if(isPaired) {
-      filePath <- normalizePath(grep(paste0(gsub("R1|R2|I1",".*",sector),
-                                            seqfilePattern), seqFilePaths,
-                                     value=TRUE), mustWork=TRUE)
+      filePath <- seqFilePaths[grep(paste0("^",gsub("R1|R2|I1",".*",sector),
+                                           seqfilePattern),
+                                    basename(seqFilePaths))]
+      filePath <- normalizePath(filePath, mustWork=TRUE)
       
       if(length(filePath)==0) {
         stop("No sequence file found for sector: ", sector,
@@ -3184,8 +3724,9 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
       seqFilePath <- filePath
       
     } else {
-      filePath <- normalizePath(grep(paste0(sector,seqfilePattern),
-                                     seqFilePaths, value=TRUE), mustWork=TRUE)
+      filePath <- seqFilePaths[grep(paste0("^",sector,seqfilePattern),
+                                    basename(seqFilePaths))]
+      filePath <- normalizePath(filePath, mustWork=TRUE)
       
       if(length(filePath)==0) {
         stop("No sequence file found for sector: ", sector,
@@ -3202,6 +3743,8 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
       seqFilePath <- filePath
     }
   }
+  
+  doSingleEndCheck <- FALSE
   
   message("Reading:\n", paste(seqFilePath, collapse="\n"))
   if(any(grepl("fastq",seqFilePath,ignore.case=TRUE))) {    
@@ -3238,8 +3781,17 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
       ## for single-end data!
       dnaSet <- dnaSet[[1]]
     }
+  } else if (any(grepl("sff",seqFilePath,ignore.case=TRUE))) {    
+    dnaSet <- rSFFreader::sread(rSFFreader::readSff(seqFilePath, 
+                                                    use.qualities=FALSE, 
+                                                    verbose=FALSE))
+    doSingleEndCheck <- TRUE    
   } else {
     dnaSet <- readDNAStringSet(seqFilePath)
+    doSingleEndCheck <- TRUE    
+  }
+  
+  if(doSingleEndCheck) {
     if(any(duplicated(names(dnaSet)))) {
       stop("Duplicate definition lines found in file(s): ", 
            paste(seqFilePath, collapse=" * "))
@@ -3255,24 +3807,33 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
 
 #' Write a fasta file per sample in parallel
 #'
-#' Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the function writes a fasta file for each sample as defined in filePath parameter.
+#' Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the
+#' function writes a fasta file for each sample as defined in filePath parameter.
 #'
 #' @param dnaSet listed DNAStringSet object containing sequences to be written.
-#' @param filePath a path write the fasta files per sample. Default is current working directory.
-#' @param filePrefix prefix the filenames with a string. Default is 'processed' followed by samplename.
-#' @param prependSamplenames Prepend definition lines with samplenames. Default is TRUE. Make sure the dnaSet parameter is a named list where names are used as samplenames.
+#' @param filePath a path write the fasta files per sample. Default is current
+#' working directory.
+#' @param filePrefix prefix the filenames with a string. Default is 'processed' 
+#' followed by samplename.
+#' @param prependSamplenames Prepend definition lines with samplenames. 
+#' Default is TRUE. Make sure the dnaSet parameter is a named list where 
+#' names are used as samplenames.
 #' @param format either fasta (the default) or fastq.
 #' @param parallel use parallel backend to perform calculation with 
 #' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
 #' registered, then a serial version is ran using \code{\link{SerialParam}}.
 #'
-#' @seealso \code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}}, 
-#' \code{\link{extractSeqs}}
+#' @seealso \code{\link{findBarcodes}}, \code{\link{read.SeqFolder}}, 
+#' \code{\link{extractSeqs}}, \code{\link{addListNameToReads}}
 #'
 #' @note
 #' \itemize{
-#'   \item Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. This is to aggregate reads from a sample which might be present in more than one sector. 
-#'   \item If data is paired end, then each pair will be written separately with designations in the filename as well as in the definition line as (at)pairX(at) appended at the end.
+#'   \item Writing of the files is done using \code{\link{writeXStringSet}} 
+#'   with parameter append=TRUE. This is to aggregate reads from a sample 
+#'   which might be present in more than one sector. 
+#'   \item If data is paired end, then each pair will be written separately 
+#'   with designations in the filename as well as in the definition line as 
+#'   (at)pairX(at) appended at the end.
 #'   \item If parallel=TRUE, then be sure to have a parallel backend registered 
 #'   before running the function. One can use any of the following 
 #'   \code{\link{MulticoreParam}} \code{\link{SnowParam}}
@@ -3329,7 +3890,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
                                              "@",pairname,"@")
           }
           
-          writeXStringSet(outputSeqs[[p]], file=filename, format=format, 
+          writeXStringSet(outputSeqs[[p]], filepath=filename, format=format, 
                           append=TRUE) 
         } 
       } else {
@@ -3383,6 +3944,8 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
       }
     },
     
+    dp <- NULL,
+    
     if("parallel" %in% names(formals())) { 
       dp <- if(parallel) { bpparam() } else { SerialParam() }
     },
@@ -3432,6 +3995,8 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
       }
     },
     
+    dp <- NULL,
+    
     if("parallel" %in% names(formals())) { 
       dp <- if(parallel) { bpparam() } else { SerialParam() }
     }
@@ -3446,7 +4011,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
 #' Paired end reads are aligned independently and the validity of hits/pairs is
 #' evaluated within \code{\link{getIntegrationSites}} once the data is read in
 #' by \code{\link{read.BAMasPSL}}. The workhorse function doing the alignment is 
-#' \code{\link{Rsubread::align}}. 
+#' \code{\link{align}}. 
 #'
 #' @param query an object of DNAStringSet, a character vector of filename(s), 
 #' or a path/pattern of fasta/fastq files to align. Default is NULL. All files 
@@ -3458,10 +4023,10 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
 #' @param outputfile filename to hold the alignment data. Default is "allhits".
 #' Extension '.bam' will be appended to this. 
 #' @param subreadParameters a character vector of alignment options to be 
-#' passed to \code{\link{Rsubread::align}}. Parameters with following names will 
+#' passed to \code{\link{align}}. Parameters with following names will 
 #' be silently ignored: index, readfile1, readfile2, input_format,output_format,
 #' output_file. Default is: c(nsubreads=15, nBestLocations=10, nthreads=4, 
-#' indels=10, unique="FALSE", reportFusions="TRUE", tieBreakHamming="FALSE")
+#' indels=10, unique="FALSE", tieBreakHamming="FALSE")
 #'
 #' @return name of the BAM file holding the hits. If parameters 'reportFusions'
 #'  or 'indels' were passed in subreadParameters, then a named vector is 
@@ -3471,14 +4036,15 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
 #' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
 #' \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{read.BAMasPSL}},
 #' \code{\link{read.blast8}}, \code{\link{splitSeqsToFiles}}, 
-#' \code{\link{Rsubread::align}}
+#' \code{\link{align}}
 #'
 #' @export
 #'
 #' @examples 
 #' \dontrun{
 #' indexPath <- "/usr/local/genomeIndexes/subread/hg18/hg18.subreads.index"
-#' buildindex(basename=indexPath, reference="/usr/local/genomeIndexes/hg18.fa", memory=4000, TH_subread=1000)
+#' buildindex(basename=indexPath, reference="/usr/local/genomeIndexes/hg18.fa", 
+#' memory=4000, TH_subread=1000)
 #' subreadAlignSeqs(dnaSeqs, indexPath, "results")
 #' subreadAlignSeqs("mySeqs.fa", indexPath, "mySeqs")
 #' subreadAlignSeqs("my.*.fa", indexPath)
@@ -3487,8 +4053,7 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
                              subreadParameters=c(nsubreads=15, 
                                                  nBestLocations=10,
                                                  nthreads=4, indels=10,
-                                                 unique="FALSE",
-                                                 reportFusions="TRUE",
+                                                 unique="FALSE",                                                 
                                                  tieBreakHamming="FALSE")) {
   
   ## check subreadParameters ##
@@ -3561,7 +4126,7 @@ subreadAlignSeqs <- function(query=NULL, subject=NULL, outputfile="allhits",
       ## write out the query sequences into fasta files
       queryFile <- "queryFile.fa.tempyQ"
       input_format <- "FASTA"
-      writeXStringSet(query, file=queryFile, format="fasta")
+      writeXStringSet(query, filepath=queryFile, format="fasta")
     }
   }
   
@@ -3657,6 +4222,7 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE, asGRanges=TRUE) {
   hits <- do.call(c, hits)
   
   if(length(hits)==0) {
+    if(removeFile) { file.remove(bamFile) }
     stop("No hits found")
   }
   
@@ -3735,13 +4301,14 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE, asGRanges=TRUE) {
 #' @export
 #'
 #' @examples 
-#' #pairUpAlignments()
+#' #pairUpAlignments(psl.rd)
 #'
 pairUpAlignments <- function(psl.rd=NULL, maxGapLength=2500, 
                              sameStrand=TRUE, parallel=TRUE) {
   
   .checkArgsSetDefaults_ALIGNed()
   stopifnot("qName" %in% names(mcols(psl.rd)))
+  qName <- NULL
   
   ### identify pairs ###
   mcols(psl.rd)$pair <- sub(".+@(.+)@","\\1", mcols(psl.rd)$qName)
@@ -3923,14 +4490,21 @@ stopgfServer <- function(host="localhost", port=NULL) {
 
 #' Align a listed DNAStringSet to a reference using gfClient or standalone BLAT.
 #'
-#' Align sequences from a listed DNAStringSet object returned from \code{\link{extractSeqs}} to an indexed reference genome using gfServer/gfClient protocol or using standalone BLAT and return the psl file as a GRanges object. This function heavily relies on defaults of \code{\link{blatSeqs}}.
+#' Align sequences from a listed DNAStringSet object returned from 
+#' \code{\link{extractSeqs}} to an indexed reference genome using 
+#' gfServer/gfClient protocol or using standalone BLAT and return the psl file 
+#' as a GRanges object. This function heavily relies on defaults of 
+#' \code{\link{blatSeqs}}.
 #'
 #' @param dnaSetList DNAStringSet object containing sequences to be aligned against the reference.
 #' @param ... parameters to be passed to \code{\link{blatSeqs}}.
 #'
 #' @return a list of GRanges object reflecting psl file type per set of sequences.
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{pslToRangedObject}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+#'  \code{\link{startgfServer}}, \code{\link{stopgfServer}}, 
+#'  \code{\link{blatSeqs}}, \code{\link{read.psl}}, 
+#'  \code{\link{pslToRangedObject}}, \code{\link{read.blast8}}
 #'
 #' @export
 #' 
@@ -3954,7 +4528,8 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 
 #' Convert psl dataframe to GRanges
 #'
-#' Convert psl dataframe to GRanges object using either the query or target as the reference data column. 
+#' Convert psl dataframe to GRanges object using either the query or target as 
+#' the reference data column. 
 #'
 #' @param x dataframe reflecting psl format
 #' @param useTargetAsRef use target(tName) or query(qName) as the chromosome or 
@@ -3970,7 +4545,6 @@ blatListedSet <- function(dnaSetList=NULL, ...) {
 #' @export
 #'
 #' @examples 
-#' #pslToRangedObject(psl)
 #' #pslToRangedObject(psl)
 #' #pslToRangedObject(psl, useTargetAsRef=FALSE)
 #'
@@ -4002,7 +4576,8 @@ pslToRangedObject <- function(x, useTargetAsRef=TRUE, isblast8=FALSE) {
 #' @param x a DNAStringSet object, or a FASTA filename.
 #' @param totalFiles an integer indicating how many files to create. Default is 4.
 #' @param suffix a word to add to each file created. Default is "tempy".
-#' @param filename name of the file if x is a DNAStringSet object. Default is "queryFile.fa".
+#' @param filename name of the file if x is a DNAStringSet object. 
+#' Default is "queryFile.fa".
 #'
 #' @return a vector of filename names created.
 #'
@@ -4025,10 +4600,10 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
     
     starts <- seq(0, totalSeqs, by=chunks) ## create chunks of starts    
     for(skippy in starts[starts!=totalSeqs]) {
-      filename.out <- paste(x, skippy, randomStrings(1)[1], suffix, sep=".")
+      filename.out <- paste(x, skippy, runif(1), suffix, sep=".")
       ## no need to read the entire file...save memory by reading in N lines
       query.tmp <- readBStringSet(x,nrec=chunks, skip=skippy) 
-      writeXStringSet(query.tmp, file=filename.out, format="fasta")            
+      writeXStringSet(query.tmp, filepath=filename.out, format="fasta")            
     }
     return(list.files(path=dirname(x), 
                       pattern=paste0(basename(x),".*", suffix, "$"), 
@@ -4041,8 +4616,8 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
     stops <- unique(c(seq(chunks, totalSeqs, by=chunks), totalSeqs))
     stopifnot(length(starts)==length(stops))        
     for(skippy in 1:length(starts)) {
-      filename.out <- paste(filename, skippy, randomStrings(1)[1], suffix, sep=".")            
-      writeXStringSet(x[starts[skippy]:stops[skippy]], file=filename.out,
+      filename.out <- paste(filename, skippy, runif(1), suffix, sep=".")            
+      writeXStringSet(x[starts[skippy]:stops[skippy]], filepath=filename.out,
                       format="fasta")            
     }            
     return(list.files(path=".", 
@@ -4084,29 +4659,35 @@ splitSeqsToFiles <- function(x, totalFiles=4, suffix="tempy",
 #' at specified host and port. Default is 1. 
 #' @param gzipResults gzip the output files? Default is TRUE.
 #' @param blatParameters a character vector of options to be passed to 
-#' gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70,
-#' minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, maxDnaHits=10, 
+#' gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=90,
+#' minScore=10, stepSize=5, tileSize=10, repMatch=112312, dots=50, maxDnaHits=10, 
 #' q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by 
 #' either BLAT or gfClient. For example, if repMatch or stepSize parameters are 
 #' specified when using gfClient, then the function will simply ignore them! 
-#' The defaults are configured to align a 19bp sequence with 70\% identity.
+#' The defaults are configured to align a 19bp sequence with 90\% identity.
 #'
-#' @return a character vector of psl filenames. Each file provided is split by number of parallel workers and with read number denoting the cut. Files are cut in smaller pieces to for the ease of read & write into a single R session. 
+#' @return a character vector of psl filenames. Each file provided is split by 
+#' number of parallel workers and with read number denoting the cut. Files are 
+#' cut in smaller pieces to for the ease of read & write into a single R session. 
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}, \code{\link{read.blast8}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, 
+#' \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}},
+#' \code{\link{splitSeqsToFiles}}, \code{\link{read.blast8}}
 #'
 #' @export
 #'
 #' @examples 
-#' #blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
-#' #blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
-#' #blatSeqs("mySeqs.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
-#' #blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
-#'
+#' \dontrun{
+#' blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, 
+#' tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
+#' blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+#' blatSeqs("mySeqs.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+#' blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+#' }
 blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560, 
                      host="localhost", parallel=TRUE, numServers=1L,
-                     gzipResults=TRUE, 
-                     blatParameters=c(minIdentity=70, minScore=5, stepSize=5, 
+                     gzipResults=TRUE,
+                     blatParameters=c(minIdentity=90, minScore=10, stepSize=5, 
                                       tileSize=10, repMatch=112312, dots=50, 
                                       maxDnaHits=10, q="dna", t="dna", 
                                       out="psl")) {
@@ -4168,8 +4749,8 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       }
       
       ## write out the subject sequences into a fasta file
-      filename.seq <- paste("subjectFile.fa",randomStrings(1)[1],"tempyS",sep=".")      
-      writeXStringSet(subject, file=filename.seq, format="fasta")                                  
+      filename.seq <- paste("subjectFile.fa",runif(1),"tempyS",sep=".")      
+      writeXStringSet(subject, filepath=filename.seq, format="fasta")                                  
       subjectFile <- filename.seq
     }
   }
@@ -4214,8 +4795,8 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       if(parallel) {
         queryFiles <- splitSeqsToFiles(query, bpworkers(), "tempyQ")
       } else {
-        queryFiles <- paste("queryFile.fa",randomStrings(1)[1],"tempyQ",sep=".")          
-        writeXStringSet(query, file=queryFiles, format="fasta")                
+        queryFiles <- paste("queryFile.fa",runif(1),"tempyQ",sep=".")          
+        writeXStringSet(query, filepath=queryFiles, format="fasta")                
       }
     }
   }
@@ -4226,7 +4807,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
   ## do some formatting ##
   queryFiles <- as.character(queryFiles)
   subjectFile <- as.character(subjectFile)
-  
+    
   dp <- if(parallel){ bpparam() } else { SerialParam() }
   
   ## BLAT it ##
@@ -4251,7 +4832,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
       filename.out
     }, BPPARAM=dp)
     
-    if(grepl("\\.tempyS$",subjectFile)) { file.remove(subjectFile) }
+    if(grepl("\\.tempyS$",subjectFile)) { system(sprintf("rm %s",subjectFile)) }
     
   } else {
     # start the gfServer if not started already! #
@@ -4270,7 +4851,7 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
     
     gfClientOpts <- blatParameters[names(blatParameters) %in% gfClientOpts]
     stopifnot(length(subjectFile)>0)
-    filenames <- bpmapply(function(port,x) {      
+    filenames <- bpmapply(function(port, x) {
       filename.out <- paste(x, gfClientOpts["out"], sep=".")
       cmd <- paste("gfClient",
                    paste(paste0("-", names(gfClientOpts)), gfClientOpts, 
@@ -4307,12 +4888,15 @@ blatSeqs <- function(query=NULL, subject=NULL, standaloneBlat=TRUE, port=5560,
 #' @param withClass return classes for each column.
 #' @return vector of PSL column names
 #'
-#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
+#' @seealso \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, 
+#' \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, 
+#' \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
 #' @examples 
 #' pslCols()
+#' 
 pslCols <- function(withClass=TRUE) {
   cols <- c("matches", "misMatches", "repMatches", "nCount", "qNumInsert", 
             "qBaseInsert", "tNumInsert", "tBaseInsert", "strand", "qName", 
@@ -4399,6 +4983,7 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
   hits <- unique(rbind.fill(hits))
   
   if(nrow(hits)==0) {
+    if(removeFile) { file.remove(pslFile) }
     stop("No hits found")
   }
   
@@ -4434,7 +5019,8 @@ read.psl <- function(pslFile=NULL, bestScoring=TRUE, asGRanges=FALSE,
 #' @param x data frame or GRanges object with required columns for psl file format.
 #' @param filename name for the output PSL file. Default is "out.psl"
 #' @param header include PSL header line. Default is FALSE.
-#' @param includeOtherCols nclude other non PSL specific columns from x in the output. Default is FALSE.
+#' @param includeOtherCols nclude other non PSL specific columns from x in 
+#' the output. Default is FALSE.
 #'
 #' @return name of the output PSL file
 #'
@@ -4481,11 +5067,16 @@ write.psl <- function(x, filename="out.psl", header=FALSE,
 
 #' Read blast8 file(s) outputted by BLAT
 #'
-#' Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
+#' Given filename(s), the function reads the blast8 file format from BLAT as a 
+#' data frame and performs basic score filtering if indicated. Any other file 
+#' format will yield errors or erroneous results.
 #'
-#' @param files blast8 filename, or vector of filenames, or a pattern of files to import.
-#' @param asGRanges return a GRanges object instead of a dataframe. Default is TRUE Saves memory!
-#' @param removeFile remove the blast8 file(s) after importing. Default is FALSE.
+#' @param files blast8 filename, or vector of filenames, or a pattern of files 
+#' to import.
+#' @param asGRanges return a GRanges object instead of a dataframe.
+#'  Default is TRUE Saves memory!
+#' @param removeFile remove the blast8 file(s) after importing. 
+#' Default is FALSE.
 #' @param parallel use parallel backend to perform calculation with 
 #' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
 #' registered, then a serial version is ran using \code{\link{SerialParam}}.
@@ -4506,7 +5097,7 @@ write.psl <- function(x, filename="out.psl", header=FALSE,
 #'
 read.blast8 <- function(files=NULL, asGRanges=FALSE,
                         removeFile=TRUE, parallel=FALSE) {
-  
+  qName <- NULL
   .checkArgsSetDefaults_ALIGNed()
 
   ## setup blast8 columns + classes
@@ -4541,6 +5132,7 @@ read.blast8 <- function(files=NULL, asGRanges=FALSE,
   hits <- unique(rbind.fill(hits))
   
   if(nrow(hits)==0) {
+    if(removeFile) { file.remove(files) }
     stop("No hits found")
   }
   
@@ -4685,6 +5277,8 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
 #' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
 #' registered, then a serial version is ran using \code{\link{SerialParam}}. 
 #' Process is split by the grouping the column.
+#' @param sonicAbund calculate breakpoint abundance using 
+#' \code{\link{getSonicAbund}}. Default is FALSE.
 #'
 #' @note The algorithm for clustering when byQuartile=TRUE is as follows: for 
 #' all values in each grouping, get a distribution and test if their frequency 
@@ -4704,19 +5298,26 @@ getIntegrationSites <- function(psl.rd=NULL, startWithin=3,
 #' clonecount, and clusterTopHit (a representative for a given cluster chosen 
 #' by best scoring hit!). 
 #'
-#' @seealso \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{pslToRangedObject}}
+#' @seealso \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, 
+#' \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, 
+#' \code{\link{pslToRangedObject}}, \code{\link{getSonicAbund}}
 #'
 #' @export
 #'
 #' @examples 
-#' #clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))
+#' clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'),
+#' value=c(rep(1000,2),5832,1000,12324,65738,928042), 
+#' grouping=c('a','a','a','b','b','b','c'))
 #' #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 #'
 clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL, 
                          weight=NULL, windowSize=5L, byQuartile=FALSE, 
-                         quartile=0.70, parallel=TRUE) {
+                         quartile=0.70, parallel=TRUE, sonicAbund=FALSE) {
   
   .checkArgsSetDefaults_ALIGNed()
+  
+  # to avoid 'no visible binding for global variable' NOTE during R check #
+  posID2 <- freq <- belowQuartile <- isMax <- isClosest <- val <- ismaxFreq <- NULL
   
   if(is.null(psl.rd)) {
     stopifnot(!is.null(posID))
@@ -4832,15 +5433,16 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
     rm("isBest","bestScore","posIDs","values","groupingVals")
     cleanit <- gc()
     
-    message("Calculating sonic abundance.")   
-    psl.rd <- getSonicAbund(psl.rd=psl.rd, grouping=mcols(psl.rd)$groups,
-                            parallel=parallel)
-    
+    if(sonicAbund) {
+      message("Calculating sonic abundance.")   
+      psl.rd <- getSonicAbund(psl.rd=psl.rd, grouping=mcols(psl.rd)$groups,
+                              parallel=parallel)
+    }
     mcols(psl.rd)$groups <- NULL
     
     return(psl.rd)
   }
-  
+
   # get frequencies of each posID & value combination by grouping #
   groups <- if(is.null(grouping)) { "" } else { grouping }
   weight2 <- if(is.null(weight)) { 1 } else { weight }
@@ -5036,6 +5638,10 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
 #' which to pool the rows (i.e. samplenames). Default is NULL.
 #' @param psl.rd a GRanges object returned from \code{\link{clusterSites}}. 
 #' Default is NULL. 
+#' @param parallel use parallel backend to perform calculation with 
+#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
+#' registered, then a serial version is ran using \code{\link{SerialParam}}. 
+#' Process is split by the grouping the column.
 #'
 #' @note The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions. 
 #'
@@ -5046,9 +5652,11 @@ clusterSites <- function(posID=NULL, value=NULL, grouping=NULL, psl.rd=NULL,
 #' @export
 #'
 #' @examples 
-#' #otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#' #otuSites(psl.rd=test.psl.rd)
-#'
+#' \dontrun{
+#' otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), 
+#' grouping=c('a','a','a','b','b','b','c'))
+#' otuSites(psl.rd=test.psl.rd)
+#' }
 otuSites <- function(posID=NULL, readID=NULL, grouping=NULL, 
                      psl.rd=NULL, parallel=TRUE) {
   
@@ -5139,7 +5747,7 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
       
       res <- sapply(query, grep, x=subject, fixed=TRUE)
       res <- res[sapply(res,length)>0]                    
-      res <- structure(unlist(res,use.names=F),
+      res <- structure(unlist(res,use.names=FALSE),
                        names=rep(names(res), sapply(res,length)))
       reads[!singles & reads$grouping==f,"newotuID"][as.numeric(res)] <- 
         as.numeric(names(res))
@@ -5223,14 +5831,20 @@ otuSites <- function(posID=NULL, readID=NULL, grouping=NULL,
 #' @return a data frame with binned values and otuID shown alongside the 
 #' original input. If psl.rd parameter is defined, then a GRanges object.
 #'
-#' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
+#' @seealso \code{\link{clusterSites}}, \code{\link{otuSites}},
+#' \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, 
+#' \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
 #' @examples 
-#' #otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(1000,1003,5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#' #otuSites2(psl.rd=test.psl.rd)
-#'
+#' \dontrun{
+#' otuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), 
+#' value=c(1000,1003,5832,1000,12324,65738,928042), 
+#' readID=paste('read',sample(letters,7),sep='-'), 
+#' grouping=c('a','a','a','b','b','b','c'))
+#' otuSites2(psl.rd=test.psl.rd)
+#' }
 otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL, 
                       psl.rd=NULL, maxgap=5, parallel=TRUE) {
   
@@ -5342,7 +5956,8 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
   sites.gr <- sort(sites.gr)
   cleanit <- gc()
   
-  ## see if readID with a unique/single location matches up to a readID with >1 location, if yes then merge
+  ## see if readID with a unique/single location matches up to a readID with >1
+  ## location, if yes then merge
   mcols(sites.gr)$singles <- mcols(sites.gr)$counts==1
   if(any(mcols(sites.gr)$singles)) {
     message('Merging non-singletons with singletons if any...')    
@@ -5403,7 +6018,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
       }
       c(sigs,nonsigs)
     }, BPPARAM=dp)
-    sites.gr <- do.call(c, sites.gr)
+    sites.gr <- unlist(GRangesList(sites.gr), use.names=FALSE)
     rm(sites.gr.list)
   }
   mcols(sites.gr)$singles <- NULL
@@ -5475,7 +6090,7 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
     }
     x
   }, BPPARAM=dp)
-  sites.gr <- do.call(c, sites.gr)
+  sites.gr <- unlist(GRangesList(sites.gr), use.names=FALSE)  
   sites.gr <- c(sites.gr, goods)
   rm("sites.gr.list","goods")
   cleanit <- gc()
@@ -5525,14 +6140,20 @@ otuSites2 <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #'
 #' @return a data frame with binned values and isuID shown alongside the original input. If psl.rd parameter is defined, then a GRanges object where object is first filtered by clusterTopHit column and the isuID column appended at the end.
 #'
-#' @seealso \code{\link{clusterSites}}, \code{\link{isuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
+#' @seealso \code{\link{clusterSites}}, \code{\link{isuSites}}, 
+#' \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, 
+#' \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 #'
 #' @export
 #'
 #' @examples 
-#' #isuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#' #isuSites2(psl.rd=test.psl.rd)
-#'
+#' \dontrun{
+#' isuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), 
+#' value=c(rep(1000,2),5832,1000,12324,65738,928042), 
+#' readID=paste('read',sample(letters,7),sep='-'), 
+#' grouping=c('a','a','a','b','b','b','c'))
+#' isuSites2(psl.rd=test.psl.rd)
+#' }
 isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL, 
                      psl.rd=NULL, maxgap=5, parallel=TRUE) {
 
@@ -5559,7 +6180,8 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #' position is filtered out from all the groups. The main use of this function 
 #' is to remove crossover sites from different samples in the data.
 #'
-#' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.
+#' @param posID a vector of groupings for the value parameter (i.e. Chr,strand). 
+#' Required if psl.rd parameter is not defined.
 #' @param value a vector of integer locations/positions that needs to be binned, 
 #' i.e. genomic location. Required if psl.rd parameter is not defined. 
 #' @param grouping additional vector of grouping of length posID or psl.rd by 
@@ -5582,13 +6204,19 @@ isuSites <- function(posID=NULL, value=NULL, readID=NULL, grouping=NULL,
 #' @export
 #'
 #' @examples 
-#' #crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), grouping=c('a','a','b','b','b','b','c','c'))
-#' #crossOverCheck(psl.rd=test.psl.rd)
-#'
+#' \dontrun{
+#' crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','
+#' chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), 
+#' grouping=c('a','a','b','b','b','b','c','c'))
+#' crossOverCheck(psl.rd=test.psl.rd)
+#' }
 crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL, 
                            weight=NULL, windowSize=1, psl.rd=NULL) {
   
   .checkArgsSetDefaults_ALIGNed()
+  
+  # to avoid 'no visible binding for global variable' NOTE during R check #
+  qgroup <- sgroup <- qfreq <- sfreq <- isBest <- NULL
   
   if(is.null(psl.rd)) {
     stopifnot(!is.null(posID))
@@ -5693,206 +6321,26 @@ crossOverCheck <- function(posID=NULL, value=NULL, grouping=NULL,
   sites
 }
 
-#' Find the integration sites and add results to SampleInfo object. 
-#'
-#' Given a SampleInfo object, the function finds integration sites for each sample using their respective settings and adds the results back to the object. This is an all-in-one function which aligns, finds best hit per read per sample, cluster sites, and assign ISU IDs. Depending on the aligner chosen, it calls \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{getIntegrationSites}}, \code{\link{clusterSites}}, \code{\link{otuSites}}. There must be linkered reads within the sampleInfo object in order to use this function using the default parameters. If you are planning on BLATing non-linkered reads, then change the seqType to one of accepted options for the 'feature' parameter of \code{\link{extractSeqs}}, except for '!' based features.
-#'
-#' @param sampleInfo sample information SimpleList object outputted from \code{\link{findLinkers}}, which holds decoded, primed, LTRed, and Linkered sequences for samples per sector/quadrant along with metadata.
-#' @param seqType which type of sequence to align and find integration sites for. Default is NULL and determined automatically based on type of restriction enzyme or isolation method used. If restriction enzyme is Fragmentase or Mu, then this parameter is set to genomicLinkered, else it is genomic. Any one of following options are valid: genomic, genomicLinkered, decoded, primed, LTRed, linkered.
-#' @param aligner which aligner to use: BLAT(default) or Subread. Use 'Subread' for illumina data.
-#' @param port a port number to host the gfServer with. Only used if aligner='BLAT'. Default is 5560.
-#' @param host name of the machine running gfServer. Only used if aligner='BLAT'. Default is 'localhost'.
-#' @param genomeIndices an associative character vector of freeze to full or relative path of respective of indexed genomes from BLAT(.nib or .2bit files) or Subreads(.subread.index). For example: c("hg18"="/usr/local/blatSuite34/hg18.2bit", "mm8"="/usr/local/blatSuite34/mm8.2bit"). Be sure to supply an index per freeze supplied in the sampleInfo object. Default is NULL.
-#' @param numServers launch >1 gfServer and load balance jobs? This only
-#' applies when parallel=TRUE and standaloneBlat=FALSE. Enable this option only
-#' if the machine has a lot of RAM! Option ignored if launched gfServer is found
-#' at specified host and port. Default is 1. 
-#' @param parallel use parallel backend to perform calculation with 
-#' \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is 
-#' registered, then a serial version is ran using \code{\link{SerialParam}}.
-#' @param samplenames a vector of samplenames to process. Default is NULL, which processes all samples from sampleInfo object.
-#' @param blatParameters a character vector of options to be passed to gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70, minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by either BLAT or gfClient. For example, if repMatch or stepSize parameters are specified when using gfClient, then the function will simply ignore them! The defaults are configured to align a 19bp sequence with 70\% identity. Ignored if aligner is "Subread".
-#'
-#' @return a SimpleList object similar to sampleInfo parameter supplied with new data added under each sector and sample. New data attributes include: psl, and sites. The psl attributes holds the genomic hits per read along with QC information. The sites attribute holds the condensed integration sites where genomic hits have been clustered by the Position column and cherry picked to have each site pass all the QC steps. 
-#'
-#' @note If parallel=TRUE, then be sure to have a parallel backend registered 
-#' before running the function. One can use any of the following 
-#' \code{\link{MulticoreParam}} \code{\link{SnowParam}}
-#'
-#' @seealso \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{startgfServer}}, \code{\link{read.psl}}, \code{\link{blatSeqs}}, \code{\link{blatListedSet}}, \code{\link{pslToRangedObject}}, \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{getIntegrationSites}}
-#'
-#' @export
-#'
-#' @examples 
-#' #findIntegrations(sampleInfo)
-#'
-findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
-                             port=5560, host="localhost", genomeIndices=NULL,
-                             numServers=1L, parallel=TRUE, samplenames=NULL,
-                             blatParameters=c(minIdentity=70, minScore=5,
-                                              stepSize=5, tileSize=10,
-                                              repMatch=112312, dots=100,
-                                              maxDnaHits=10, out="psl",
-                                              q="dna", t="dna")){
-  
-  .checkArgs_SEQed()
-  
-  ## test if there are linkered sequences in the sampleinfo object if 
-  ## specific feature/seqType is not defined ##   
-  feature <- ifelse(is.null(seqType), "linkered", seqType)
-  message("Checking for ", feature, " reads.")		
-  featured <- extractFeature(sampleInfo, feature=feature)
-  samplesfeatured <- sapply(featured, names, simplify=FALSE)
-  sectorsfeatured <- names(which(sapply(sapply(featured,length),">",0)))
-  rm(featured)
-  cleanit <- gc()
-  
-  if(length(sectorsfeatured)==0) {
-    stop("No ", feature, " reads found in sampleInfo object provided.")
+## a helper used in summary functions to obtain lengths by object class ##
+.uniqueLength <- function(x) {
+  if(is(x,"GRanges")) {
+    length(unique(x$qName))
+  } else if(is(x,"DNAStringSet")) {
+    length(unique(names(x)))
+  } else {
+    length(x)
   }
-  
-  ## subset specific samples if defined ##
-  samplesToProcess <- unlist(samplesfeatured,use.names=F)
-  if(!is.null(samplenames)) {
-    samplesToProcess <- samplesToProcess[samplesToProcess %in% samplenames]
-  }
-  
-  message("Creating hashes of settings for aligning and processing.")
-  
-  ## setup settings hashes for aligning the genomic seqs by species & 
-  ## processing hits later
-  for(setting in c("restrictionenzyme", "freeze", "startwithin", 
-                   "alignratiothreshold", "genomicpercentidentity", 
-                   "clustersiteswithin", "keepmultihits")) {
-    setter <- extractFeature(sampleInfo, samplename=samplesToProcess, 
-                             feature=setting)
-    names(setter) <- NULL
-    setter <- unlist(setter)
-    assign(setting,setter)
-  }
-  
-  ## Align by respective species ##
-  pslFiles <- c()        
-  for (f in unique(freeze)) {
-    message("Aligning to: ", f)
-    
-    message("Getting sequences to align")        
-    # get sequences to align #
-    if (is.null(seqType)) {
-      wanted <- names(restrictionenzyme[!grepl("FRAG|SONIC|MU",
-                                               restrictionenzyme,
-                                               ignore.case=TRUE)])
-      wanted <- wanted[wanted %in% names(freeze[freeze==f])]
-      seqs <- extractSeqs(sampleInfo, samplename=wanted, 
-                          feature="genomic", minReadLength=5)
-      if(any(as.numeric(sapply(seqs,length))>0)) {
-        write.listedDNAStringSet(seqs, filePrefix=paste0("processed",f))
-      }
-      
-      wanted <- names(restrictionenzyme[grepl("FRAG|SONIC|MU",
-                                              restrictionenzyme,
-                                              ignore.case=TRUE)])
-      wanted <- wanted[wanted %in% names(freeze[freeze==f])]
-      seqs <- extractSeqs(sampleInfo, samplename=wanted, 
-                          feature="genomicLinkered", minReadLength=5)
-      if(any(as.numeric(sapply(seqs,length))>0)) {
-        write.listedDNAStringSet(seqs, filePrefix=paste0("processed",f))
-      }
-    } else {
-      seqs <- extractSeqs(sampleInfo, samplename=names(freeze[freeze==f]), 
-                          feature=seqType, minReadLength=5)
-      if(any(as.numeric(sapply(seqs,length))>0)) {
-        write.listedDNAStringSet(seqs, filePrefix=paste0("processed",f))
-      }
-    }
-    
-    # Align seqs #
-    pslFile <- blatSeqs(query=paste0("processed",f,".*.fa$"), 
-                        subject=genomeIndices[[f]], standaloneBlat=FALSE, 
-                        host=host, port=port, parallel=parallel, 
-                        gzipResults=TRUE, blatParameters=blatParameters)                
-    
-    message("Cleaning!")
-    # add pslFiles for later use #
-    pslFiles <- c(pslFiles, pslFile)
-    cleanit <- gc()
-    system(paste("rm",paste0("processed",f,".*.fa")))
-  }
-  
-  message("Reading PSL files.")
-  ## read all hits and split by samples ##
-  psl <- read.psl(pslFiles, bestScoring=TRUE, asGRanges=TRUE, 
-                  removeFile=TRUE, parallel=FALSE)
-  cleanit <- gc()
-  psl$setname <- sub("^(.+)-(.+)$","\\1", psl$qName)
-  psl <- split(psl, psl$setname)
-  
-  ## begin processing hits ##
-  psl.hits <- bplapply(names(psl), function(x) {
-    message("Processing ",x)
-    
-    # add qc info for bestscoring hits #
-    psl.x <- 
-      getIntegrationSites(psl[[x]], startWithin=startwithin[[x]], 
-                          alignRatioThreshold= alignratiothreshold[[x]], 
-                          genomicPercentIdentity= genomicpercentidentity[[x]])
-    
-    # filter multihits if applicable #
-    if(!as.logical(keepmultihits[[x]])) {
-      psl.x <- psl.x[!psl.x$isMultiHit, ]
-    }
-    
-    # cluster sites by positions #
-    psl.x <- clusterSites(psl.rd=psl.x, windowSize=clustersiteswithin[[x]])
-    
-    # get sites ISU for tagging multihits #
-    if(as.logical(keepmultihits[[x]])) {        
-      psl.x <- isuSites(psl.rd=psl.x)
-    }
-    
-    psl.x
-  }, BPPARAM=dp)
-  names(psl.hits) <- names(psl)
-  
-  message("Adding PSL hits back to the object.")
-  sampleInfo <- addFeature(sampleInfo, sector=NULL, samplename=names(psl.hits),
-                           feature="psl", value=psl.hits)
-  
-  message("Adding sites back to the object.")
-  psl.hits <- sapply(psl.hits, function(x) {
-    x <- DataFrame(x)      
-    x <- subset(x, clusterTopHit & pass.allQC, 
-                select=setdiff(colnames(x), 
-                               c('matches', 'misMatches', 'repMatches', 
-                                 'nCount', 'qNumInsert', 'qBaseInsert', 
-                                 'tNumInsert', 'tBaseInsert', 'tSize', 
-                                 'blockCount', 'blockSizes', 'qStarts', 
-                                 'score', 'tStarts', 'pass.startWithin',
-                                 'alignRatio', 'pass.alignRatio', 
-                                 'percIdentity', 'pass.percIdentity', 
-                                 'pass.allQC', 'clusterTopHit', 'width',
-                                 'Position')))
-    x$start <- x$end <- x$clusteredPosition
-    x$clusteredPosition <- NULL    
-    GRanges(x)
-  })
-  
-  sampleInfo <- addFeature(sampleInfo, sector=NULL, samplename=names(psl.hits),
-                           feature="sites", value=psl.hits)
-  
-  cleanit <- gc()
-  
-  sampleInfo$callHistory <- append(sampleInfo$callHistory,match.call())
-  return(sampleInfo)
 }
 
 #' Simple summary of a sampleInfo object.
 #'
 #' Give a simple summary of major attributes in sampleInfo/SimpleList object.
 #'
-#' @param sampleInfo sample information SimpleList object, which samples per sector/quadrant information along with other metadata.
+#' @param sampleInfo sample information SimpleList object, which samples per 
+#' sector/quadrant information along with other metadata.
 #'
-#' @return a dataframe summarizing counts of major attributes per sample and sector. 
+#' @return a dataframe summarizing counts of major attributes per sample 
+#' and sector. 
 #'
 #' @export
 #'
@@ -5902,16 +6350,18 @@ findIntegrations <- function(sampleInfo, seqType=NULL, aligner="BLAT",
 summary.simple <- function(sampleInfo) {
   stopifnot(is(sampleInfo,"SimpleList"))
   message("Total sectors:", paste(names(sampleInfo$sectors),collapse=","), "\n")
+
   res <- lapply(names(sampleInfo$sectors), function(sector) {
     bore <- extractFeature(sampleInfo, sector=sector,
                            feature="samplename")[[sector]]
     res.df <- data.frame(Sector=sector, SampleName=as.character(bore))
     res.df$SampleName <- as.character(res.df$SampleName)
-    for (metaD in c("decoded","primed","LTRed","linkered","psl","sites")) {
+    for (metaD in c("decoded","primed","LTRed","vectored","linkered",
+                    "psl","sites")) {
       res <- extractFeature(sampleInfo, sector=sector, feature=metaD)[[sector]]
       
       if(is(res,"DataFrame")) {
-        res <- t(sapply(as.list(res), sapply, length))
+        res <- t(sapply(as.list(res), sapply, .uniqueLength))
         if(length(res)>0) {
           colnames(res) <- paste(metaD, colnames(res), sep=".")
           res.df <- cbind(res.df, as.data.frame(res)[res.df$SampleName,])
@@ -5919,7 +6369,7 @@ summary.simple <- function(sampleInfo) {
           res.df[,metaD] <- NA
         }
       } else {
-        res <- sapply(res, length)
+        res <- sapply(res, .uniqueLength)
         if(length(res)>0) {
           res.df[,metaD] <- res[res.df$SampleName]
         } else {
@@ -5981,9 +6431,9 @@ summary.elegant <- function(sampleInfo, samplenames=NULL) {
       
       if(decode.test) {
         totalDecoded <- if(isPaired[[sample.i]]) {
-          sapply(totalDecoded, sapply, length) 
+          sapply(totalDecoded, sapply, .uniqueLength) 
         } else { 
-          length(totalDecoded[[1]])
+          .uniqueLength(totalDecoded[[1]])
         }
         
         meta.processed <- grep("ed$", metadatalist, value=TRUE)
@@ -5995,20 +6445,20 @@ summary.elegant <- function(sampleInfo, samplenames=NULL) {
                                       feature=metadata.i)[[sector]][[1]]
           
           counts <- if(is.list(feature.i)) {
-            sapply(feature.i, length)
+            sapply(feature.i, .uniqueLength)
           } else {
-            length(feature.i)
+            .uniqueLength(feature.i)
           }
           
           if(metadata.i %in% meta.processed) {
-            cat(length(feature.i),"(",
+            cat(.uniqueLength(feature.i),"(",
                 round(100*(counts/totalDecoded),2),"%) ",
                 sep="","\n")
           } else if(metadata.i %in% meta.sites) {
             counts <- if(is.list(feature.i)) {
-              sapply(feature.i, function(x) length(unique(x$qName)))
+              sapply(feature.i, .uniqueLength)
             } else {
-              length(unique(feature.i$qName))
+              .uniqueLength(feature.i)
             }
             cat(counts,"(",
                 round(100*(counts/totalDecoded),2),"%) ",
@@ -6160,4 +6610,94 @@ getSonicAbund <- function(posID=NULL, fragLen=NULL, grouping=NULL,
   res <- merge(unique(res[,c("grouping","posID","estAbund")]), 
                counts.fragLen, all.x=TRUE)
   return(res)
+}
+
+#' Prepend name attribute of a list to DNAStringSet
+#'
+#' Given a named listed DNAStringSet object returned from \code{\link{extractSeqs}}, 
+#' the function prepends the sample name to read names.
+#'
+#' @param dnaSet output from \code{\link{extractSeqs}}
+#' @param flatten should the output be unlisted? Default is FALSE.
+#'
+#' @return listed DNAStringSet with the names attribute prepended with the 
+#' name of the list. If flatten is TRUE, then a DNAStringSet object
+#'
+#' @seealso \code{\link{extractFeature}}, \code{\link{extractSeqs}}, 
+#' \code{\link{getSectorsForSamples}}, \code{\link{write.listedDNAStringSet}}
+#'
+#' @export
+#'
+#' @examples 
+#' #addListNameToReads(sampleInfo)
+#'
+addListNameToReads <- function(dnaSet, flatten=FALSE) {
+  stopifnot(class(dnaSet) == "list")
+  
+  if(all(sapply(dnaSet, class)=="DNAStringSet")) {
+    ## this would be list of DNAStringSets ##    
+    out <- mapply(function(x, y) {
+      names(x) <- paste(y, names(x), sep="-")
+      x
+    }, dnaSet, names(dnaSet), SIMPLIFY=FALSE)
+  } else {
+    ## this would be list of lists ##
+    out <- sapply(dnaSet, function(i) {
+      mapply(function(x, y) {
+        names(x) <- paste(y, names(x), sep="-")
+        x
+      }, i, names(i), SIMPLIFY=FALSE)
+    }, simplify=FALSE)
+  }
+  
+  if(flatten) {
+    names(out) <- NULL
+    out <- do.call(c, unlist(out, use.names=FALSE))
+  }
+  
+  out
+}
+
+#' Write the information from sample information object back to disk.
+#'
+#' Given a sampleInfo object, the function will reconstruct the sequencing run
+#' folder with sector/lane files and relevant sampleInformation file. If 
+#' genomic alignment attributes were recorded, then each sample sites will be 
+#' outputted into a text file in the root of run folder.
+#'
+#' @param sampleInfo sample information SimpleList object which has been through
+#' at least \code{\link{findBarcodes}}, \code{\link{findPrimers}},
+#' \code{\link{findLTRs}}, \code{\link{findLinkers}}, 
+#' \code{\link{findIntegrations}}
+#' @param outPath path to output location. Defaults to 'SequencingFolderPath'
+#' attribute of the sampleInfo object.
+#'
+#' @return location of the exported run data
+#'
+#' @note if the run folder already exists, then the data will be overwritten!
+#'
+#' @seealso \code{\link{extractFeature}}, \code{\link{extractSeqs}}, 
+#' \code{\link{getSectorsForSamples}}
+#'
+#' @export
+#'
+#' @examples 
+#' #write.runData(sampleInfo)
+#'
+write.runData <- function(sampleInfo, outPath=NULL) {
+  .checkArgs_SEQed()
+  with(sampleInfo, {
+    ## make the run folder ##
+    if(exists(path.expand(SequencingFolderPath))) {
+      message(SequencingFolderPath, "already exists...data will be overwritten")
+    } else {
+      dir.create(SequencingFolderPath)
+    }
+    baseLoc <- path.expand(SequencingFolderPath)
+    
+    ## write the sequencing file ##
+    for(f in sectors) {
+      
+    }
+  })
 }

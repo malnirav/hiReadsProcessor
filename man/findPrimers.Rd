@@ -9,12 +9,12 @@ findPrimers(sampleInfo, alignWay = "slow", showStats = FALSE,
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from
-\code{\link{decodeByBarcode}}, which holds decoded sequences for samples
+\code{\link{findBarcodes}}, which holds decoded sequences for samples
 per sector/quadrant along with information of sample to primer associations.}
 
 \item{alignWay}{method to utilize for detecting the primers. One of
 following: "slow" (Default), or "fast". Fast, calls
-\code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vpatternMatch}} at its
+\code{\link{vpairwiseAlignSeqs}} and uses \code{\link{vmatchPattern}} at its
 core, which is less accurate with indels and mismatches but much faster.
 Slow, calls \code{\link{pairwiseAlignSeqs}} and uses
 \code{\link{pairwiseAlignment}} at its core, which is accurate with indels
@@ -39,7 +39,7 @@ the data? Default is FALSE.}
 \item{parallel2}{perform parallelization is sequence level. Default is FALSE.
 Useful in cases where each sector has only one sample with numerous sequences.}
 
-\item{...}{extra parameters to be passed to either \code{\link{vpatternMatch}}
+\item{...}{extra parameters to be passed to either \code{\link{vmatchPattern}}
 or \code{\link{pairwiseAlignment}} depending on 'alignWay' parameter.}
 }
 \value{
@@ -65,8 +65,10 @@ portion is recorded back to the object and used subsequently by
 }
 }
 \examples{
-#findPrimers(sampleInfo, showStats=TRUE)
-#findPrimers(sampleInfo, alignWay="slow", showStats=TRUE)
+\dontrun{
+findPrimers(sampleInfo, showStats=TRUE)
+findPrimers(sampleInfo, alignWay="slow", showStats=TRUE)
+}
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},

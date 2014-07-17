@@ -6,7 +6,7 @@ discrete factors}
 \usage{
 clusterSites(posID = NULL, value = NULL, grouping = NULL, psl.rd = NULL,
   weight = NULL, windowSize = 5L, byQuartile = FALSE, quartile = 0.7,
-  parallel = TRUE)
+  parallel = TRUE, sonicAbund = FALSE)
 }
 \arguments{
 \item{posID}{a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.}
@@ -36,6 +36,9 @@ threshold. Default is 0.70.}
 \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is
 registered, then a serial version is ran using \code{\link{SerialParam}}.
 Process is split by the grouping the column.}
+
+\item{sonicAbund}{calculate breakpoint abundance using
+\code{\link{getSonicAbund}}. Default is FALSE.}
 }
 \value{
 a data frame with clusteredValues and frequency shown alongside with
@@ -63,10 +66,14 @@ passed, then multihits are ignored and only unique sites are clustered. All
 multihits will be tagged as a good 'clusterTopHit'.
 }
 \examples{
-#clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), grouping=c('a','a','a','b','b','b','c'))
+clusterSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'),
+value=c(rep(1000,2),5832,1000,12324,65738,928042),
+grouping=c('a','a','a','b','b','b','c'))
 #clusterSites(grouping=test.psl.rd$grouping, psl.rd=test.psl.rd)
 }
 \seealso{
-\code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{pslToRangedObject}}
+\code{\link{findIntegrations}}, \code{\link{getIntegrationSites}},
+\code{\link{otuSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}},
+\code{\link{pslToRangedObject}}, \code{\link{getSonicAbund}}
 }
 

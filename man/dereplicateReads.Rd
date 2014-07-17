@@ -16,10 +16,12 @@ Given a DNAStringSet object, the function dereplicates reads and
 adds counts=X to the definition line to indicate replication.
 }
 \examples{
-#dereplicateReads(dnaSet)
+\dontrun{
+dereplicateReads(dnaSet)
+}
 }
 \seealso{
 \code{\link{replicateReads}}, \code{\link{removeReadsWithNs}},
-\code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+\code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 }
 

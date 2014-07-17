@@ -22,11 +22,13 @@ pairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL, side = "left",
 
 \item{doRC}{perform reverse complement search of the defined pattern. Default is TRUE.}
 
-\item{returnUnmatched}{return sequences which had no or less than 5\% match to the patternSeq. Default is FALSE.}
+\item{returnUnmatched}{return sequences which had no or less than 5\% match
+to the patternSeq. Default is FALSE.}
 
-\item{returnLowScored}{return sequences which had quality score less than the defined qualityThreshold. Default is FALSE.}
+\item{returnLowScored}{return sequences which had quality score less than
+the defined qualityThreshold. Default is FALSE.}
 
-\item{parallel}{use BiocParallel backend to perform calculation with
+\item{parallel}{use parallel backend to perform calculation with
 \code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is
 registered, then a serial version is ran using \code{\link{SerialParam}}.}
 
@@ -35,7 +37,10 @@ registered, then a serial version is ran using \code{\link{SerialParam}}.}
 \value{
 \itemize{
  \item IRanges object with starts, stops, and names of the aligned sequences.
- \item If returnLowScored or returnUnmatched = T, then a CompressedIRangesList where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed to match qualityThreshold hits, and x[["Absent"]] has the hits where the aligned bit is <=10\% match to the patternSeq.
+ \item If returnLowScored or returnUnmatched = T, then a CompressedIRangesList
+ where x[["hits"]] has the good scoring hits, x[["Rejected"]] has the failed
+ to match qualityThreshold hits, and x[["Absent"]] has the hits where the
+ aligned bit is <=10\% match to the patternSeq.
 }
 }
 \description{
@@ -43,9 +48,16 @@ Align a fixed length short pattern sequence (i.e. primers or adaptors) to subjec
 }
 \note{
 \itemize{
- \item For qualityThreshold, the alignment score is calculated by (matches*2)-(mismatches+gaps) which programatically translates to round(nchar(patternSeq)*qualityThreshold)*2.
- \item Gaps and mismatches are weighed equally with value of -1 which can be overriden by defining extra parameters 'gapOpening' & 'gapExtension'.
- \item If qualityThreshold is 1, then it is a full match, if 0, then any match is accepted which is useful in searching linker sequences at 3' end. Beware, this function only searches for the pattern sequence in one orientation. If you are expecting to find the pattern in both orientation, you might be better off using BLAST/BLAT!
+ \item For qualityThreshold, the alignment score is calculated by
+ (matches*2)-(mismatches+gaps) which programatically translates to
+ round(nchar(patternSeq)*qualityThreshold)*2.
+ \item Gaps and mismatches are weighed equally with value of -1 which can
+ be overriden by defining extra parameters 'gapOpening' & 'gapExtension'.
+ \item If qualityThreshold is 1, then it is a full match, if 0, then any
+ match is accepted which is useful in searching linker sequences at 3' end.
+ Beware, this function only searches for the pattern sequence in one
+ orientation. If you are expecting to find the pattern in both orientation,
+ you might be better off using BLAST/BLAT!
  \item If parallel=TRUE, then be sure to have a parallel backend registered
  before running the function. One can use any of the following
  \code{\link{MulticoreParam}} \code{\link{SnowParam}}
@@ -61,6 +73,8 @@ pairwiseAlignSeqs(subjectSeqs, "AAATAATAAA", showStats=TRUE,
 qualityThreshold=0.5)
 }
 \seealso{
-\code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
+\code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+\code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}},
+\code{\link{findAndRemoveVector}}
 }
 

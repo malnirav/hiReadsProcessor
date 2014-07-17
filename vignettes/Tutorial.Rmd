@@ -1,0 +1,85 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{Using hiReadsProcessor}
+
+## Introduction
+`hiReadsProcessor` contains set of functions which allow users to process LM-PCR products sequenced using any platform. Given an excel/txt file containing parameters for demultiplexing and sample metadata, the functions in here automate trimming of adaptors, remove any vector sequence, and identify host genomic location. In addition, if INSPIR&D MySQL database is setup, the sequence attrition is loaded into respective tables for post processing setup and analysis.
+
+Below are few simple steps to get you started.
+
+## Quick *hiReadsProcessor* tutorial.
+
+### Step 1: Loading the tools
+First load this package and the parallel backend of choice from `BiocParallel` library. Although `BiocParallel` is imported internally and will invoke `multicore` like functionality, you may have to load it to invoke `snow` like functionality.
+```{r}
+library(hiReadsProcessor)
+```
+
+### Step 2: Processing the data
+The package comes with example 454 sequencing run: `FLX_sample_run`. In the rest of this tutorial we will use this dataset to 
+
+```{r}
+```
+
+## Detailed *hiReadsProcessor* tutorial.
+
+### Sequencing Run related functions
+read.SeqFolder
+read.sampleInfo
+read.seqsFromSector
+findBarcodes|decodeByBarcode
+findPrimers
+findLTRs
+findVector
+findLinkers
+troubleshootLinkers
+write.runData
+
+### Reads related functions
+splitByBarcode
+dereplicateReads
+replicateReads
+splitSeqsToFiles
+write.listedDNAStringSet
+trimSeqs
+removeReadsWithNs
+
+### Alignment functions
+startgfServer
+stopgfServer
+blatSeqs
+blatListedSet
+subreadAlignSeqs
+vpairwiseAlignSeqs
+pairwiseAlignSeqs
+primerIDAlignSeqs
+
+### Alignment related functions
+read.psl
+write.psl
+read.blast8
+read.BAMasPSL
+pairUpAlignments
+
+### Integration Site functions
+findIntegrations
+getIntegrationSites
+clusterSites
+getSonicAbund
+isuSites
+otuSites
+otuSites2
+crossOverCheck
+
+### Utility functions
+findAndTrimSeq
+summary.elegant
+summary.simple
+pslToRangedObject
+pslCols
+getSectorsForSamples
+extractSeqs
+extractFeature
+doRCtest
+chunkize
+addFeature
+addListNameToReads

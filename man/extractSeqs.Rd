@@ -5,7 +5,7 @@
 \usage{
 extractSeqs(sampleInfo, sector = NULL, samplename = NULL,
   feature = "genomic", trim = TRUE, minReadLength = 1,
-  sideReturn = NULL, pairReturn = "both")
+  sideReturn = NULL, pairReturn = "both", strict = FALSE)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object, which samples per
@@ -28,7 +28,7 @@ which are primed, LTRed, linkered, and !linkered. The genomicLinkered is same
 as genomic minus the !linkered. When feature is decoded, it includes
 everything that demultiplexed. The '!' in front of a feature extracts the
 inverse. One can only get unDecoded sequences if returnUnmatched was TRUE in
-\code{\link{decodeByBarcode}}. If \code{\link{findVector}} was run and
+\code{\link{findBarcodes}}. If \code{\link{findVector}} was run and
 "vectored" feature was found in the sampleInfo object, then genomic &
 genomicLinkered output will have vectored reads removed.}
 
@@ -44,6 +44,12 @@ apply to features: decoded, genomic or genomicLinkered.}
 \item{pairReturn}{if the data is paired end, then from which pair to return
 the feature. Options are "pair1", "pair2", or defaults to "both". Ignored if
 data is single end.}
+
+\item{strict}{this option is used when feature is either 'genomic' or
+'genomicLinkered'. When a sample has no LTRed reads, primer ends are used as
+starting points by default to extract the genomic part. Enabling this option
+will strictly ensure that only reads with primer and LTR are trimmed for the
+'genomic' or 'genomicLinkered' feature. Default is FALSE.}
 }
 \value{
 a listed DNAStringSet object structed by sector then sample.
@@ -56,7 +62,7 @@ feature.
 }
 \examples{
 #extractSeqs(sampleInfo)
-#extractSeqs(sampleInfo,feature="primed")
+#extractSeqs(sampleInfo, feature="primed")
 }
 \seealso{
 \code{\link{findPrimers}}, \code{\link{findLTRs}},

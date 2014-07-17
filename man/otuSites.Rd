@@ -16,6 +16,11 @@ which to pool the rows (i.e. samplenames). Default is NULL.}
 
 \item{psl.rd}{a GRanges object returned from \code{\link{clusterSites}}.
 Default is NULL.}
+
+\item{parallel}{use parallel backend to perform calculation with
+\code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is
+registered, then a serial version is ran using \code{\link{SerialParam}}.
+Process is split by the grouping the column.}
 }
 \value{
 a data frame with posID, readID, grouping, and otuID. If psl.rd parameter is defined, then a GRanges object where object is first filtered by clusterTopHit column and the otuID column appended at the end.
@@ -27,8 +32,11 @@ Given a group of discrete positions per read/clone, the function tries to yield 
 The algorithm for making OTUs of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same OTU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same OTU ID to all readIDs sharing 1 or more positions.
 }
 \examples{
-#otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#otuSites(psl.rd=test.psl.rd)
+\dontrun{
+otuSites(posID=c('chr1-1000','chr1-1000','chr2-1000','chr2+1000','chr15-1000','chr16-1000','chr11-1000'), readID=paste('read',sample(letters,7),sep='-'),
+grouping=c('a','a','a','b','b','b','c'))
+otuSites(psl.rd=test.psl.rd)
+}
 }
 \seealso{
 \code{\link{clusterSites}}, \code{\link{otuSites2}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}

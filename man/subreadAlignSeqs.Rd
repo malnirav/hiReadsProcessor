@@ -5,8 +5,7 @@
 \usage{
 subreadAlignSeqs(query = NULL, subject = NULL, outputfile = "allhits",
   subreadParameters = c(nsubreads = 15, nBestLocations = 10, nthreads = 4,
-  indels = 10, unique = "FALSE", reportFusions = "TRUE", tieBreakHamming =
-  "FALSE"))
+  indels = 10, unique = "FALSE", tieBreakHamming = "FALSE"))
 }
 \arguments{
 \item{query}{an object of DNAStringSet, a character vector of filename(s),
@@ -22,10 +21,10 @@ See basename parameter in \code{\link{buildindex}}}
 Extension '.bam' will be appended to this.}
 
 \item{subreadParameters}{a character vector of alignment options to be
-passed to \code{\link{Rsubread::align}}. Parameters with following names will
+passed to \code{\link{align}}. Parameters with following names will
 be silently ignored: index, readfile1, readfile2, input_format,output_format,
 output_file. Default is: c(nsubreads=15, nBestLocations=10, nthreads=4,
-indels=10, unique="FALSE", reportFusions="TRUE", tieBreakHamming="FALSE")}
+indels=10, unique="FALSE", tieBreakHamming="FALSE")}
 }
 \value{
 name of the BAM file holding the hits. If parameters 'reportFusions'
@@ -38,12 +37,13 @@ Align batch of sequences using Subread against an indexed reference genome.
 Paired end reads are aligned independently and the validity of hits/pairs is
 evaluated within \code{\link{getIntegrationSites}} once the data is read in
 by \code{\link{read.BAMasPSL}}. The workhorse function doing the alignment is
-\code{\link{Rsubread::align}}.
+\code{\link{align}}.
 }
 \examples{
 \dontrun{
 indexPath <- "/usr/local/genomeIndexes/subread/hg18/hg18.subreads.index"
-buildindex(basename=indexPath, reference="/usr/local/genomeIndexes/hg18.fa", memory=4000, TH_subread=1000)
+buildindex(basename=indexPath, reference="/usr/local/genomeIndexes/hg18.fa",
+memory=4000, TH_subread=1000)
 subreadAlignSeqs(dnaSeqs, indexPath, "results")
 subreadAlignSeqs("mySeqs.fa", indexPath, "mySeqs")
 subreadAlignSeqs("my.*.fa", indexPath)
@@ -53,6 +53,6 @@ subreadAlignSeqs("my.*.fa", indexPath)
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
 \code{\link{blatSeqs}}, \code{\link{read.psl}}, \code{\link{read.BAMasPSL}},
 \code{\link{read.blast8}}, \code{\link{splitSeqsToFiles}},
-\code{\link{Rsubread::align}}
+\code{\link{align}}
 }
 

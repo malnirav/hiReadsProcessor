@@ -21,14 +21,16 @@ splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL, showStats = FALSE,
 DNAStringSet object split by sample name found in barcodesSample.
 }
 \description{
-Given a character vector of barcodes/MID to sample association and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{decodeByBarcode}} or \code{\link{findBarcodes}}
+Given a character vector of barcodes/MID to sample association and a DNAStringSet object, the function splits/demultiplexes the DNAStringSet object by first few bases dictated by length of barcodes/MID supplied. This is an accessory function used by \code{\link{findBarcodes}}
 }
 \examples{
-#splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet,
+\dontrun{
+splitByBarcode(c("ACATCCAT"="Sample1", "GAATGGAT"="Sample2"), dnaSet,
 showStats=TRUE, returnUnmatched=TRUE)
 }
+}
 \seealso{
-\code{\link{decodeByBarcode}}, \code{\link{dereplicateReads}},
+\code{\link{findBarcodes}}, \code{\link{dereplicateReads}},
 \code{\link{replicateReads}}
 }
 

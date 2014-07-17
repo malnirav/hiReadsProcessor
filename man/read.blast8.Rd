@@ -7,11 +7,14 @@ read.blast8(files = NULL, asGRanges = FALSE, removeFile = TRUE,
   parallel = FALSE)
 }
 \arguments{
-\item{files}{blast8 filename, or vector of filenames, or a pattern of files to import.}
+\item{files}{blast8 filename, or vector of filenames, or a pattern of files
+to import.}
 
-\item{asGRanges}{return a GRanges object instead of a dataframe. Default is TRUE Saves memory!}
+\item{asGRanges}{return a GRanges object instead of a dataframe.
+Default is TRUE Saves memory!}
 
-\item{removeFile}{remove the blast8 file(s) after importing. Default is FALSE.}
+\item{removeFile}{remove the blast8 file(s) after importing.
+Default is FALSE.}
 
 \item{parallel}{use parallel backend to perform calculation with
 \code{\link{BiocParallel}}. Defaults to TRUE. If no parallel backend is
@@ -21,7 +24,9 @@ registered, then a serial version is ran using \code{\link{SerialParam}}.}
 a dataframe or GRanges object reflecting blast8 file type.
 }
 \description{
-Given filename(s), the function reads the blast8 file format from BLAT as a data frame and performs basic score filtering if indicated. Any other file format will yield errors or erroneous results.
+Given filename(s), the function reads the blast8 file format from BLAT as a
+data frame and performs basic score filtering if indicated. Any other file
+format will yield errors or erroneous results.
 }
 \note{
 If parallel=TRUE, then be sure to have a parallel backend registered

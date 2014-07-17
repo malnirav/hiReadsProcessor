@@ -22,7 +22,7 @@ If returnDf=TRUE, then a dataframe of sector associated with each samplename, el
 Given a sampleInfo object, the function gets the sectors for each samplename. This is an accessory function utilized by other functions of this package to aid sector retrieval.
 }
 \examples{
-#getSectorsForSamples(sampleInfo,samplename="SampleName1")
+#getSectorsForSamples(sampleInfo, samplename="SampleName1")
 }
 \seealso{
 \code{\link{extractSeqs}}, \code{\link{extractFeature}}, \code{\link{addFeature}}

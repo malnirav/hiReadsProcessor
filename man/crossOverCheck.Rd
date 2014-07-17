@@ -8,7 +8,8 @@ crossOverCheck(posID = NULL, value = NULL, grouping = NULL,
   weight = NULL, windowSize = 1, psl.rd = NULL)
 }
 \arguments{
-\item{posID}{a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.}
+\item{posID}{a vector of groupings for the value parameter (i.e. Chr,strand).
+Required if psl.rd parameter is not defined.}
 
 \item{value}{a vector of integer locations/positions that needs to be binned,
 i.e. genomic location. Required if psl.rd parameter is not defined.}
@@ -38,8 +39,12 @@ position is filtered out from all the groups. The main use of this function
 is to remove crossover sites from different samples in the data.
 }
 \examples{
-#crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042), grouping=c('a','a','b','b','b','b','c','c'))
-#crossOverCheck(psl.rd=test.psl.rd)
+\dontrun{
+crossOverCheck(posID=c('chr1-','chr1-','chr1-','chr1-','chr2+','chr15-','
+chr16-','chr11-'), value=c(rep(1000,3),5832,1000,12324,65738,928042),
+grouping=c('a','a','b','b','b','b','c','c'))
+crossOverCheck(psl.rd=test.psl.rd)
+}
 }
 \seealso{
 \code{\link{clusterSites}}, \code{\link{otuSites}},

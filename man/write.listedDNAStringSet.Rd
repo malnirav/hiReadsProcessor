@@ -9,11 +9,15 @@ write.listedDNAStringSet(dnaSet, filePath = ".", filePrefix = "processed",
 \arguments{
 \item{dnaSet}{listed DNAStringSet object containing sequences to be written.}
 
-\item{filePath}{a path write the fasta files per sample. Default is current working directory.}
+\item{filePath}{a path write the fasta files per sample. Default is current
+working directory.}
 
-\item{filePrefix}{prefix the filenames with a string. Default is 'processed' followed by samplename.}
+\item{filePrefix}{prefix the filenames with a string. Default is 'processed'
+followed by samplename.}
 
-\item{prependSamplenames}{Prepend definition lines with samplenames. Default is TRUE. Make sure the dnaSet parameter is a named list where names are used as samplenames.}
+\item{prependSamplenames}{Prepend definition lines with samplenames.
+Default is TRUE. Make sure the dnaSet parameter is a named list where
+names are used as samplenames.}
 
 \item{format}{either fasta (the default) or fastq.}
 
@@ -22,12 +26,17 @@ write.listedDNAStringSet(dnaSet, filePath = ".", filePrefix = "processed",
 registered, then a serial version is ran using \code{\link{SerialParam}}.}
 }
 \description{
-Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the function writes a fasta file for each sample as defined in filePath parameter.
+Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the
+function writes a fasta file for each sample as defined in filePath parameter.
 }
 \note{
 \itemize{
-  \item Writing of the files is done using \code{\link{writeXStringSet}} with parameter append=TRUE. This is to aggregate reads from a sample which might be present in more than one sector.
-  \item If data is paired end, then each pair will be written separately with designations in the filename as well as in the definition line as (at)pairX(at) appended at the end.
+  \item Writing of the files is done using \code{\link{writeXStringSet}}
+  with parameter append=TRUE. This is to aggregate reads from a sample
+  which might be present in more than one sector.
+  \item If data is paired end, then each pair will be written separately
+  with designations in the filename as well as in the definition line as
+  (at)pairX(at) appended at the end.
   \item If parallel=TRUE, then be sure to have a parallel backend registered
   before running the function. One can use any of the following
   \code{\link{MulticoreParam}} \code{\link{SnowParam}}
@@ -37,7 +46,7 @@ Given a listed DNAStringSet object return from \code{\link{extractSeqs}}, the fu
 #write.listedDNAStringSet(dnaSet)
 }
 \seealso{
-\code{\link{decodeByBarcode}}, \code{\link{read.SeqFolder}},
-\code{\link{extractSeqs}}
+\code{\link{findBarcodes}}, \code{\link{read.SeqFolder}},
+\code{\link{extractSeqs}}, \code{\link{addListNameToReads}}
 }
 

@@ -36,10 +36,17 @@ Given a group of values or genomic positions per read/clone, the function tries 
 The algorithm for making isus of sites is as follows: for each readID check how many positions are there. Separate readIDs with only position from the rest. Check if any readIDs with >1 position match to any readIDs with only one position. If there is a match, then assign both readIDs with the same ISU ID. Check if any positions from readIDs with >1 position match any other readIDs with >1 position. If yes, then assign same ISU ID to all readIDs sharing 1 or more positions.
 }
 \examples{
-#isuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), value=c(rep(1000,2),5832,1000,12324,65738,928042), readID=paste('read',sample(letters,7),sep='-'), grouping=c('a','a','a','b','b','b','c'))
-#isuSites2(psl.rd=test.psl.rd)
+\dontrun{
+isuSites2(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'),
+value=c(rep(1000,2),5832,1000,12324,65738,928042),
+readID=paste('read',sample(letters,7),sep='-'),
+grouping=c('a','a','a','b','b','b','c'))
+isuSites2(psl.rd=test.psl.rd)
+}
 }
 \seealso{
-\code{\link{clusterSites}}, \code{\link{isuSites}}, \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
+\code{\link{clusterSites}}, \code{\link{isuSites}},
+\code{\link{crossOverCheck}}, \code{\link{findIntegrations}},
+\code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 }
 

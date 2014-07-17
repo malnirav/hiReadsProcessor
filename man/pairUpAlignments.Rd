@@ -31,7 +31,7 @@ pair up reads where the qName column ends with "atpersand pairname atpersand"
 which is outputted by \code{\link{extractSeqs}}.
 }
 \examples{
-#pairUpAlignments()
+#pairUpAlignments(psl.rd)
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}},

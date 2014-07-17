@@ -47,7 +47,9 @@ using 'vectorFile' metadata supplied in the sample information file in
 }
 }
 \examples{
-#findVector(sampleInfo, showStats=TRUE)
+\dontrun{
+findVector(sampleInfo, showStats=TRUE)
+}
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{blatSeqs}},

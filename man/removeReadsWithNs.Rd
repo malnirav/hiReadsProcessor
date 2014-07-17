@@ -19,10 +19,12 @@ DNAStringSet object.
 Given a DNAStringSet object, the function removes any reads that has either repeating or total Ns which is greater than to maxNs threshold
 }
 \examples{
-#removeReadsWithNs(dnaSet)
+\dontrun{
+removeReadsWithNs(dnaSet)
+}
 }
 \seealso{
 \code{\link{dereplicateReads}}, \code{\link{replicateReads}},
-\code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+\code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 }
 

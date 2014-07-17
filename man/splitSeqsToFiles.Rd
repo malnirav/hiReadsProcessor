@@ -13,7 +13,8 @@ splitSeqsToFiles(x, totalFiles = 4, suffix = "tempy",
 
 \item{suffix}{a word to add to each file created. Default is "tempy".}
 
-\item{filename}{name of the file if x is a DNAStringSet object. Default is "queryFile.fa".}
+\item{filename}{name of the file if x is a DNAStringSet object.
+Default is "queryFile.fa".}
 }
 \value{
 a vector of filename names created.

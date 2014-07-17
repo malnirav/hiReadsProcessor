@@ -65,7 +65,9 @@ aligned have primerID in it or not.
 }
 }
 \examples{
-#findLinkers(sampleInfo,showStats=TRUE)
+\dontrun{
+findLinkers(sampleInfo, showStats=TRUE)
+}
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},

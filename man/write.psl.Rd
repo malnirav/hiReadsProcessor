@@ -13,7 +13,8 @@ write.psl(x, filename = "out.psl", header = FALSE,
 
 \item{header}{include PSL header line. Default is FALSE.}
 
-\item{includeOtherCols}{nclude other non PSL specific columns from x in the output. Default is FALSE.}
+\item{includeOtherCols}{nclude other non PSL specific columns from x in
+the output. Default is FALSE.}
 }
 \value{
 name of the output PSL file

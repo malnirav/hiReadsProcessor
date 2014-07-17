@@ -61,7 +61,9 @@ perform the trimming. This function heavily relies on
 }
 }
 \examples{
-#findLTRs(sampleInfo,showStats=TRUE)
+\dontrun{
+findLTRs(sampleInfo, showStats=TRUE)
+}
 }
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},

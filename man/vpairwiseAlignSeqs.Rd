@@ -22,7 +22,7 @@ vpairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL, side = "left",
 
 \item{doRC}{perform reverse complement search of the defined pattern. Default is TRUE.}
 
-\item{parallel}{use BiocParallel backend to perform calculation with
+\item{parallel}{use parallel backend to perform calculation with
 \code{\link{BiocParallel}}. Defaults to FALSE. If no parallel backend is
 registered, then a serial version is ran using \code{\link{SerialParam}}.}
 
@@ -45,10 +45,15 @@ Align a fixed length short pattern sequence to subject sequences using \code{\li
 }
 }
 \examples{
-#vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
-#vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold=0.5)
+\dontrun{
+vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
+vpairwiseAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE,
+qualityThreshold=0.5)
+}
 }
 \seealso{
-\code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}
+\code{\link{pairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}},
+\code{\link{doRCtest}}, \code{\link{findAndTrimSeq}}, \code{\link{blatSeqs}},
+\code{\link{findAndRemoveVector}}
 }
 

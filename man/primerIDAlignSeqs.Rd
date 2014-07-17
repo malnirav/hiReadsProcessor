@@ -48,8 +48,11 @@ Align a fixed length short pattern sequence containing primerID to variable leng
 }
 }
 \examples{
-#primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
-#primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE, qualityThreshold1=0.5)
+\dontrun{
+primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE)
+primerIDAlignSeqs(subjectSeqs, patternSeq, showStats=TRUE,
+qualityThreshold1=0.5)
+}
 }
 \seealso{
 \code{\link{vpairwiseAlignSeqs}}, \code{\link{pairwiseAlignSeqs}}, \code{\link{doRCtest}}, \code{\link{blatSeqs}}, \code{\link{findAndRemoveVector}}

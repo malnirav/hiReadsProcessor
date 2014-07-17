@@ -18,10 +18,12 @@ Given a DNAStringSet object, the function replicates reads using counts=X
 marker at the end of definition line.
 }
 \examples{
-#replicateReads(decoded)
+\dontrun{
+replicateReads(decoded)
+}
 }
 \seealso{
 \code{\link{dereplicateReads}}, \code{\link{removeReadsWithNs}},
-\code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+\code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 }
 

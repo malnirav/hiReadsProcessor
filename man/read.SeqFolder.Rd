@@ -4,34 +4,53 @@
 \title{Read contents of a sequencing folder and make a SimpleList object}
 \usage{
 read.SeqFolder(sequencingFolderPath = NULL, sampleInfoFilePath = NULL,
-  seqfilePattern = "\\\\.TCA.454Reads.fna$", interactive = TRUE)
+  seqfilePattern = NULL, interactive = TRUE)
 }
 \arguments{
 \item{sequencingFolderPath}{full or relative path to the sequencing folder}
 
-\item{sampleInfoFilePath}{full or relative path to the sample information file, which holds samples to quadrant/lane associations along with other metadata required to trim sequences or process it. Default to NULL, where the function tries to find xls or tab deliminated txt file in the sequencing folder which sounds similar to 'sampleinfo' and present you with choices of file to select from.}
+\item{sampleInfoFilePath}{full or relative path to the sample information
+file, which holds samples to quadrant/lane associations along with other
+metadata required to trim sequences or process it. Default to NULL, where
+the function tries to find xls or tab deliminated txt file in the sequencing
+folder which sounds similar to 'sampleinfo' and present you with choices of
+file to select from.}
 
-\item{seqfilePattern}{regex to describe sequence file endings. See examples. Default is "\\.TCA.454Reads.fna$".}
+\item{seqfilePattern}{regex/string to describe sequence file endings.
+See examples. Default is NULL.}
 
-\item{interactive}{whether to prompt each time the function encounters an issue or use the defaults. Default is TRUE.}
+\item{interactive}{whether to prompt each time the function encounters an
+issue or use the defaults. Default is TRUE.}
 }
 \value{
-a SimpleList list which is used by other functions to process and decode the data.
+a SimpleList list which is used by other functions to process and
+decode the data.
 }
 \description{
-Given a sequencing folder path, sample information file path, and sequence file extension pattern, the function returns a list of variables required to process the data. The function also calls \code{\link{read.sampleInfo}} which reads in sample processing metadata and formats it if needed.
+Given a sequencing folder path, sample information file path, and sequence
+file extension pattern, the function returns a list of variables required to
+process the data. The function also calls \code{\link{read.sampleInfo}}
+which reads in sample processing metadata and formats it if needed.
 }
 \note{
 \itemize{
-  \item One must make sure that each sequencing file has sector name/number prefixed at the beginning, else \code{\link{decodeByBarcode}} will fail trying to find the filename.
-  \item For paired end Illumina runs, make sure the filenames include R1, R2, and I1 somewhere in the name denoting pair1, pair2, and index/barcode reads, respectively.
+  \item One must make sure that each sequencing file has sector name/number
+  prefixed at the beginning, else \code{\link{findBarcodes}} will fail trying
+  to find the filename.
+  \item For paired end Illumina runs, make sure the filenames include R1, R2,
+  and I1 somewhere in the name denoting pair1, pair2, and index/barcode
+  reads, respectively.
 }
 }
 \examples{
-#read.SeqFolder("~/Downloads/454Runs/2011_07_22", seqfilePattern=".+fna$")
-#read.SeqFolder(".", seqfilePattern=".+fastq$")
+\dontrun{
+read.SeqFolder("~/Downloads/454Runs/2011_07_22", seqfilePattern=".+fna$")
+read.SeqFolder(".", seqfilePattern="\\\\.TCA.454Reads.fna$")
+read.SeqFolder(".", seqfilePattern=".+fastq$")
+}
 }
 \seealso{
-\code{\link{read.sampleInfo}}, \code{\link{decodeByBarcode}}, \code{\link{splitByBarcode}}
+\code{\link{read.sampleInfo}}, \code{\link{findBarcodes}},
+\code{\link{splitByBarcode}}
 }
 

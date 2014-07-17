@@ -22,9 +22,12 @@ a list or list of lists depending upon which parameters were supplied.
 Given a sampleInfo object, the function extracts a defined feature(s) for given sample or sector.
 }
 \examples{
-#extractFeature(sampleInfo,feature="primed")
+#extractFeature(sampleInfo, feature="primed")
 }
 \seealso{
-\code{\link{addFeature}}, \code{\link{findPrimers}}, \code{\link{findLTRs}}, \code{\link{findLinkers}}, \code{\link{extractSeqs}}, \code{\link{trimSeqs}}, \code{\link{getSectorsForSamples}}
+\code{\link{addFeature}}, \code{\link{findPrimers}},
+ \code{\link{findLTRs}}, \code{\link{findLinkers}},
+ \code{\link{extractSeqs}}, \code{\link{trimSeqs}},
+ \code{\link{getSectorsForSamples}}
 }
 

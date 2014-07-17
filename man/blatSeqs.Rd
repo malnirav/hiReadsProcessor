@@ -5,7 +5,7 @@
 \usage{
 blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE,
   port = 5560, host = "localhost", parallel = TRUE, numServers = 1L,
-  gzipResults = TRUE, blatParameters = c(minIdentity = 70, minScore = 5,
+  gzipResults = TRUE, blatParameters = c(minIdentity = 90, minScore = 10,
   stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50, maxDnaHits = 10, q
   = "dna", t = "dna", out = "psl"))
 }
@@ -39,15 +39,17 @@ at specified host and port. Default is 1.}
 \item{gzipResults}{gzip the output files? Default is TRUE.}
 
 \item{blatParameters}{a character vector of options to be passed to
-gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=70,
-minScore=5, stepSize=5, tileSize=10, repMatch=112312, dots=50, maxDnaHits=10,
+gfClient/BLAT command except for 'nohead' option. Default: c(minIdentity=90,
+minScore=10, stepSize=5, tileSize=10, repMatch=112312, dots=50, maxDnaHits=10,
 q="dna", t="dna", out="psl"). Be sure to only pass parameters accepted by
 either BLAT or gfClient. For example, if repMatch or stepSize parameters are
 specified when using gfClient, then the function will simply ignore them!
-The defaults are configured to align a 19bp sequence with 70\% identity.}
+The defaults are configured to align a 19bp sequence with 90\% identity.}
 }
 \value{
-a character vector of psl filenames. Each file provided is split by number of parallel workers and with read number denoting the cut. Files are cut in smaller pieces to for the ease of read & write into a single R session.
+a character vector of psl filenames. Each file provided is split by
+number of parallel workers and with read number denoting the cut. Files are
+cut in smaller pieces to for the ease of read & write into a single R session.
 }
 \description{
 Align batch of sequences using standalone BLAT or gfServer/gfClient protocol
@@ -59,12 +61,17 @@ apriori, this function will start one using \code{\link{startgfServer}}
 and kill it using \code{\link{stopgfServer}} upon successful execution.
 }
 \examples{
-#blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
-#blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
-#blatSeqs("mySeqs.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
-#blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+\dontrun{
+blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10,
+tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
+blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+blatSeqs("mySeqs.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
+}
 }
 \seealso{
-\code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}}, \code{\link{splitSeqsToFiles}}, \code{\link{read.blast8}}
+\code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
+\code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}},
+\code{\link{splitSeqsToFiles}}, \code{\link{read.blast8}}
 }
 
