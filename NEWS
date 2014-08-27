@@ -1,0 +1,13 @@
+hiReadsProcessor News
+
+CHANGES IN 0.99.0:
+  * Added examples for almost all functions
+  * Removed Subread support
+
+CHANGES IN 0.3.35:
+  * Added annotateSites
+
+CHANGES IN 0.3.34:
+  * bug fix dereplicateReads & write.psl
+
+INITIALIZATION 0.3.33
