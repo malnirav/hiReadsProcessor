@@ -4272,7 +4272,7 @@ read.BAMasPSL <- function(bamFile=NULL, removeFile=TRUE, asGRanges=TRUE) {
                                          isMateMinusStrand = NA,
                                          isFirstMateRead = NA, 
                                          isSecondMateRead = NA,
-                                         isNotPrimaryRead = NA, 
+                                         isSecondaryAlignment = NA, 
                                          isDuplicate = NA,
                                          isNotPassingQualityControls = NA),
                         tag=c("CC", "CT", "CP", "CG"))
