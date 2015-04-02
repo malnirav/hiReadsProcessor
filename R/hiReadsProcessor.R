@@ -7,7 +7,7 @@
 #' Genomic products are further processed for QC and abundance quantification.
 #'
 #' @import Biostrings GenomicAlignments hiAnnotator BiocParallel xlsx plyr
-#' sonicLength
+#' sonicLength BiocGenerics
 #' @docType package
 #' @name hiReadsProcessor
 #' @author Nirav V Malani
@@ -4163,7 +4163,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
     },
     
     if("parallel" %in% names(formals())) { 
-      dp <- if(parallel) { bpparam() } else { SerialParam() }
+      dp <- if(parallel & .Platform$OS.type != "windows") { bpparam() } else { SerialParam() }
     },
     
     if("sampleInfo" %in% names(formals())) { 
@@ -4212,7 +4212,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath=".",
     },
 
     if("parallel" %in% names(formals())) { 
-      dp <- if(parallel) { bpparam() } else { SerialParam() }
+      dp <- if(parallel & .Platform$OS.type != "windows") { bpparam() } else { SerialParam() }
     }
   )
   

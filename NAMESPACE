@@ -56,3 +56,7 @@ import(plyr)
 import(sonicLength)
 import(xlsx)
 import(GenomicRanges)
+import(BiocGenerics)
+importFrom(rSFFreader,sread)
+importFrom(rSFFreader,readSff)
+

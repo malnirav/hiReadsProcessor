@@ -18,6 +18,8 @@ Please refer to following publications from [Bushman Lab](http://bushmanlab.org/
 First load this package and the parallel backend of choice from `BiocParallel` library. Although `BiocParallel` is imported internally and will invoke `multicore` like functionality, you may have to load it to invoke `snow` like functionality.
 ```{r, message=FALSE}
 library(hiReadsProcessor)
+## added to avoid package build failure on windows machines ##
+if(.Platform$OS.type == "windows") { register(SerialParam()) }
 ```
 
 ### Step 2: Processing the data
