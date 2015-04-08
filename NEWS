@@ -1,5 +1,9 @@
 hiReadsProcessor News
 
+CHANGES IN 1.1.3:
+  * Modified all bplapply calls
+  * Moved BiocGenerics and rSFFreader to Imports
+
 CHANGES IN 0.99.0:
   * Added examples for almost all functions
   * Removed Subread support
