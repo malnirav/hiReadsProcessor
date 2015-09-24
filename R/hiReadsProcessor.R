@@ -1,4 +1,4 @@
-#' Functions to process LM-PCR reads from 454/Illumina data.
+#' Functions to process LM-PCR reads from 454/Illumina data
 #'
 #' hiReadsProcessor contains set of functions which allow users to process 
 #' LM-PCR products sequenced using any platform. Given an excel/txt file 
@@ -475,7 +475,7 @@ replicateReads <- function(dnaSet, counts=NULL) {
     if(is.null(names(dnaSet))) {
       stop("No names attribute found in dnaSet object")
     }
-    counts <- as.numeric(sub(".+counts=(\\d+)","\\1", names(dnaSet)))
+    counts <- as.numeric(sub(".+counts=(\\d+).*","\\1", names(dnaSet)))
     if(all(is.na(counts))) {
       stop("No counts=X marker found at the end of definition line or ",
            "names attribute in dnaSet object")
