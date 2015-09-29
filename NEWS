@@ -1,6 +1,6 @@
 hiReadsProcessor News
 
-CHANGES IN 1.1.4:
+CHANGES IN 1.4.0:
   * Using dplyr for small computations
 
 CHANGES IN 1.1.3:
