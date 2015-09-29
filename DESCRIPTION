@@ -12,11 +12,11 @@ Description: hiReadsProcessor contains set of functions which allow
         Genomic products are further processed for QC and abundance
         quantification.
 Depends: Biostrings, GenomicAlignments, xlsx, BiocParallel,
-        hiAnnotator, R (>= 3.0)
-Imports: sonicLength, plyr, GenomicRanges, BiocGenerics, rSFFreader
+         hiAnnotator, R (>= 3.0)
+Imports: sonicLength, dplyr, GenomicRanges, BiocGenerics, rSFFreader
 License: GPL-3
 VignetteBuilder: knitr
 Suggests: knitr, testthat
 biocViews: Sequencing, Preprocessing
 LazyLoad: yes
-SystemRequirements: BLAT, JRE, UCSC hg18 in 2bit format for BLAT
+SystemRequirements: BLAT, UCSC hg18 in 2bit format for BLAT

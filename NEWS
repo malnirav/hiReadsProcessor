@@ -1,5 +1,8 @@
 hiReadsProcessor News
 
+CHANGES IN 1.1.4:
+  * Using dplyr for small computations
+
 CHANGES IN 1.1.3:
   * Modified all bplapply calls
   * Moved BiocGenerics and rSFFreader to Imports
