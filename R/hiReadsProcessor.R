@@ -5863,10 +5863,6 @@ otuSites <- function(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
   sites$posID2 <- with(sites, paste0(posID,clusteredValue))
   rm("groups","sites.clustered")
   
-  ## get unique positions per readID by grouping 
-  ## use tapply instead of ddply() or by() because it's a lot faster on 
-  ## larger datasets
-  
   counts <- with(sites, tapply(posID2, paste0(grouping,readID), 
                                function(x) {
                                  uniques <- sort(unique(x))
@@ -6269,9 +6265,9 @@ crossOverCheck <- function(posID = NULL, value = NULL, grouping = NULL,
     res$sgroup <- mcols(sites.gr)$grouping[res$subjectHits]
     res$qfreq <- mcols(sites.gr)$freq[res$queryHits]
     res$sfreq <- mcols(sites.gr)$freq[res$subjectHits]
-    res <- ddply(res, .(queryHits), summarize, 
-                 FoundIn=paste(sort(unique(c(qgroup,sgroup))),collapse=","),
-                 isBest=all(qfreq>sfreq))
+    res <- res %>% group_by(queryHits) %>%
+      summarise(FoundIn=paste(sort(unique(c(qgroup,sgroup))),collapse=","),
+                isBest=all(qfreq>sfreq))
     sites$isCrossover[subset(res,!isBest)$queryHits] <- TRUE  
     sites$FoundIn[res$queryHits] <- res$FoundIn
     sites$Candidate[res$queryHits] <- TRUE
