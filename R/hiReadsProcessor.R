@@ -5041,29 +5041,29 @@ read.psl <- function(pslFile = NULL, bestScoring = TRUE, asGRanges = FALSE,
   ## setup psl columns + classes
   cols <- pslCols()
   
-  hits <- bplapply(files, function(x) {
+  hits <- mclapply(files, function(x) {
     
     message(x)
     ## add extra fields incase pslx format ##
     ncol <- max(count.fields(x, sep = "\t"))
-    if (ncol > length(cols)) {
-      for (f in 1:(ncol - length(cols))) {
+    if(ncol > length(cols)) {
+      for(f in 1:(ncol - length(cols))) {
         cols[paste0("V",f)] <- "character"
       }
     }
-    hits.temp <- read.delim( x, header = FALSE, col.names = names(cols),
-                             stringsAsFactors = FALSE, colClasses = cols)
-    if (bestScoring) {
+    hits.temp <- read.delim(x, header = FALSE, col.names = names(cols),
+                            stringsAsFactors = FALSE, colClasses = cols)
+    if(bestScoring) {
       ## do round one of bestScore here to reduce file size
       hits.temp <- hits.temp %>%
         mutate(score = matches - misMatches - qBaseInsert - tBaseInsert) %>%
         group_by(qName) %>% filter(score == max(score)) %>% ungroup
     }
     hits.temp
-  }, BPPARAM=dp)  
-  hits <- unique(bind_rows(hits))
+  })  
+  hits <- bind_rows(hits) %>% unique
   
-  if(nrow(hits)==0) {
+  if(nrow(hits) == 0) {
     if(removeFile) { file.remove(pslFile) }
     stop("No hits found")
   }
@@ -5075,6 +5075,8 @@ read.psl <- function(pslFile = NULL, bestScoring = TRUE, asGRanges = FALSE,
       mutate(score = matches - misMatches - qBaseInsert - tBaseInsert) %>%
       group_by(qName) %>% filter(score == max(score)) %>% ungroup
   }
+  
+  hits <- as.data.frame(hits)
   
   if(asGRanges) {
     hits <- pslToRangedObject(hits, useTargetAsRef = TRUE)
@@ -6114,7 +6116,7 @@ isuSites <- function(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
                      psl.rd = NULL, maxgap = 5, parallel = TRUE) {
 
   res <- otuSites(posID=posID, value=value, readID=readID, grouping=grouping, 
-                   psl.rd=psl.rd, maxgap=maxgap, parallel=parallel)
+                  psl.rd=psl.rd, maxgap=maxgap, parallel=parallel)
   
   if(is(res,"GRanges") | is(res,"GAlignment")) {
     cols <- grep('otu',colnames(mcols(res)))
