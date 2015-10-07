@@ -60,7 +60,7 @@ The algorithm for making OTUs of sites is as follows:
 otuSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'),
 value=c(1000,1003,5832,1000,12324,65738,928042),
 readID=paste('read',sample(letters,7),sep='-'),
-grouping=c('a','a','a','b','b','b','c'))
+grouping=c('a','a','a','b','b','b','c'), parallel=FALSE)
 }
 \seealso{
 \code{\link{clusterSites}}, \code{\link{isuSites}},

@@ -76,7 +76,9 @@ before running the function. One can use any of the following
 \donttest{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
-findIntegrations(seqProps, genomeIndices=c("hg18"="/usr/local/genomeIndexes/hg18.noRandom.2bit"), numServers=2)
+findIntegrations(seqProps,
+genomeIndices=c("hg18"="/usr/local/genomeIndexes/hg18.noRandom.2bit"),
+numServers=2)
 }
 }
 \seealso{

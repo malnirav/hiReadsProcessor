@@ -2538,7 +2538,9 @@ findVector <- function(sampleInfo, showStats = FALSE, parallel = TRUE,
 #' \donttest{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
-#' findIntegrations(seqProps, genomeIndices=c("hg18"="/usr/local/genomeIndexes/hg18.noRandom.2bit"), numServers=2)
+#' findIntegrations(seqProps, 
+#' genomeIndices=c("hg18"="/usr/local/genomeIndexes/hg18.noRandom.2bit"), 
+#' numServers=2)
 #' }
 findIntegrations <- function(sampleInfo, seqType = NULL,
                              genomeIndices = NULL, samplenames = NULL,
@@ -5024,11 +5026,11 @@ pslCols <- function(withClass = TRUE) {
 #' @export
 #'
 #' @examples 
+#' \dontrun{
 #' data(psl)
 #' pslFile <- tempfile()
 #' write.psl(psl, filename = pslFile)
 #' head(read.psl(pslFile=pslFile))
-#' \dontrun{
 #' # read many PSL files matching the regex #
 #' psl <- read.psl(pslFile="processed.*.psl$")
 #' }
@@ -5791,7 +5793,7 @@ clusterSites <- function(posID = NULL, value = NULL, grouping = NULL,
 #' otuSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), 
 #' value=c(1000,1003,5832,1000,12324,65738,928042), 
 #' readID=paste('read',sample(letters,7),sep='-'), 
-#' grouping=c('a','a','a','b','b','b','c'))
+#' grouping=c('a','a','a','b','b','b','c'), parallel=FALSE)
 otuSites <- function(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
                      psl.rd = NULL, maxgap = 5, parallel = TRUE) {
   clusteredValue <- dp <- NULL
@@ -6111,7 +6113,7 @@ otuSites <- function(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
 #' isuSites(posID=c('chr1-','chr1-','chr1-','chr2+','chr15-','chr16-','chr11-'), 
 #' value=c(rep(1000,2),5832,1000,12324,65738,928042), 
 #' readID=paste('read',sample(letters,7),sep='-'), 
-#' grouping=c('a','a','a','b','b','b','c'))
+#' grouping=c('a','a','a','b','b','b','c'), parallel=FALSE)
 isuSites <- function(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
                      psl.rd = NULL, maxgap = 5, parallel = TRUE) {
 

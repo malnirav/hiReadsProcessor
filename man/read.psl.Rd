@@ -41,11 +41,11 @@ before running the function. One can use any of the following
 \code{\link{MulticoreParam}} \code{\link{SnowParam}}
 }
 \examples{
+\dontrun{
 data(psl)
 pslFile <- tempfile()
 write.psl(psl, filename = pslFile)
 head(read.psl(pslFile=pslFile))
-\dontrun{
 # read many PSL files matching the regex #
 psl <- read.psl(pslFile="processed.*.psl$")
 }
