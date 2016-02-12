@@ -1,7 +1,7 @@
 Package: hiReadsProcessor
 Title: Functions to process LM-PCR reads from 454/Illumina data
-Version: 1.7.0
-Date: 2015-09-30
+Version: 1.7.1
+Date: 2016-02-11
 Author: Nirav V Malani <malnirav@gmail.com>
 Maintainer: Nirav V Malani <malnirav@gmail.com>
 Description: hiReadsProcessor contains set of functions which allow
@@ -13,7 +13,8 @@ Description: hiReadsProcessor contains set of functions which allow
         quantification.
 Depends: Biostrings, GenomicAlignments, xlsx, BiocParallel,
          hiAnnotator, R (>= 3.0)
-Imports: sonicLength, dplyr, GenomicRanges, BiocGenerics, rSFFreader
+Imports: sonicLength, dplyr, BiocGenerics, GenomicRanges (>= 1.23.16),
+        rSFFreader
 License: GPL-3
 VignetteBuilder: knitr
 Suggests: knitr, testthat
