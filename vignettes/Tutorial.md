@@ -37,20 +37,22 @@ list.files(runData, recursive  = TRUE)
 ```
 
 ```
-## [1] "RunData/1.TCA.454Reads.fna.gz" "RunData/2.TCA.454Reads.fna.gz"
-## [3] "RunData/3.TCA.454Reads.fna.gz" "Vectors/HIV1.fa"              
-## [5] "Vectors/MLV-vector.fa"         "sampleInfo.xls"
+## [1] "RunData/1.TCA.454Reads.fna"    "RunData/1.TCA.454Reads.fna.gz"
+## [3] "RunData/2.TCA.454Reads.fna"    "RunData/2.TCA.454Reads.fna.gz"
+## [5] "RunData/3.TCA.454Reads.fna"    "RunData/3.TCA.454Reads.fna.gz"
+## [7] "Vectors/HIV1.fa"               "Vectors/MLV-vector.fa"        
+## [9] "sampleInfo.xlsx"
 ```
 
 Function `read.SeqFolder` will initiate a `SimpleList` sample information object which will hold everything regarding the sequencing run. The object is structured to store sequencing file paths, sequence data, processed data as well as sample metadata. The function finds the required file needed to ease the automation process. It is important that somewhere in the sequencing folder there is a file called "sampleInfo" else object initialization will fail.
 
 
 ```r
-seqProps <- read.SeqFolder(runData, seqfilePattern=".+fna.gz$")
+seqProps <- read.SeqFolder(runData, seqfilePattern = ".+fna.gz$")
 ```
 
 ```
-## Choosing /home/microarray/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/sampleInfo.xls as sample information file.
+## Choosing /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/sampleInfo.xlsx as sample information file.
 ```
 
 ```r
@@ -80,13 +82,19 @@ The first step of processing most sequencing run is to demultiplex reads by barc
 
 
 ```r
-seqProps <- findBarcodes(seqProps, sector="all", showStats=TRUE)
+seqProps <- findBarcodes(seqProps, sector = "all", showStats = TRUE)
 ```
 
 ```
 ## Decoding sector: 1
+```
+
+```
 ## Reading:
-## /home/microarray/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/1.TCA.454Reads.fna.gz
+## /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/1.TCA.454Reads.fna.gz
+```
+
+```
 ## Using following schema for barcode to sample associations
 ```
 
@@ -150,6 +158,9 @@ seqProps <- findBarcodes(seqProps, sector="all", showStats=TRUE)
 
 ```
 ## Number of Sequences with no matching barcode: 196
+```
+
+```
 ## Number of Sequences decoded:
 ```
 
@@ -211,8 +222,14 @@ seqProps <- findBarcodes(seqProps, sector="all", showStats=TRUE)
 
 ```
 ## Decoding sector: 2
+```
+
+```
 ## Reading:
-## /home/microarray/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/2.TCA.454Reads.fna.gz
+## /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/2.TCA.454Reads.fna.gz
+```
+
+```
 ## Using following schema for barcode to sample associations
 ```
 
@@ -276,6 +293,9 @@ seqProps <- findBarcodes(seqProps, sector="all", showStats=TRUE)
 
 ```
 ## Number of Sequences with no matching barcode: 214
+```
+
+```
 ## Number of Sequences decoded:
 ```
 
@@ -337,8 +357,14 @@ seqProps <- findBarcodes(seqProps, sector="all", showStats=TRUE)
 
 ```
 ## Decoding sector: 3
+```
+
+```
 ## Reading:
-## /home/microarray/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/3.TCA.454Reads.fna.gz
+## /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/3.TCA.454Reads.fna.gz
+```
+
+```
 ## Using following schema for barcode to sample associations
 ```
 
@@ -352,6 +378,9 @@ seqProps <- findBarcodes(seqProps, sector="all", showStats=TRUE)
 
 ```
 ## Number of Sequences with no matching barcode: 140
+```
+
+```
 ## Number of Sequences decoded:
 ```
 
@@ -413,7 +442,7 @@ If the __vectorFile__ parameter is defined within the sample information file, f
 
 
 ```r
-seqProps <- findVector(seqProps, showStats=TRUE)
+seqProps <- findVector(seqProps, showStats = TRUE)
 ```
 
 #### Detect Linker adaptors
@@ -431,8 +460,9 @@ Once all the non-genomic parts have been detected, it is time to find the actual
 
 
 ```r
-seqProps <- findIntegrations(seqProps, 
-                             genomeIndices=c("hg18"="/usr/local/genomeIndexes/hg18.noRandom.2bit"), numServers=2)
+seqProps <- findIntegrations(seqProps,
+                             genomeIndices = c("hg18" = "/usr/local/genomeIndexes/hg18.noRandom.2bit"), 
+                             numServers = 2)
 ```
 
 #### Obtain summary
@@ -553,48 +583,42 @@ sessionInfo()
 ```
 
 ```
-## R version 3.2.2 (2015-08-14)
-## Platform: x86_64-redhat-linux-gnu (64-bit)
-## Running under: CentOS release 6.7 (Final)
+## R version 3.2.5 (2016-04-14)
+## Platform: x86_64-apple-darwin15.4.0 (64-bit)
+## Running under: OS X 10.11.4 (El Capitan)
 ## 
 ## locale:
-##  [1] LC_CTYPE=en_US.UTF-8          LC_NUMERIC=C                 
-##  [3] LC_TIME=en_US.UTF-8           LC_COLLATE=C                 
-##  [5] LC_MONETARY=en_US.UTF-8       LC_MESSAGES=en_US.UTF-8      
-##  [7] LC_PAPER=en_US.UTF-8          LC_NAME=en_US.UTF-8          
-##  [9] LC_ADDRESS=en_US.UTF-8        LC_TELEPHONE=en_US.UTF-8     
-## [11] LC_MEASUREMENT=en_US.UTF-8    LC_IDENTIFICATION=en_US.UTF-8
+## [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 ## 
 ## attached base packages:
 ## [1] stats4    parallel  stats     graphics  grDevices utils     datasets 
 ## [8] methods   base     
 ## 
 ## other attached packages:
-##  [1] hiReadsProcessor_1.1.4  hiAnnotator_1.3.2      
-##  [3] BiocParallel_1.2.21     xlsx_0.5.7             
-##  [5] xlsxjars_0.6.1          rJava_0.9-7            
-##  [7] GenomicAlignments_1.4.1 Rsamtools_1.20.4       
-##  [9] GenomicRanges_1.20.8    GenomeInfoDb_1.4.2     
-## [11] Biostrings_2.36.4       XVector_0.8.0          
-## [13] IRanges_2.2.7           S4Vectors_0.6.6        
-## [15] BiocGenerics_0.14.0    
+##  [1] hiReadsProcessor_1.9.1     hiAnnotator_1.4.0         
+##  [3] BiocParallel_1.4.3         GenomicAlignments_1.6.3   
+##  [5] Rsamtools_1.22.0           SummarizedExperiment_1.0.2
+##  [7] Biobase_2.30.0             GenomicRanges_1.22.4      
+##  [9] GenomeInfoDb_1.6.3         Biostrings_2.38.4         
+## [11] XVector_0.10.0             IRanges_2.4.8             
+## [13] S4Vectors_0.8.11           BiocGenerics_0.16.1       
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_0.12.1          formatR_1.2.1        RColorBrewer_1.1-2  
+##  [1] Rcpp_0.12.4          formatR_1.3          RColorBrewer_1.1-2  
 ##  [4] futile.logger_1.4.1  plyr_1.8.3           bitops_1.0-6        
-##  [7] futile.options_1.0.0 iterators_1.0.7      tools_3.2.2         
-## [10] zlibbioc_1.14.0      digest_0.6.8         evaluate_0.8        
-## [13] lattice_0.20-33      memoise_0.2.1        gtable_0.1.2        
-## [16] BSgenome_1.36.3      foreach_1.4.2        DBI_0.3.1           
-## [19] proto_0.3-10         knitr_1.11           hwriter_1.3.2       
-## [22] rSFFreader_0.16.0    dplyr_0.4.3          rtracklayer_1.28.10 
-## [25] stringr_1.0.0        roxygen2_4.1.1       devtools_1.9.1      
-## [28] grid_3.2.2           Biobase_2.28.0       R6_2.1.1            
-## [31] XML_3.98-1.3         latticeExtra_0.6-26  ggplot2_1.0.1       
-## [34] reshape2_1.4.1       lambda.r_1.1.7       magrittr_1.5        
-## [37] splines_3.2.2        MASS_7.3-44          scales_0.3.0        
-## [40] codetools_0.2-14     ShortRead_1.26.0     assertthat_0.1      
-## [43] colorspace_1.2-6     sonicLength_1.4.4    stringi_0.5-5       
-## [46] munsell_0.4.2        RCurl_1.95-4.7
+##  [7] futile.options_1.0.0 iterators_1.0.8      tools_3.2.5         
+## [10] zlibbioc_1.16.0      testthat_1.0.2       digest_0.6.9        
+## [13] evaluate_0.9         lattice_0.20-33      memoise_1.0.0       
+## [16] gtable_0.2.0         BSgenome_1.38.0      foreach_1.4.3       
+## [19] DBI_0.4              knitr_1.12.3         hwriter_1.3.2       
+## [22] rSFFreader_0.18.0    rtracklayer_1.30.4   withr_1.0.1         
+## [25] stringr_1.0.0        dplyr_0.4.3          roxygen2_5.0.1      
+## [28] devtools_1.11.1      grid_3.2.5           R6_2.1.2            
+## [31] readxl_0.1.1         XML_3.98-1.4         latticeExtra_0.6-28 
+## [34] ggplot2_2.1.0        lambda.r_1.1.7       magrittr_1.5        
+## [37] splines_3.2.5        scales_0.4.0         codetools_0.2-14    
+## [40] ShortRead_1.28.0     assertthat_0.1       colorspace_1.2-6    
+## [43] sonicLength_1.4.4    stringi_1.0-1        RCurl_1.95-4.8      
+## [46] munsell_0.4.3        crayon_1.3.1
 ```
 

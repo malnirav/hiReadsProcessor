@@ -1,3 +1,12 @@
+CHANGES IN 1.9.1
+-----------------------
+
+    * Using readxl to import sampleInfo excel file
+    * Minor code improvements for merging internal objects and cleaning data
+    * Removed parameter interactive in read.SeqFolder in favor of base::interactive()
+    * findOverlap calls updated to use ignoreRedundant & ignoreSelf
+    * splitSeqsToFiles receives outDir parameter
+
 CHANGES IN 1.4.0
 -----------------------
 

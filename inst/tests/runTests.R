@@ -1,5 +1,5 @@
 ## unit tests will not be done if testthat is not available
-if(require("testthat", quietly=TRUE)) {
+if(require("testthat", quietly = TRUE)) {
     library(hiReadsProcessor)
     data(FLX_seqProps)
     test_package("hiReadsProcessor")    

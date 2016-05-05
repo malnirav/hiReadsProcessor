@@ -37,7 +37,7 @@ list.files(runData, recursive  = TRUE)
 Function `read.SeqFolder` will initiate a `SimpleList` sample information object which will hold everything regarding the sequencing run. The object is structured to store sequencing file paths, sequence data, processed data as well as sample metadata. The function finds the required file needed to ease the automation process. It is important that somewhere in the sequencing folder there is a file called "sampleInfo" else object initialization will fail.
 
 ```{r}
-seqProps <- read.SeqFolder(runData, seqfilePattern=".+fna.gz$")
+seqProps <- read.SeqFolder(runData, seqfilePattern = ".+fna.gz$")
 seqProps
 ```
 
@@ -52,7 +52,7 @@ seqProps$sectors$"1"$samples
 The first step of processing most sequencing run is to demultiplex reads by barcodes/MIDs. Function `findBarcodes` automates the demultiplexing process based on already stored data from the sample information file. Please see the documentation for `read.sampleInfo` for the kinds of parameters and information held in a sample information file. An example file is supplied within the `FLX_sample_run` dataset.
 
 ```{r}
-seqProps <- findBarcodes(seqProps, sector="all", showStats=TRUE)
+seqProps <- findBarcodes(seqProps, sector = "all", showStats = TRUE)
 seqProps
 seqProps$sectors
 ```
@@ -85,7 +85,7 @@ seqProps <- findLTRs(seqProps, showStats=TRUE)
 If the __vectorFile__ parameter is defined within the sample information file, function `findVector` tags any reads which matches the given vector file. These reads are discarded during the genomic alignment step which is covered later. 
 
 ```{r, eval=FALSE}
-seqProps <- findVector(seqProps, showStats=TRUE)
+seqProps <- findVector(seqProps, showStats = TRUE)
 ```
 
 #### Detect Linker adaptors
@@ -101,8 +101,9 @@ seqProps <- findLinkers(seqProps, showStats=TRUE, doRC=TRUE)
 Once all the non-genomic parts have been detected, it is time to find the actual integration sites. Function `findIntegrations` makes this a breeze given that BLAT and indexed genome files are provided/in-place.
 
 ```{r, eval=FALSE}
-seqProps <- findIntegrations(seqProps, 
-                             genomeIndices=c("hg18"="/usr/local/genomeIndexes/hg18.noRandom.2bit"), numServers=2)
+seqProps <- findIntegrations(seqProps,
+                             genomeIndices = c("hg18" = "/usr/local/genomeIndexes/hg18.noRandom.2bit"), 
+                             numServers = 2)
 ```
 
 #### Obtain summary
