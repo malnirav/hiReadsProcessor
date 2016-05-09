@@ -269,7 +269,7 @@ read.sampleInfo <- function(sampleInfoPath = NULL, splitBySector = TRUE) {
                     'user' = Sys.getenv("USER"), 'startwithin' = 3,
                     'alignratiothreshold' = .7, 'clustersiteswithin' = 5,
                     'keepmultihits' = TRUE , 'genomicpercentidentity' = .98,
-                    'processingdate' = format(Sys.time(), "%Y-%m-%d "),
+                    'processingdate' = format(Sys.time(), "%Y-%m-%d"),
                     'pairedend' = FALSE, 'vectorFile' = '')
   
   if(grepl('.xls.?$', sampleInfoPath)) {
