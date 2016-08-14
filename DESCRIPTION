@@ -23,7 +23,8 @@ Imports:
     BiocGenerics,
     GenomicRanges,
     rSFFreader,
-    readxl
+    readxl,
+    methods
 License: GPL-3
 VignetteBuilder: knitr
 Suggests:

@@ -1,3 +1,9 @@
+CHANGES IN 1.9.3
+-----------------------
+
+    * Namespace fixes for base R packages to alleviate build errors
+    * Updated findOverlap calls to use the new drop.self & drop.redundant args
+    
 CHANGES IN 1.9.1
 -----------------------
 

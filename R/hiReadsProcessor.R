@@ -11,7 +11,10 @@
 #' @importFrom rSFFreader sread readSff
 #' @importFrom readxl read_excel
 #' @importFrom dplyr count arrange summarise rename mutate select ungroup
-#' group_by bind_rows left_join desc n %>%
+#' group_by bind_rows left_join desc n %>% contains
+#' @importFrom methods as is
+#' @importFrom stats aggregate ave filter na.omit runif
+#' @importFrom utils count.fields read.delim write.table
 #' @docType package
 #' @name hiReadsProcessor
 #' @author Nirav V Malani
@@ -5708,10 +5711,10 @@ clusterSites <- function(posID = NULL, value = NULL, grouping = NULL,
                                   IRanges(start = value, width = 1),
                                   strand = "*", freq))
       
-      # the key part is ignoreSelf=TRUE,ignoreRedundant=FALSE..
+      # the key part is drop.self=TRUE,drop.redundant=FALSE..
       # helps overwrite values at later step
-      res <- as.data.frame(as.matrix(findOverlaps(sites.gr, ignoreSelf = TRUE,
-                                                  ignoreRedundant = FALSE,
+      res <- as.data.frame(as.matrix(findOverlaps(sites.gr, drop.self = TRUE,
+                                                  drop.redundant = FALSE,
                                                   select = "all",
                                                   maxgap = windowSize))) 
       if(nrow(res) > 0) {
@@ -6024,8 +6027,8 @@ otuSites <- function(posID = NULL, value = NULL, readID = NULL, grouping = NULL,
   sites.gr <- subset(sites.gr, mcols(sites.gr)$check)
   sites.gr.list <- split(sites.gr, mcols(sites.gr)$grouping)
   sites.gr <- bplapply(sites.gr.list, function(x) {		    
-    res <- findOverlaps(x, maxgap = maxgap, ignoreSelf = TRUE,
-                        ignoreRedundant = TRUE, select = "all")
+    res <- findOverlaps(x, maxgap = maxgap, drop.self = TRUE,
+                        drop.redundant = TRUE, select = "all")
     if(length(res) > 0) {
       res <- as.data.frame(res)
       res$queryOTU <- mcols(x)$otuID[res$queryHits]
@@ -6313,8 +6316,8 @@ crossOverCheck <- function(posID = NULL, value = NULL, grouping = NULL,
   # find overlapping positions & pick the winner based on frequencies #
   sites.gr <- with(sites, GRanges(seqnames = posID, IRanges(start = value, width = 1),
                                   strand = "*", grouping, freq))
-  res <- findOverlaps(sites.gr, maxgap = windowSize, ignoreSelf = TRUE,
-                      ignoreRedundant = FALSE, select = "all")
+  res <- findOverlaps(sites.gr, maxgap = windowSize, drop.self = TRUE,
+                      drop.redundant = FALSE, select = "all")
   if(length(res) > 0) {
     res <- as.data.frame(res)
     res$qgroup <- mcols(sites.gr)$grouping[res$queryHits]
