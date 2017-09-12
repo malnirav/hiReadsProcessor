@@ -1,17 +1,41 @@
-hiReadsProcessor News
+CHANGES IN 1.9.3
+-----------------------
 
-CHANGES IN 1.1.3:
+    * Namespace fixes for base R packages to alleviate build errors
+    * Updated findOverlap calls to use the new drop.self & drop.redundant args
+    
+CHANGES IN 1.9.1
+-----------------------
+
+    * Using readxl to import sampleInfo excel file
+    * Minor code improvements for merging internal objects and cleaning data
+    * Removed parameter interactive in read.SeqFolder in favor of base::interactive()
+    * findOverlap calls updated to use ignoreRedundant & ignoreSelf
+    * splitSeqsToFiles receives outDir parameter
+
+CHANGES IN 1.4.0
+-----------------------
+
+    * Using dplyr for small computations
+
+CHANGES IN 1.1.3
+-----------------------
+
   * Modified all bplapply calls
   * Moved BiocGenerics and rSFFreader to Imports
 
-CHANGES IN 0.99.0:
+CHANGES IN 0.99.0
+-----------------------
+
   * Added examples for almost all functions
   * Removed Subread support
 
-CHANGES IN 0.3.35:
+CHANGES IN 0.3.35
+-----------------------
+
   * Added annotateSites
 
-CHANGES IN 0.3.34:
-  * bug fix dereplicateReads & write.psl
+CHANGES IN 0.3.34
+-----------------------
 
-INITIALIZATION 0.3.33
+  * Bug fix dereplicateReads & write.psl

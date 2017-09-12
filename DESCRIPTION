@@ -1,22 +1,36 @@
 Package: hiReadsProcessor
-Title: Functions to process LM-PCR reads from 454/Illumina data.
-Version: 1.3.0
-Date: 2015-04-02
+Title: Functions to process LM-PCR reads from 454/Illumina data
+Version: 1.13.0
+Date: 2016-05-05
 Author: Nirav V Malani <malnirav@gmail.com>
 Maintainer: Nirav V Malani <malnirav@gmail.com>
 Description: hiReadsProcessor contains set of functions which allow
-        users to process LM-PCR products sequenced using any platform.
-        Given an excel/txt file containing parameters for
-        demultiplexing and sample metadata, the functions automate
-        trimming of adaptors and identification of the genomic product.
-        Genomic products are further processed for QC and abundance
-        quantification.
-Depends: Biostrings, GenomicAlignments, xlsx, BiocParallel,
-        hiAnnotator, R (>= 3.0)
-Imports: sonicLength, plyr, GenomicRanges, BiocGenerics, rSFFreader
+    users to process LM-PCR products sequenced using any platform.
+    Given an excel/txt file containing parameters for
+    demultiplexing and sample metadata, the functions automate
+    trimming of adaptors and identification of the genomic product.
+    Genomic products are further processed for QC and abundance
+    quantification.
+Depends:
+    Biostrings,
+    GenomicAlignments,
+    BiocParallel,
+    hiAnnotator,
+    R (>= 3.0)
+Imports:
+    sonicLength,
+    dplyr,
+    BiocGenerics,
+    GenomicRanges,
+    rSFFreader,
+    readxl,
+    methods
 License: GPL-3
 VignetteBuilder: knitr
-Suggests: knitr, testthat
+Suggests:
+    knitr,
+    testthat
 biocViews: Sequencing, Preprocessing
 LazyLoad: yes
-SystemRequirements: BLAT, JRE, UCSC hg18 in 2bit format for BLAT
+SystemRequirements: BLAT, UCSC hg18 in 2bit format for BLAT
+RoxygenNote: 5.0.1
