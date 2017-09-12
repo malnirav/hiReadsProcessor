@@ -489,7 +489,11 @@ replicateReads <- function(dnaSet, counts = NULL) {
     if(is.null(names(dnaSet))) {
       stop("No names attribute found in dnaSet object")
     }
+<<<<<<< HEAD
     counts <- as.numeric(sub(".+counts=(\\d+)", "\\1", names(dnaSet)))
+=======
+    counts <- as.numeric(sub(".+counts=(\\d+).*","\\1", names(dnaSet)))
+>>>>>>> origin/master
     if(all(is.na(counts))) {
       warning("No counts=\\d+ marker found at the end of definition line or ",
               "names attribute in dnaSet object. Defaulting to count=1")
