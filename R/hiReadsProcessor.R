@@ -570,7 +570,7 @@ removeReadsWithNs <- function(dnaSet, maxNs = 5, consecutive = TRUE) {
 #' chunkize(DNAStringSet(x), 5)
 chunkize <- function(x, chunkSize = NULL) {
   chunks <- breakInChunks(length(x), 
-                          ifelse(!is.null(chunkSize),
+                          chunksize=ifelse(!is.null(chunkSize),
                                  length(x)/chunkSize, 
                                  ifelse(!is.null(bpworkers()), 
                                         length(x)/bpworkers(), 
