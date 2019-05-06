@@ -4,8 +4,9 @@
 \alias{findLinkers}
 \title{Find the 3' linkers and add results to SampleInfo object.}
 \usage{
-findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE,
-  samplenames = NULL, bypassChecks = FALSE, parallel2 = FALSE, ...)
+findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE,
+  parallel = TRUE, samplenames = NULL, bypassChecks = FALSE,
+  parallel2 = FALSE, ...)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -80,4 +81,3 @@ findLinkers(seqProps, showStats=TRUE, doRC=TRUE)
 \code{\link{extractSeqs}}, \code{\link{findAndTrimSeq}},
 \code{\link{findIntegrations}}
 }
-

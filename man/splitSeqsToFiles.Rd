@@ -34,4 +34,3 @@ splitSeqsToFiles(seqs, 5, "tempyQ", "myDNAseqs.fa", tempdir())
 \seealso{
 \code{\link{blatSeqs}}
 }
-

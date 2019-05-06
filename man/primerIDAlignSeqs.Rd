@@ -5,9 +5,9 @@
 \title{Align a short pattern with PrimerID to variable length target sequences.}
 \usage{
 primerIDAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
-  qualityThreshold1 = 0.75, qualityThreshold2 = 0.5, doAnchored = FALSE,
-  doRC = TRUE, returnUnmatched = FALSE, returnRejected = FALSE,
-  showStats = FALSE, ...)
+  qualityThreshold1 = 0.75, qualityThreshold2 = 0.5,
+  doAnchored = FALSE, doRC = TRUE, returnUnmatched = FALSE,
+  returnRejected = FALSE, showStats = FALSE, ...)
 }
 \arguments{
 \item{subjectSeqs}{DNAStringSet object containing sequences to be searched for the pattern.}
@@ -63,4 +63,3 @@ primerIDAlignSeqs(DNAStringSet(subjectSeqs), patternSeq, doAnchored = TRUE)
 \code{\link{doRCtest}}, \code{\link{blatSeqs}}, 
 \code{\link{findAndRemoveVector}}
 }
-

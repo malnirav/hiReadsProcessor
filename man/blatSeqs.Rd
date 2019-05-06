@@ -5,10 +5,10 @@
 \title{Align sequences using BLAT.}
 \usage{
 blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE,
-  port = 5560, host = "localhost", parallel = TRUE, numServers = 1L,
-  gzipResults = TRUE, blatParameters = c(minIdentity = 90, minScore = 10,
-  stepSize = 5, tileSize = 10, repMatch = 112312, dots = 50, maxDnaHits = 10, q
-  = "dna", t = "dna", out = "psl"))
+  port = 5560, host = "localhost", parallel = TRUE,
+  numServers = 1L, gzipResults = TRUE, blatParameters = c(minIdentity
+  = 90, minScore = 10, stepSize = 5, tileSize = 10, repMatch = 112312, dots
+  = 50, maxDnaHits = 10, q = "dna", t = "dna", out = "psl"))
 }
 \arguments{
 \item{query}{an object of DNAStringSet, a character vector of filename(s), 
@@ -76,4 +76,3 @@ blatSeqs("my.*.fa", "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)
 \code{\link{startgfServer}}, \code{\link{stopgfServer}}, \code{\link{read.psl}},
 \code{\link{splitSeqsToFiles}}, \code{\link{read.blast8}}
 }
-

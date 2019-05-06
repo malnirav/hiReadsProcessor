@@ -49,4 +49,3 @@ grouping = c('a', 'a', 'b', 'b', 'b', 'b', 'c', 'c'))
 \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, 
 \code{\link{pslToRangedObject}}
 }
-

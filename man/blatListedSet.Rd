@@ -27,4 +27,3 @@ as a GRanges object. This function heavily relies on defaults of
  \code{\link{blatSeqs}}, \code{\link{read.psl}}, 
  \code{\link{pslToRangedObject}}, \code{\link{read.blast8}}
 }
-

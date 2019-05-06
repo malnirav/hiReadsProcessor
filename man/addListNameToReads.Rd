@@ -32,4 +32,3 @@ addListNameToReads(seqs, TRUE)
 \code{\link{extractFeature}}, \code{\link{extractSeqs}}, 
 \code{\link{getSectorsForSamples}}, \code{\link{write.listedDNAStringSet}}
 }
-

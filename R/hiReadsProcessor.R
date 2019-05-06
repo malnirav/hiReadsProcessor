@@ -8,7 +8,6 @@
 #'
 #' @import BiocParallel Biostrings GenomicAlignments hiAnnotator 
 #' sonicLength BiocGenerics GenomicRanges
-#' @importFrom rSFFreader sread readSff
 #' @importFrom readxl read_excel
 #' @importFrom dplyr count arrange summarise rename mutate select ungroup
 #' group_by bind_rows left_join desc n %>% contains
@@ -86,7 +85,6 @@ NULL
 #' \dontrun{
 #' read.SeqFolder(".", seqfilePattern = "\\.TCA.454Reads.fna$")
 #' read.SeqFolder(".", seqfilePattern = ".+fastq$")
-#' read.SeqFolder(".", seqfilePattern = ".+sff$")
 #' }
 read.SeqFolder <- function(sequencingFolderPath = NULL, 
                            sampleInfoFilePath = NULL,
@@ -3914,11 +3912,11 @@ getSectorsForSamples <- function(sampleInfo, sector = NULL, samplename = NULL,
   }
 }
 
-#' Read fasta/fastq/sff given the path or sampleInfo object.
+#' Read fasta/fastq given the path or sampleInfo object.
 #'
 #' Given a sequence reads file path, the function returns a DNAStringSet object.
 #'
-#' @param seqFilePath a path to fasta/fastq/sff reads file or a sampleInfo 
+#' @param seqFilePath a path to fasta/fastq reads file or a sampleInfo 
 #' object returned by \code{\link{read.SeqFolder}}
 #' @param sector specific sector to reads sequences from. Default is 1, and not 
 #' required if seqFilePath is a direct file path rather than sampleInfo object.
@@ -4032,11 +4030,6 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
       ## for single-end data!
       dnaSet <- dnaSet[[1]]
     }
-  } else if (any(grepl("sff", seqFilePath, ignore.case = TRUE))) {    
-    dnaSet <- rSFFreader::sread(rSFFreader::readSff(seqFilePath,
-                                                    use.qualities = FALSE,
-                                                    verbose = FALSE))
-    doSingleEndCheck <- TRUE    
   } else {
     dnaSet <- readDNAStringSet(seqFilePath)
     doSingleEndCheck <- TRUE    

@@ -24,4 +24,3 @@ data(FLX_seqProps)
 sampleSummary(seqProps)
 
 }
-

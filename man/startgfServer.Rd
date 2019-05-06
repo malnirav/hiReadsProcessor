@@ -6,8 +6,8 @@
 \title{Start/Stop a gfServer instance}
 \usage{
 startgfServer(seqDir = NULL, host = "localhost", port = 5560,
-  gfServerOpts = c(repMatch = 112312, stepSize = 5, tileSize = 10, maxDnaHits
-  = 10))
+  gfServerOpts = c(repMatch = 112312, stepSize = 5, tileSize = 10,
+  maxDnaHits = 10))
 
 stopgfServer(host = "localhost", port = NULL)
 }
@@ -37,4 +37,3 @@ sequences using BLAT gfServer/gfClient protocol.
 \code{\link{stopgfServer}}, \code{\link{read.psl}}, 
 \code{\link{blatSeqs}}, \code{\link{read.blast8}}
 }
-

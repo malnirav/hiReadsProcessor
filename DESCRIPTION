@@ -1,7 +1,7 @@
 Package: hiReadsProcessor
 Title: Functions to process LM-PCR reads from 454/Illumina data
-Version: 1.19.0
-Date: 2016-05-05
+Version: 1.19.1
+Date: 2019-05-07
 Author: Nirav V Malani <malnirav@gmail.com>
 Maintainer: Nirav V Malani <malnirav@gmail.com>
 Description: hiReadsProcessor contains set of functions which allow
@@ -22,7 +22,6 @@ Imports:
     dplyr,
     BiocGenerics,
     GenomicRanges,
-    rSFFreader,
     readxl,
     methods
 License: GPL-3
@@ -33,4 +32,4 @@ Suggests:
 biocViews: Sequencing, Preprocessing
 LazyLoad: yes
 SystemRequirements: BLAT, UCSC hg18 in 2bit format for BLAT
-RoxygenNote: 5.0.1
+RoxygenNote: 6.1.1

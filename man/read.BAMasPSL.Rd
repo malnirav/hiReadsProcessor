@@ -35,4 +35,3 @@ read.BAMasPSL(bamFile=c("sample1hits.bam","sample2hits.bam"))
 \code{\link{read.blast8}}, \code{\link{read.psl}}, 
 \code{\link{pslToRangedObject}}, \code{\link{pairUpAlignments}}
 }
-

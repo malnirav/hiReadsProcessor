@@ -31,4 +31,3 @@ chunkize(DNAStringSet(x), 5)
 \code{\link{primerIDAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, 
 \code{\link{pairwiseAlignSeqs}}
 }
-

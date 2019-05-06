@@ -44,4 +44,3 @@ before running the function. One can use any of the following
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}},
 \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.psl}}
 }
-

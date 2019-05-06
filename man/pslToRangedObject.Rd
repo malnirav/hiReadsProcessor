@@ -32,4 +32,3 @@ pslToRangedObject(psl, useTargetAsRef = FALSE)
 \code{\link{read.psl}}, \code{\link{read.blast8}}, 
 \code{\link{blatListedSet}}
 }
-

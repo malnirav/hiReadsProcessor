@@ -2,12 +2,12 @@
 % Please edit documentation in R/hiReadsProcessor.R
 \name{read.seqsFromSector}
 \alias{read.seqsFromSector}
-\title{Read fasta/fastq/sff given the path or sampleInfo object.}
+\title{Read fasta/fastq given the path or sampleInfo object.}
 \usage{
 read.seqsFromSector(seqFilePath = NULL, sector = 1, isPaired = FALSE)
 }
 \arguments{
-\item{seqFilePath}{a path to fasta/fastq/sff reads file or a sampleInfo 
+\item{seqFilePath}{a path to fasta/fastq reads file or a sampleInfo 
 object returned by \code{\link{read.SeqFolder}}}
 
 \item{sector}{specific sector to reads sequences from. Default is 1, and not 
@@ -34,4 +34,3 @@ read.seqsFromSector(seqProps, sector="2")
 \code{\link{findBarcodes}}, \code{\link{read.SeqFolder}}, 
 \code{\link{extractSeqs}}
 }
-

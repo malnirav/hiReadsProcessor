@@ -4,8 +4,8 @@
 \alias{findAndRemoveVector}
 \title{Find and trim vector sequence from reads.}
 \usage{
-findAndRemoveVector(reads, Vector, minLength = 10, returnCoords = FALSE,
-  parallel = TRUE)
+findAndRemoveVector(reads, Vector, minLength = 10,
+  returnCoords = FALSE, parallel = TRUE)
 }
 \arguments{
 \item{reads}{DNAStringSet object containing sequences to be trimmed for vector.}
@@ -37,4 +37,3 @@ before running the function. One can use any of the following
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{pslToRangedObject}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, \code{\link{findAndTrimSeq}}
 }
-

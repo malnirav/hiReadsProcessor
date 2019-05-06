@@ -56,4 +56,3 @@ annotateSites(seqProps, annots, annotType="nearest", side="5p")
 \code{\link{crossOverCheck}}, \code{\link{findIntegrations}}, 
 \code{\link{getIntegrationSites}}, \code{\link{pslToRangedObject}}
 }
-

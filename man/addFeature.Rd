@@ -4,8 +4,8 @@
 \alias{addFeature}
 \title{Add a specific feature/attribute to the sampleInfo object.}
 \usage{
-addFeature(sampleInfo, sector = NULL, samplename = NULL, feature = NULL,
-  value = NULL)
+addFeature(sampleInfo, sector = NULL, samplename = NULL,
+  feature = NULL, value = NULL)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object, which samples per 
@@ -47,4 +47,3 @@ samplename="Roth-MLV3p-CD4TMLVWell6-MseI", feature="metadata")
 \code{\link{trimSeqs}}, \code{\link{extractFeature}}, 
 \code{\link{getSectorsForSamples}}
 }
-

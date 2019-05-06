@@ -44,4 +44,3 @@ before running the function. One can use any of the following
 \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, 
 \code{\link{findPrimers}}, \code{\link{findAndTrimSeq}}
 }
-

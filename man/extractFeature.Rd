@@ -37,4 +37,3 @@ extractFeature(seqProps, sector='2', samplename=samples, feature="metadata")
  \code{\link{extractSeqs}}, \code{\link{trimSeqs}}, 
  \code{\link{getSectorsForSamples}}
 }
-

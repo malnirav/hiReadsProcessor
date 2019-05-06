@@ -56,4 +56,3 @@ head(bore)
 \code{\link{findIntegrations}}, \code{\link{getIntegrationSites}}, 
 \code{\link{pslToRangedObject}}
 }
-

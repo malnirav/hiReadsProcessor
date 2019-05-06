@@ -33,4 +33,3 @@ write.psl(psl, filename = pslFile)
 \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}}, 
 \code{\link{pslToRangedObject}}
 }
-

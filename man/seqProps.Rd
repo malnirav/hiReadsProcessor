@@ -12,4 +12,3 @@ is of SimpleList class and follows a certain structural hierarchy explained
 by the Introductory vignette.
 }
 \keyword{datasets}
-

@@ -53,4 +53,3 @@ getIntegrationSites(psl.rd)
 \code{\link{clusterSites}}, \code{\link{isuSites}}, 
 \code{\link{crossOverCheck}}, \code{\link{read.blast8}}
 }
-

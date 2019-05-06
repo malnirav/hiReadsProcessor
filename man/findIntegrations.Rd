@@ -91,4 +91,3 @@ numServers=2)
 \code{\link{getIntegrationSites}}, \code{\link{getSonicAbund}},
 \code{\link{annotateSites}}
 }
-

@@ -37,11 +37,11 @@ list.files(runData, recursive  = TRUE)
 ```
 
 ```
-## [1] "RunData/1.TCA.454Reads.fna"    "RunData/1.TCA.454Reads.fna.gz"
-## [3] "RunData/2.TCA.454Reads.fna"    "RunData/2.TCA.454Reads.fna.gz"
-## [5] "RunData/3.TCA.454Reads.fna"    "RunData/3.TCA.454Reads.fna.gz"
-## [7] "Vectors/HIV1.fa"               "Vectors/MLV-vector.fa"        
-## [9] "sampleInfo.xlsx"
+##  [1] "RunData/1.TCA.454Reads.fna"    "RunData/1.TCA.454Reads.fna.gz"
+##  [3] "RunData/2.TCA.454Reads.fna"    "RunData/2.TCA.454Reads.fna.gz"
+##  [5] "RunData/3.TCA.454Reads.fna"    "RunData/3.TCA.454Reads.fna.gz"
+##  [7] "Vectors/HIV1.fa"               "Vectors/MLV-vector.fa"        
+##  [9] "sampleInfo.xls"                "sampleInfo.xlsx"
 ```
 
 Function `read.SeqFolder` will initiate a `SimpleList` sample information object which will hold everything regarding the sequencing run. The object is structured to store sequencing file paths, sequence data, processed data as well as sample metadata. The function finds the required file needed to ease the automation process. It is important that somewhere in the sequencing folder there is a file called "sampleInfo" else object initialization will fail.
@@ -52,7 +52,7 @@ seqProps <- read.SeqFolder(runData, seqfilePattern = ".+fna.gz$")
 ```
 
 ```
-## Choosing /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/sampleInfo.xlsx as sample information file.
+## Choosing /Users/nerv/github/hiReadsProcessor/inst/extdata/FLX_sample_run/sampleInfo.xls as sample information file.
 ```
 
 ```r
@@ -91,7 +91,7 @@ seqProps <- findBarcodes(seqProps, sector = "all", showStats = TRUE)
 
 ```
 ## Reading:
-## /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/1.TCA.454Reads.fna.gz
+## /Users/nerv/github/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/1.TCA.454Reads.fna.gz
 ```
 
 ```
@@ -226,7 +226,7 @@ seqProps <- findBarcodes(seqProps, sector = "all", showStats = TRUE)
 
 ```
 ## Reading:
-## /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/2.TCA.454Reads.fna.gz
+## /Users/nerv/github/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/2.TCA.454Reads.fna.gz
 ```
 
 ```
@@ -361,7 +361,7 @@ seqProps <- findBarcodes(seqProps, sector = "all", showStats = TRUE)
 
 ```
 ## Reading:
-## /Users/Nmalani200667/VM_Share/Bioconductor/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/3.TCA.454Reads.fna.gz
+## /Users/nerv/github/hiReadsProcessor/inst/extdata/FLX_sample_run/RunData/3.TCA.454Reads.fna.gz
 ```
 
 ```
@@ -487,26 +487,247 @@ sampleSummary(seqProps)
 ```
 
 ```
-## Warning in rbind_all(x, .id): Unequal factor levels: coercing to character
+## Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character
 ```
 
 ```
-## Source: local data frame [112 x 9]
-## 
-##    Sector                       SampleName decoded primed LTRed vectored
-##     (chr)                            (chr)   (int)  (int) (int)    (int)
-## 1       1       Roth-MLV-CD4T-20100723NCMu      NA     NA    NA       NA
-## 2       1   Roth-MLV-CD4T-20100723well1BMu      18     18     6        1
-## 3       1 Roth-MLV-CD4T-20100723well2BMu1-      12     11    NA       NA
-## 4       1 Roth-MLV-CD4T-20100723well2BMu10       1      1     1       NA
-## 5       1 Roth-MLV-CD4T-20100723well2BMu11       6      4     3       NA
-## 6       1 Roth-MLV-CD4T-20100723well2BMu12       1      1    NA       NA
-## 7       1  Roth-MLV-CD4T-20100723well2BMu2       3      3     1       NA
-## 8       1  Roth-MLV-CD4T-20100723well2BMu3       8      8    NA       NA
-## 9       1  Roth-MLV-CD4T-20100723well2BMu4      10     10     4       NA
-## 10      1  Roth-MLV-CD4T-20100723well2BMu5       8      8     3       NA
-## ..    ...                              ...     ...    ...   ...      ...
-## Variables not shown: linkered (int), psl (int), sites (int)
+## Warning in bind_rows_(x, .id): binding character and factor vector,
+## coercing into character vector
+
+## Warning in bind_rows_(x, .id): binding character and factor vector,
+## coercing into character vector
+
+## Warning in bind_rows_(x, .id): binding character and factor vector,
+## coercing into character vector
+```
+
+```
+##     Sector                            SampleName decoded primed LTRed
+## 1        1            Roth-MLV-CD4T-20100723NCMu      NA     NA    NA
+## 2        1        Roth-MLV-CD4T-20100723well1BMu      18     18     6
+## 3        1      Roth-MLV-CD4T-20100723well2BMu1-      12     11    NA
+## 4        1      Roth-MLV-CD4T-20100723well2BMu10       1      1     1
+## 5        1      Roth-MLV-CD4T-20100723well2BMu11       6      4     3
+## 6        1      Roth-MLV-CD4T-20100723well2BMu12       1      1    NA
+## 7        1       Roth-MLV-CD4T-20100723well2BMu2       3      3     1
+## 8        1       Roth-MLV-CD4T-20100723well2BMu3       8      8    NA
+## 9        1       Roth-MLV-CD4T-20100723well2BMu4      10     10     4
+## 10       1       Roth-MLV-CD4T-20100723well2BMu5       8      8     3
+## 11       1       Roth-MLV-CD4T-20100723well2BMu6       9      8     2
+## 12       1       Roth-MLV-CD4T-20100723well2BMu7       7      5     1
+## 13       1       Roth-MLV-CD4T-20100723well2BMu8       4      4     2
+## 14       1       Roth-MLV-CD4T-20100723well2BMu9       1      1     1
+## 15       1        Roth-MLV-CD4T-20100723well2Mu1       3      3    NA
+## 16       1        Roth-MLV-CD4T-20100723well2Mu2       4      4    NA
+## 17       1        Roth-MLV-CD4T-20100723well2Mu3       3      3    NA
+## 18       1        Roth-MLV-CD4T-20100723well2Mu4       1      1    NA
+## 19       1        Roth-MLV-CD4T-20100723well2Mu5       1      1    NA
+## 20       1        Roth-MLV-CD4T-20100723well2Mu6      NA     NA    NA
+## 21       1            Roth-MLV3p-CD4T-20100730NC      NA     NA    NA
+## 22       1    Roth-MLV3p-CD4T-20100730Well1BstYI      19     18    15
+## 23       1     Roth-MLV3p-CD4T-20100730Well1MseI      26     26    23
+## 24       1   Roth-MLV3p-CD4T-20100730Well1NlaIII      36     33    28
+## 25       1  Roth-MLV3p-CD4T-20100730Well1Tsp509I      34     29    25
+## 26       1    Roth-MLV3p-CD4T-20100730Well2BstyI      32     31    22
+## 27       1     Roth-MLV3p-CD4T-20100730Well2MseI      43     43    39
+## 28       1   Roth-MLV3p-CD4T-20100730Well2NlaIII      31     31    25
+## 29       1  Roth-MLV3p-CD4T-20100730Well2Tsp509I      39     39    35
+## 30       1            Roth-MLV3p-CD4TMLVLot16-Mu      15     14    11
+## 31       1         Roth-MLV3p-CD4TMLVwell3-BstYI      18     18    17
+## 32       1          Roth-MLV3p-CD4TMLVWell3-MseI      42     40    36
+## 33       1        Roth-MLV3p-CD4TMLVWell3-NlaIII      35     35    28
+## 34       1       Roth-MLV3p-CD4TMLVWell3-Tsp509I      39     39    37
+## 35       1       Roth-MLV3p-CD4TMLVWell3Harri-Mu       9      9     7
+## 36       1       Roth-MLV3p-CD4TMLVWell3Lot60-Mu       5      5     2
+## 37       1       Roth-MLV3p-CD4TMLVWell3Lot62-Mu      13     13     8
+## 38       1       Roth-MLV3p-CD4TMLVWell3Lot64-Mu       8      8     8
+## 39       1    Roth-MLV3p-CD4TMLVWell3Lot64new-Mu       2      2     2
+## 40       1         Roth-MLV3p-CD4TMLVWell4-BstYI       8      8     6
+## 41       1          Roth-MLV3p-CD4TMLVWell4-MseI      38     38    35
+## 42       1           Roth-MLV3p-CD4TMLVwell4-MuA      18     18     1
+## 43       1        Roth-MLV3p-CD4TMLVWell4-NlaIII      22     22    22
+## 44       1       Roth-MLV3p-CD4TMLVWell4-Tsp509I      30     26    25
+## 45       1         Roth-MLV3p-CD4TMLVWell5-BstYI      10     10     8
+## 46       1          Roth-MLV3p-CD4TMLVWell5-MseI      43     41    38
+## 47       1           Roth-MLV3p-CD4TMLVwell5-MuA      26     25     6
+## 48       1        Roth-MLV3p-CD4TMLVWell5-NlaIII      28     27    27
+## 49       1       Roth-MLV3p-CD4TMLVWell5-Tsp509I      67     66    60
+## 50       1         Roth-MLV3p-CD4TMLVWell6-BstYI      17     17    14
+## 51       1          Roth-MLV3p-CD4TMLVWell6-MseI      36     36    31
+## 52       1           Roth-MLV3p-CD4TMLVwell6-MuA      13     13    NA
+## 53       1        Roth-MLV3p-CD4TMLVWell6-NlaIII      22     22    21
+## 54       1       Roth-MLV3p-CD4TMLVWell6-Tsp509I      54     52    48
+## 55       2            Roth-MLV-CD4T-20100723NCMu      NA     NA    NA
+## 56       2        Roth-MLV-CD4T-20100723well1BMu      21     21     6
+## 57       2      Roth-MLV-CD4T-20100723well2BMu1-       2      2    NA
+## 58       2      Roth-MLV-CD4T-20100723well2BMu10      NA     NA    NA
+## 59       2      Roth-MLV-CD4T-20100723well2BMu11       4      4     2
+## 60       2      Roth-MLV-CD4T-20100723well2BMu12       1      1    NA
+## 61       2       Roth-MLV-CD4T-20100723well2BMu2       4      4    NA
+## 62       2       Roth-MLV-CD4T-20100723well2BMu3      17     17     2
+## 63       2       Roth-MLV-CD4T-20100723well2BMu4       8      8     1
+## 64       2       Roth-MLV-CD4T-20100723well2BMu5       6      6     3
+## 65       2       Roth-MLV-CD4T-20100723well2BMu6       5      5     1
+## 66       2       Roth-MLV-CD4T-20100723well2BMu7       8      6     2
+## 67       2       Roth-MLV-CD4T-20100723well2BMu8       2      2     1
+## 68       2       Roth-MLV-CD4T-20100723well2BMu9       3      3     3
+## 69       2        Roth-MLV-CD4T-20100723well2Mu1       2      2    NA
+## 70       2        Roth-MLV-CD4T-20100723well2Mu2       7      7    NA
+## 71       2        Roth-MLV-CD4T-20100723well2Mu3       4      4    NA
+## 72       2        Roth-MLV-CD4T-20100723well2Mu4       1      1    NA
+## 73       2        Roth-MLV-CD4T-20100723well2Mu5      NA     NA    NA
+## 74       2        Roth-MLV-CD4T-20100723well2Mu6      NA     NA    NA
+## 75       2            Roth-MLV3p-CD4T-20100730NC      NA     NA    NA
+## 76       2    Roth-MLV3p-CD4T-20100730Well1BstYI      14     13     8
+## 77       2     Roth-MLV3p-CD4T-20100730Well1MseI      20     20    20
+## 78       2   Roth-MLV3p-CD4T-20100730Well1NlaIII      29     28    24
+## 79       2  Roth-MLV3p-CD4T-20100730Well1Tsp509I      25     22    20
+## 80       2    Roth-MLV3p-CD4T-20100730Well2BstyI      45     45    36
+## 81       2     Roth-MLV3p-CD4T-20100730Well2MseI      46     46    45
+## 82       2   Roth-MLV3p-CD4T-20100730Well2NlaIII      36     35    30
+## 83       2  Roth-MLV3p-CD4T-20100730Well2Tsp509I      34     33    31
+## 84       2            Roth-MLV3p-CD4TMLVLot16-Mu      16     16     9
+## 85       2         Roth-MLV3p-CD4TMLVwell3-BstYI      17     17    14
+## 86       2          Roth-MLV3p-CD4TMLVWell3-MseI      64     63    57
+## 87       2        Roth-MLV3p-CD4TMLVWell3-NlaIII      32     32    28
+## 88       2       Roth-MLV3p-CD4TMLVWell3-Tsp509I      42     42    37
+## 89       2       Roth-MLV3p-CD4TMLVWell3Harri-Mu       3      3     1
+## 90       2       Roth-MLV3p-CD4TMLVWell3Lot60-Mu       3      3     3
+## 91       2       Roth-MLV3p-CD4TMLVWell3Lot62-Mu      16     16    10
+## 92       2       Roth-MLV3p-CD4TMLVWell3Lot64-Mu      11     11    10
+## 93       2    Roth-MLV3p-CD4TMLVWell3Lot64new-Mu      NA     NA    NA
+## 94       2         Roth-MLV3p-CD4TMLVWell4-BstYI      13     13    13
+## 95       2          Roth-MLV3p-CD4TMLVWell4-MseI      41     41    37
+## 96       2           Roth-MLV3p-CD4TMLVwell4-MuA      21     21     1
+## 97       2        Roth-MLV3p-CD4TMLVWell4-NlaIII      31     29    26
+## 98       2       Roth-MLV3p-CD4TMLVWell4-Tsp509I      27     26    26
+## 99       2         Roth-MLV3p-CD4TMLVWell5-BstYI      19     19    18
+## 100      2          Roth-MLV3p-CD4TMLVWell5-MseI      40     40    37
+## 101      2           Roth-MLV3p-CD4TMLVwell5-MuA      36     36    10
+## 102      2        Roth-MLV3p-CD4TMLVWell5-NlaIII      23     21    19
+## 103      2       Roth-MLV3p-CD4TMLVWell5-Tsp509I      54     53    48
+## 104      2         Roth-MLV3p-CD4TMLVWell6-BstYI      14     14    12
+## 105      2          Roth-MLV3p-CD4TMLVWell6-MseI      33     33    31
+## 106      2           Roth-MLV3p-CD4TMLVwell6-MuA      15     14     1
+## 107      2        Roth-MLV3p-CD4TMLVWell6-NlaIII      23     23    20
+## 108      2       Roth-MLV3p-CD4TMLVWell6-Tsp509I      46     46    41
+## 109      3   Ocwieja-HIV896-CD4TND365-InfectionI     422    422   400
+## 110      3  Ocwieja-HIV896-CD4TND365-InfectionII     295    293   279
+## 111      3 Ocwieja-HIV896-CD4TND365-InfectionIII     269    269   253
+## 112      3      Ocwieja-HIV896-CD4TND365-NoVirus      NA     NA    NA
+##     vectored linkered psl sites
+## 1         NA       NA  NA    NA
+## 2          1       15   5     2
+## 3         NA       12  NA    NA
+## 4         NA       NA  NA    NA
+## 5         NA       NA  NA    NA
+## 6         NA       NA  NA    NA
+## 7         NA        3   1     1
+## 8         NA        7   1     1
+## 9         NA        9   2     2
+## 10        NA        4   1     1
+## 11        NA        6   1    NA
+## 12        NA        2  NA    NA
+## 13        NA        2  NA    NA
+## 14        NA       NA  NA    NA
+## 15        NA        3  NA    NA
+## 16        NA        4  NA    NA
+## 17        NA        3  NA    NA
+## 18        NA        1  NA    NA
+## 19        NA        1  NA    NA
+## 20        NA       NA  NA    NA
+## 21        NA       NA  NA    NA
+## 22        NA       19   9     6
+## 23        NA       26  31    24
+## 24         4       36  38    29
+## 25        NA       34  31    22
+## 26        NA       32  24    16
+## 27         1       42  49    34
+## 28         4       31  37    25
+## 29         1       39  41    32
+## 30        NA       15  17    11
+## 31        NA       18  23    18
+## 32        NA       42  74    67
+## 33        NA       35  46    39
+## 34        NA       39  58    46
+## 35        NA        9   7     6
+## 36        NA        5   5     5
+## 37        NA       13  14    10
+## 38        NA        8  16    10
+## 39        NA        1   1     1
+## 40        NA        8   8     4
+## 41         1       38  51    42
+## 42        NA       17  NA    NA
+## 43        NA       22  39    32
+## 44        NA       30  44    34
+## 45        NA        9  18    15
+## 46        NA       43  56    48
+## 47        NA       16   3     2
+## 48         1       28  33    22
+## 49        NA       67  80    60
+## 50        NA       17  10     8
+## 51        NA       36  44    33
+## 52        NA       13  NA    NA
+## 53        NA       22  31    25
+## 54         1       54  63    44
+## 55        NA       NA  NA    NA
+## 56        NA       17   5     2
+## 57        NA        2  NA    NA
+## 58        NA       NA  NA    NA
+## 59        NA       NA  NA    NA
+## 60        NA       NA  NA    NA
+## 61        NA        4   1     1
+## 62        NA       15   1     1
+## 63        NA        6   2     2
+## 64        NA        4   1     1
+## 65        NA        4   1    NA
+## 66        NA       NA  NA    NA
+## 67        NA       NA  NA    NA
+## 68        NA       NA  NA    NA
+## 69        NA        2  NA    NA
+## 70        NA        7  NA    NA
+## 71        NA        4  NA    NA
+## 72        NA        1  NA    NA
+## 73        NA       NA  NA    NA
+## 74        NA       NA  NA    NA
+## 75        NA       NA  NA    NA
+## 76        NA       14   9     6
+## 77         1       20  31    24
+## 78        NA       28  38    29
+## 79        NA       24  31    22
+## 80        NA       45  24    16
+## 81        NA       46  49    34
+## 82         4       36  37    25
+## 83        NA       33  41    32
+## 84         1       16  17    11
+## 85        NA       17  23    18
+## 86        NA       64  74    67
+## 87         1       32  46    39
+## 88        NA       42  58    46
+## 89        NA        3   7     6
+## 90        NA        3   5     5
+## 91        NA       13  14    10
+## 92        NA        9  16    10
+## 93        NA       NA   1     1
+## 94         1       13   8     4
+## 95        NA       40  51    42
+## 96        NA       19  NA    NA
+## 97        NA       30  39    32
+## 98        NA       27  44    34
+## 99        NA       19  18    15
+## 100       NA       40  56    48
+## 101       NA       27   3     2
+## 102       NA       23  33    22
+## 103        1       54  80    60
+## 104       NA       14  10     8
+## 105       NA       33  44    33
+## 106       NA       15  NA    NA
+## 107        1       23  31    25
+## 108       NA       45  63    44
+## 109       66      357 281   210
+## 110       48      233 201   145
+## 111       41      188 171   114
+## 112       NA       NA  NA    NA
 ```
 
 ## Detailed *hiReadsProcessor* tutorial.
@@ -583,9 +804,12 @@ sessionInfo()
 ```
 
 ```
-## R version 3.2.5 (2016-04-14)
-## Platform: x86_64-apple-darwin15.4.0 (64-bit)
-## Running under: OS X 10.11.4 (El Capitan)
+## R version 3.6.0 (2019-04-26)
+## Platform: x86_64-apple-darwin18.5.0 (64-bit)
+## Running under: macOS Mojave 10.14.4
+## 
+## Matrix products: default
+## BLAS/LAPACK: /usr/local/Cellar/openblas/0.3.5/lib/libopenblasp-r0.3.5.dylib
 ## 
 ## locale:
 ## [1] C/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -595,30 +819,37 @@ sessionInfo()
 ## [8] methods   base     
 ## 
 ## other attached packages:
-##  [1] hiReadsProcessor_1.9.1     hiAnnotator_1.4.0         
-##  [3] BiocParallel_1.4.3         GenomicAlignments_1.6.3   
-##  [5] Rsamtools_1.22.0           SummarizedExperiment_1.0.2
-##  [7] Biobase_2.30.0             GenomicRanges_1.22.4      
-##  [9] GenomeInfoDb_1.6.3         Biostrings_2.38.4         
-## [11] XVector_0.10.0             IRanges_2.4.8             
-## [13] S4Vectors_0.8.11           BiocGenerics_0.16.1       
+##  [1] hiReadsProcessor_1.19.1     hiAnnotator_1.18.0         
+##  [3] GenomicAlignments_1.20.0    Rsamtools_2.0.0            
+##  [5] SummarizedExperiment_1.14.0 DelayedArray_0.10.0        
+##  [7] BiocParallel_1.17.19        matrixStats_0.54.0         
+##  [9] Biobase_2.44.0              GenomicRanges_1.36.0       
+## [11] GenomeInfoDb_1.20.0         Biostrings_2.52.0          
+## [13] XVector_0.24.0              IRanges_2.18.0             
+## [15] S4Vectors_0.22.0            BiocGenerics_0.30.0        
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_0.12.4          formatR_1.3          RColorBrewer_1.1-2  
-##  [4] futile.logger_1.4.1  plyr_1.8.3           bitops_1.0-6        
-##  [7] futile.options_1.0.0 iterators_1.0.8      tools_3.2.5         
-## [10] zlibbioc_1.16.0      testthat_1.0.2       digest_0.6.9        
-## [13] evaluate_0.9         lattice_0.20-33      memoise_1.0.0       
-## [16] gtable_0.2.0         BSgenome_1.38.0      foreach_1.4.3       
-## [19] DBI_0.4              knitr_1.12.3         hwriter_1.3.2       
-## [22] rSFFreader_0.18.0    rtracklayer_1.30.4   withr_1.0.1         
-## [25] stringr_1.0.0        dplyr_0.4.3          roxygen2_5.0.1      
-## [28] devtools_1.11.1      grid_3.2.5           R6_2.1.2            
-## [31] readxl_0.1.1         XML_3.98-1.4         latticeExtra_0.6-28 
-## [34] ggplot2_2.1.0        lambda.r_1.1.7       magrittr_1.5        
-## [37] splines_3.2.5        scales_0.4.0         codetools_0.2-14    
-## [40] ShortRead_1.28.0     assertthat_0.1       colorspace_1.2-6    
-## [43] sonicLength_1.4.4    stringi_1.0-1        RCurl_1.95-4.8      
-## [46] munsell_0.4.3        crayon_1.3.1
+##  [1] pkgload_1.0.2          splines_3.6.0          foreach_1.4.4         
+##  [4] assertthat_0.2.1       BSgenome_1.52.0        GenomeInfoDbData_1.2.1
+##  [7] cellranger_1.1.0       remotes_2.0.4          sessioninfo_1.1.1     
+## [10] pillar_1.3.1           backports_1.1.4        lattice_0.20-38       
+## [13] glue_1.3.1             digest_0.6.18          colorspace_1.4-1      
+## [16] Matrix_1.2-17          plyr_1.8.4             XML_3.98-1.19         
+## [19] pkgconfig_2.0.2        devtools_2.0.2         zlibbioc_1.30.0       
+## [22] purrr_0.3.2            scales_1.0.0           processx_3.3.0        
+## [25] tibble_2.1.1           ggplot2_3.1.1          usethis_1.5.0         
+## [28] withr_2.1.2            lazyeval_0.2.2         cli_1.1.0             
+## [31] magrittr_1.5           crayon_1.3.4           readxl_1.3.1          
+## [34] evaluate_0.13          memoise_1.1.0          ps_1.3.0              
+## [37] fs_1.3.0               xml2_1.2.0             pkgbuild_1.0.3        
+## [40] tools_3.6.0            prettyunits_1.0.2      stringr_1.4.0         
+## [43] munsell_0.5.0          callr_3.2.0            compiler_3.6.0        
+## [46] rlang_0.3.4            grid_3.6.0             RCurl_1.95-4.12       
+## [49] iterators_1.0.10       rstudioapi_0.10        bitops_1.0-6          
+## [52] gtable_0.3.0           codetools_0.2-16       roxygen2_6.1.1        
+## [55] R6_2.4.0               knitr_1.22             dplyr_0.8.0.1         
+## [58] rtracklayer_1.44.0     sonicLength_1.4.6      commonmark_1.7        
+## [61] rprojroot_1.3-2        desc_1.2.0             stringi_1.4.3         
+## [64] Rcpp_1.0.1             xfun_0.6               tidyselect_0.2.5
 ```
 

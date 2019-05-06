@@ -106,4 +106,3 @@ read.sampleInfo(file.path(runData, "sampleInfo.xlsx"))
 \code{\link{read.SeqFolder}}, \code{\link{findBarcodes}}, 
 \code{\link{splitByBarcode}}
 }
-

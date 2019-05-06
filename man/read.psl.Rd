@@ -56,4 +56,3 @@ psl <- read.psl(pslFile = "processed.*.psl$")
 \code{\link{read.blast8}}, \code{\link{read.BAMasPSL}},
 \code{\link{pslToRangedObject}}, \code{\link{write.psl}}
 }
-

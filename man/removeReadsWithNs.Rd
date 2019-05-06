@@ -32,4 +32,3 @@ removeReadsWithNs(dnaSet, maxNs = 4, consecutive = FALSE)
 \code{\link{dereplicateReads}}, \code{\link{replicateReads}},
 \code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 }
-

@@ -47,11 +47,9 @@ read.SeqFolder(runData, seqfilePattern=".+fna.gz$")
 \dontrun{
 read.SeqFolder(".", seqfilePattern = "\\\\.TCA.454Reads.fna$")
 read.SeqFolder(".", seqfilePattern = ".+fastq$")
-read.SeqFolder(".", seqfilePattern = ".+sff$")
 }
 }
 \seealso{
 \code{\link{read.sampleInfo}}, \code{\link{findBarcodes}}, 
 \code{\link{splitByBarcode}}
 }
-

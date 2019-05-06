@@ -4,8 +4,8 @@
 \alias{pairUpAlignments}
 \title{Pair up alignments in a GRanges object}
 \usage{
-pairUpAlignments(psl.rd = NULL, maxGapLength = 2500, sameStrand = TRUE,
-  parallel = TRUE)
+pairUpAlignments(psl.rd = NULL, maxGapLength = 2500,
+  sameStrand = TRUE, parallel = TRUE)
 }
 \arguments{
 \item{psl.rd}{a GRanges object with qNames ending in "atpersand pairname atpersand".}
@@ -43,4 +43,3 @@ pairUpAlignments(psl.rd)
 \code{\link{read.blast8}}, \code{\link{read.psl}}, 
 \code{\link{getIntegrationSites}}, \code{\link{read.BAMasPSL}}
 }
-

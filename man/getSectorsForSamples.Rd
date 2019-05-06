@@ -34,4 +34,3 @@ getSectorsForSamples(seqProps, samplename=samples, returnDf=TRUE)
 \code{\link{extractSeqs}}, \code{\link{extractFeature}}, 
 \code{\link{addFeature}}
 }
-

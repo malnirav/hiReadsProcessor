@@ -41,4 +41,3 @@ offBy=1, alignWay = "slow")
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{extractFeature}}, \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, \code{\link{findLinkers}}
 }
-

@@ -62,4 +62,3 @@ findVector(seqProps, showStats=TRUE)
 \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}},
 \code{\link{findAndRemoveVector}}
 }
-

@@ -4,8 +4,9 @@
 \alias{write.listedDNAStringSet}
 \title{Write a fasta file per sample in parallel}
 \usage{
-write.listedDNAStringSet(dnaSet, filePath = ".", filePrefix = "processed",
-  prependSamplenames = TRUE, format = "fasta", parallel = FALSE)
+write.listedDNAStringSet(dnaSet, filePath = ".",
+  filePrefix = "processed", prependSamplenames = TRUE,
+  format = "fasta", parallel = FALSE)
 }
 \arguments{
 \item{dnaSet}{listed DNAStringSet object containing sequences to be written.}
@@ -58,4 +59,3 @@ write.listedDNAStringSet(seqs)
 \code{\link{findBarcodes}}, \code{\link{read.SeqFolder}}, 
 \code{\link{extractSeqs}}, \code{\link{addListNameToReads}}
 }
-

@@ -5,9 +5,10 @@
 \title{Cluster/Correct values within a window based on their frequency given 
 discrete factors}
 \usage{
-clusterSites(posID = NULL, value = NULL, grouping = NULL, psl.rd = NULL,
-  weight = NULL, windowSize = 5L, byQuartile = FALSE, quartile = 0.7,
-  parallel = TRUE, sonicAbund = FALSE)
+clusterSites(posID = NULL, value = NULL, grouping = NULL,
+  psl.rd = NULL, weight = NULL, windowSize = 5L,
+  byQuartile = FALSE, quartile = 0.7, parallel = TRUE,
+  sonicAbund = FALSE)
 }
 \arguments{
 \item{posID}{a vector of groupings for the value parameter (i.e. Chr,strand). Required if psl.rd parameter is not defined.}
@@ -83,4 +84,3 @@ clusterSites(grouping = psl.rd$grouping, psl.rd = psl.rd)
 \code{\link{otuSites}}, \code{\link{isuSites}}, \code{\link{crossOverCheck}}, 
 \code{\link{pslToRangedObject}}, \code{\link{getSonicAbund}}
 }
-

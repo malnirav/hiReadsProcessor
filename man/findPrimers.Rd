@@ -79,4 +79,3 @@ findPrimers(seqProps, showStats=TRUE)
 \code{\link{primerIDAlignSeqs}}, \code{\link{findLTRs}}, 
 \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 }
-

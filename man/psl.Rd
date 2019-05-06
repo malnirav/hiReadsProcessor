@@ -10,4 +10,3 @@ Sample BLAT PSL file output from samples included Integration Sites
 Sequencing Data \code{\link{seqProps}}
 }
 \keyword{datasets}
-

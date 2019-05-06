@@ -4,8 +4,8 @@
 \alias{doRCtest}
 \title{Test if pattern aligns better in +/- orientation.}
 \usage{
-doRCtest(subjectSeqs = NULL, patternSeq = NULL, qualityThreshold = 0.5,
-  parallel = TRUE)
+doRCtest(subjectSeqs = NULL, patternSeq = NULL,
+  qualityThreshold = 0.5, parallel = TRUE)
 }
 \arguments{
 \item{subjectSeqs}{DNAStringSet object containing sequences to be searched for the pattern.}
@@ -34,4 +34,3 @@ doRCtest(subjectSeqs, "TTTTTTTTT")
 \seealso{
 \code{\link{pairwiseAlignSeqs}}, \code{\link{vpairwiseAlignSeqs}}, \code{\link{primerIDAlignSeqs}}
 }
-

@@ -4,8 +4,9 @@
 \alias{findLTRs}
 \title{Find the 5' LTRs and add results to SampleInfo object.}
 \usage{
-findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE, parallel = TRUE,
-  samplenames = NULL, bypassChecks = FALSE, parallel2 = FALSE, ...)
+findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE,
+  parallel = TRUE, samplenames = NULL, bypassChecks = FALSE,
+  parallel2 = FALSE, ...)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -75,4 +76,3 @@ findLTRs(seqProps, showStats=TRUE)
 \code{\link{primerIDAlignSeqs}}, \code{\link{findPrimers}}, 
 \code{\link{findLinkers}}, \code{\link{findAndTrimSeq}}
 }
-

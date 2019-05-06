@@ -36,4 +36,3 @@ trimSeqs(dnaSet, coords, side="middle")
 \seealso{
 \code{\link{extractSeqs}}, \code{\link{primerIDAlignSeqs}}
 }
-

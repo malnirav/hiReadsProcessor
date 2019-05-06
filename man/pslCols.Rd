@@ -24,4 +24,3 @@ pslCols()
 \code{\link{startgfServer}}, \code{\link{blatSeqs}}, \code{\link{read.blast8}}, 
 \code{\link{read.BAMasPSL}}, \code{\link{pslToRangedObject}}
 }
-

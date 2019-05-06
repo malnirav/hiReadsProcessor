@@ -36,4 +36,3 @@ replicateReads(dnaSet)
 \code{\link{dereplicateReads}}, \code{\link{removeReadsWithNs}},
 \code{\link{findBarcodes}}, \code{\link{splitByBarcode}}
 }
-

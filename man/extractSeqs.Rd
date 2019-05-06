@@ -76,4 +76,3 @@ extractSeqs(seqProps, sector='2', samplename=samples, feature="genomic")
 \code{\link{findLinkers}}, \code{\link{trimSeqs}}, \code{\link{extractFeature}},
 \code{\link{getSectorsForSamples}}
 }
-
