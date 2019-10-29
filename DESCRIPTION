@@ -1,6 +1,6 @@
 Package: hiReadsProcessor
 Title: Functions to process LM-PCR reads from 454/Illumina data
-Version: 1.21.1
+Version: 1.22.0
 Date: 2019-05-06
 Author: Nirav V Malani <malnirav@gmail.com>
 Maintainer: Nirav V Malani <malnirav@gmail.com>
