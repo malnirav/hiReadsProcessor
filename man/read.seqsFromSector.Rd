@@ -24,7 +24,7 @@ DNAStringSet objects of three elements corresponding to reads from
 Given a sequence reads file path, the function returns a DNAStringSet object.
 }
 \examples{
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 read.seqsFromSector(seqProps, sector="2")

@@ -4,9 +4,17 @@
 \alias{findIntegrations}
 \title{Find the integration sites and add results to SampleInfo object.}
 \usage{
-findIntegrations(sampleInfo, seqType = NULL, genomeIndices = NULL,
-  samplenames = NULL, parallel = TRUE, autoOptimize = FALSE,
-  doSonic = FALSE, doISU = FALSE, ...)
+findIntegrations(
+  sampleInfo,
+  seqType = NULL,
+  genomeIndices = NULL,
+  samplenames = NULL,
+  parallel = TRUE,
+  autoOptimize = FALSE,
+  doSonic = FALSE,
+  doISU = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -74,7 +82,7 @@ before running the function. One can use any of the following
 }
 \examples{
  
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 findIntegrations(seqProps, 

@@ -4,9 +4,16 @@
 \alias{findLTRs}
 \title{Find the 5' LTRs and add results to SampleInfo object.}
 \usage{
-findLTRs(sampleInfo, showStats = FALSE, doRC = FALSE,
-  parallel = TRUE, samplenames = NULL, bypassChecks = FALSE,
-  parallel2 = FALSE, ...)
+findLTRs(
+  sampleInfo,
+  showStats = FALSE,
+  doRC = FALSE,
+  parallel = TRUE,
+  samplenames = NULL,
+  bypassChecks = FALSE,
+  parallel2 = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -64,7 +71,7 @@ perform the trimming. This function heavily relies on
 }
 \examples{
  
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 findLTRs(seqProps, showStats=TRUE)

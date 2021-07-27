@@ -1589,7 +1589,7 @@ doRCtest <- function(subjectSeqs = NULL, patternSeq = NULL,
 #'
 #' @examples 
 #' 
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' findPrimers(seqProps, showStats=TRUE)
@@ -1801,7 +1801,7 @@ findPrimers <- function(sampleInfo, alignWay = "slow", showStats = FALSE,
 #'
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' findLTRs(seqProps, showStats=TRUE)
@@ -2044,7 +2044,7 @@ findLTRs <- function(sampleInfo, showStats = FALSE, doRC = FALSE,
 #'
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' findLinkers(seqProps, showStats=TRUE, doRC=TRUE)
@@ -2303,7 +2303,7 @@ findLinkers <- function(sampleInfo, showStats = FALSE, doRC = FALSE,
 #'
 #' @examples 
 #' 
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' findVector(seqProps, showStats=TRUE)
@@ -2556,7 +2556,7 @@ findVector <- function(sampleInfo, showStats = FALSE, parallel = TRUE,
 #'
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' findIntegrations(seqProps, 
@@ -2831,7 +2831,7 @@ findIntegrations <- function(sampleInfo, seqType = NULL,
 #'
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' data(genes)
@@ -3932,7 +3932,7 @@ getSectorsForSamples <- function(sampleInfo, sector = NULL, samplename = NULL,
 #' @export
 #'
 #' @examples 
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' read.seqsFromSector(seqProps, sector="2")
@@ -4087,7 +4087,7 @@ read.seqsFromSector <- function(seqFilePath=NULL, sector=1, isPaired=FALSE) {
 #' 
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' load(file.path(system.file("data", package = "hiReadsProcessor"),
 #' "FLX_seqProps.RData"))
 #' samples <- c('Roth-MLV3p-CD4TMLVWell6-Tsp509I', 
@@ -4277,7 +4277,7 @@ write.listedDNAStringSet <- function(dnaSet, filePath = ".",
 #'
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' read.BAMasPSL(bamFile="processed.*.bam$")
 #' read.BAMasPSL(bamFile=c("sample1hits.bam","sample2hits.bam"))
 #' }
@@ -4398,7 +4398,7 @@ read.BAMasPSL <- function(bamFile = NULL, removeFile = TRUE, asGRanges = TRUE) {
 #'
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' psl.rd <- read.BAMasPSL(bamFile=c("sample1hits.bam","sample2hits.bam"))
 #' pairUpAlignments(psl.rd)
 #' }
@@ -4774,7 +4774,7 @@ splitSeqsToFiles <- function(x, totalFiles = 4, suffix = "tempy",
 #'
 #' @examples
 #'  
-#' \donttest{
+#' \dontrun{
 #' blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, 
 #' tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
 #' blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)

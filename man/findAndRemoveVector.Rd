@@ -4,8 +4,13 @@
 \alias{findAndRemoveVector}
 \title{Find and trim vector sequence from reads.}
 \usage{
-findAndRemoveVector(reads, Vector, minLength = 10,
-  returnCoords = FALSE, parallel = TRUE)
+findAndRemoveVector(
+  reads,
+  Vector,
+  minLength = 10,
+  returnCoords = FALSE,
+  parallel = TRUE
+)
 }
 \arguments{
 \item{reads}{DNAStringSet object containing sequences to be trimmed for vector.}

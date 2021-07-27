@@ -4,8 +4,13 @@
 \alias{splitSeqsToFiles}
 \title{Split DNA sequences into smaller files.}
 \usage{
-splitSeqsToFiles(x, totalFiles = 4, suffix = "tempy",
-  filename = "queryFile.fa", outDir = getwd())
+splitSeqsToFiles(
+  x,
+  totalFiles = 4,
+  suffix = "tempy",
+  filename = "queryFile.fa",
+  outDir = getwd()
+)
 }
 \arguments{
 \item{x}{a DNAStringSet object, or a FASTA filename.}

@@ -5,8 +5,14 @@
 \title{Remove values/positions which are overlapping between discrete groups based 
 on their frequency.}
 \usage{
-crossOverCheck(posID = NULL, value = NULL, grouping = NULL,
-  weight = NULL, windowSize = 1, psl.rd = NULL)
+crossOverCheck(
+  posID = NULL,
+  value = NULL,
+  grouping = NULL,
+  weight = NULL,
+  windowSize = 1,
+  psl.rd = NULL
+)
 }
 \arguments{
 \item{posID}{a vector of groupings for the value parameter (i.e. Chr,strand). 

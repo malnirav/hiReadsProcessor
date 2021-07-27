@@ -4,10 +4,19 @@
 \alias{pairwiseAlignSeqs}
 \title{Align a short pattern to variable length target sequences.}
 \usage{
-pairwiseAlignSeqs(subjectSeqs = NULL, patternSeq = NULL,
-  side = "left", qualityThreshold = 1, showStats = FALSE,
-  bufferBases = 5, doRC = TRUE, returnUnmatched = FALSE,
-  returnLowScored = FALSE, parallel = FALSE, ...)
+pairwiseAlignSeqs(
+  subjectSeqs = NULL,
+  patternSeq = NULL,
+  side = "left",
+  qualityThreshold = 1,
+  showStats = FALSE,
+  bufferBases = 5,
+  doRC = TRUE,
+  returnUnmatched = FALSE,
+  returnLowScored = FALSE,
+  parallel = FALSE,
+  ...
+)
 }
 \arguments{
 \item{subjectSeqs}{DNAStringSet object containing sequences to be searched for the pattern. This is generally bigger than patternSeq, and cases where subjectSeqs is smaller than patternSeq will be ignored in the alignment.}

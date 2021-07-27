@@ -4,7 +4,9 @@
 \name{seqProps}
 \alias{seqProps}
 \title{Sample Integration Sites Sequencing Data}
-\format{A SimpleList object}
+\format{
+A SimpleList object
+}
 \description{
 This is a processed data object containing raw sequences and respective 
 alignments to UCSC freeze hg18 from 112 integration site samples. The object

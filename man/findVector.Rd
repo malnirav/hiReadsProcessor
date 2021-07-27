@@ -4,8 +4,7 @@
 \alias{findVector}
 \title{Find vector DNA in reads and add results to SampleInfo object.}
 \usage{
-findVector(sampleInfo, showStats = FALSE, parallel = TRUE,
-  samplenames = NULL)
+findVector(sampleInfo, showStats = FALSE, parallel = TRUE, samplenames = NULL)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -49,7 +48,7 @@ using 'vectorFile' metadata supplied in the sample information file in
 }
 \examples{
 
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 findVector(seqProps, showStats=TRUE)

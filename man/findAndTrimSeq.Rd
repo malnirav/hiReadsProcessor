@@ -4,8 +4,14 @@
 \alias{findAndTrimSeq}
 \title{Find and trim a short pattern sequence from the subject.}
 \usage{
-findAndTrimSeq(patternSeq, subjectSeqs, side = "left", offBy = 0,
-  alignWay = "slow", ...)
+findAndTrimSeq(
+  patternSeq,
+  subjectSeqs,
+  side = "left",
+  offBy = 0,
+  alignWay = "slow",
+  ...
+)
 }
 \arguments{
 \item{patternSeq}{DNAString object or a sequence containing the query sequence to search.}

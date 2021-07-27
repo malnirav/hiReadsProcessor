@@ -4,9 +4,16 @@
 \alias{troubleshootLinkers}
 \title{Compare LTRed/Primed sequences to all linkers.}
 \usage{
-troubleshootLinkers(sampleInfo, qualityThreshold = 0.55,
-  qualityThreshold1 = 0.75, qualityThreshold2 = 0.5, doRC = TRUE,
-  parallel = TRUE, samplenames = NULL, ...)
+troubleshootLinkers(
+  sampleInfo,
+  qualityThreshold = 0.55,
+  qualityThreshold1 = 0.75,
+  qualityThreshold2 = 0.5,
+  doRC = TRUE,
+  parallel = TRUE,
+  samplenames = NULL,
+  ...
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from \code{\link{findPrimers}} or \code{\link{findLTRs}}, which holds decoded sequences for samples per sector/quadrant along with information of sample to primer associations.}

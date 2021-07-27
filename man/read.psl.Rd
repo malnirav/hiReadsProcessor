@@ -4,8 +4,13 @@
 \alias{read.psl}
 \title{Read PSL file(s) outputted by BLAT}
 \usage{
-read.psl(pslFile = NULL, bestScoring = TRUE, asGRanges = FALSE,
-  removeFile = TRUE, parallel = FALSE)
+read.psl(
+  pslFile = NULL,
+  bestScoring = TRUE,
+  asGRanges = FALSE,
+  removeFile = TRUE,
+  parallel = FALSE
+)
 }
 \arguments{
 \item{pslFile}{PSL filename, or vector of filenames, or a pattern of files 

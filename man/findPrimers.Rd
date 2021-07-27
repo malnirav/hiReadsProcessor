@@ -4,9 +4,17 @@
 \alias{findPrimers}
 \title{Find the 5' primers and add results to SampleInfo object.}
 \usage{
-findPrimers(sampleInfo, alignWay = "slow", showStats = FALSE,
-  doRC = FALSE, parallel = TRUE, samplenames = NULL,
-  bypassChecks = FALSE, parallel2 = FALSE, ...)
+findPrimers(
+  sampleInfo,
+  alignWay = "slow",
+  showStats = FALSE,
+  doRC = FALSE,
+  parallel = TRUE,
+  samplenames = NULL,
+  bypassChecks = FALSE,
+  parallel2 = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -67,7 +75,7 @@ portion is recorded back to the object and used subsequently by
 }
 \examples{
 
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 findPrimers(seqProps, showStats=TRUE)

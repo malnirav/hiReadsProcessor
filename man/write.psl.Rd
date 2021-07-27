@@ -4,8 +4,7 @@
 \alias{write.psl}
 \title{Write PSL file from dataframe or GRanges}
 \usage{
-write.psl(x, filename = "out.psl", header = FALSE,
-  includeOtherCols = FALSE)
+write.psl(x, filename = "out.psl", header = FALSE, includeOtherCols = FALSE)
 }
 \arguments{
 \item{x}{data frame or GRanges object with required columns for psl file format.}

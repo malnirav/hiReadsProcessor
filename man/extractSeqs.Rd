@@ -4,9 +4,17 @@
 \alias{extractSeqs}
 \title{Extract sequences for a feature in the sampleInfo object.}
 \usage{
-extractSeqs(sampleInfo, sector = NULL, samplename = NULL,
-  feature = "genomic", trim = TRUE, minReadLength = 1,
-  sideReturn = NULL, pairReturn = "both", strict = FALSE)
+extractSeqs(
+  sampleInfo,
+  sector = NULL,
+  samplename = NULL,
+  feature = "genomic",
+  trim = TRUE,
+  minReadLength = 1,
+  sideReturn = NULL,
+  pairReturn = "both",
+  strict = FALSE
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object, which samples per 

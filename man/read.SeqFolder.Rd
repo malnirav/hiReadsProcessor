@@ -4,8 +4,11 @@
 \alias{read.SeqFolder}
 \title{Read contents of a sequencing folder and make a SimpleList object}
 \usage{
-read.SeqFolder(sequencingFolderPath = NULL, sampleInfoFilePath = NULL,
-  seqfilePattern = NULL)
+read.SeqFolder(
+  sequencingFolderPath = NULL,
+  sampleInfoFilePath = NULL,
+  seqfilePattern = NULL
+)
 }
 \arguments{
 \item{sequencingFolderPath}{full or relative path to the sequencing folder}

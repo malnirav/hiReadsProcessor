@@ -5,9 +5,15 @@
 \alias{decodeByBarcode}
 \title{Demultiplex reads by their barcodes}
 \usage{
-findBarcodes(sampleInfo, sector = NULL, dnaSet = NULL,
-  showStats = FALSE, returnUnmatched = FALSE, dereplicate = FALSE,
-  alreadyDecoded = FALSE)
+findBarcodes(
+  sampleInfo,
+  sector = NULL,
+  dnaSet = NULL,
+  showStats = FALSE,
+  returnUnmatched = FALSE,
+  dereplicate = FALSE,
+  alreadyDecoded = FALSE
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object created using 

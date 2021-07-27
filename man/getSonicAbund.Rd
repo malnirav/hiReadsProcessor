@@ -4,8 +4,14 @@
 \alias{getSonicAbund}
 \title{Calculate breakpoint/sonic abundance of integration sites in a population}
 \usage{
-getSonicAbund(posID = NULL, fragLen = NULL, grouping = NULL,
-  replicateNum = NULL, psl.rd = NULL, parallel = TRUE)
+getSonicAbund(
+  posID = NULL,
+  fragLen = NULL,
+  grouping = NULL,
+  replicateNum = NULL,
+  psl.rd = NULL,
+  parallel = TRUE
+)
 }
 \arguments{
 \item{posID}{a vector of discrete positions, i.e. Chr,strand,Position.

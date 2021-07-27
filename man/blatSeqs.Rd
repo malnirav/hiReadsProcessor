@@ -4,11 +4,18 @@
 \alias{blatSeqs}
 \title{Align sequences using BLAT.}
 \usage{
-blatSeqs(query = NULL, subject = NULL, standaloneBlat = TRUE,
-  port = 5560, host = "localhost", parallel = TRUE,
-  numServers = 1L, gzipResults = TRUE, blatParameters = c(minIdentity
-  = 90, minScore = 10, stepSize = 5, tileSize = 10, repMatch = 112312, dots
-  = 50, maxDnaHits = 10, q = "dna", t = "dna", out = "psl"))
+blatSeqs(
+  query = NULL,
+  subject = NULL,
+  standaloneBlat = TRUE,
+  port = 5560,
+  host = "localhost",
+  parallel = TRUE,
+  numServers = 1L,
+  gzipResults = TRUE,
+  blatParameters = c(minIdentity = 90, minScore = 10, stepSize = 5, tileSize = 10,
+    repMatch = 112312, dots = 50, maxDnaHits = 10, q = "dna", t = "dna", out = "psl")
+)
 }
 \arguments{
 \item{query}{an object of DNAStringSet, a character vector of filename(s), 
@@ -63,7 +70,7 @@ and kill it using \code{\link{stopgfServer}} upon successful execution.
 }
 \examples{
  
-\donttest{
+\dontrun{
 blatSeqs(dnaSeqs, subjectSeqs, blatParameters=c(minIdentity=90, minScore=10, 
 tileSize=10, dots=10, q="dna", t="dna", out="blast8"))
 blatSeqs(dnaSeqs, "/usr/local/genomeIndex/hg18.2bit", standaloneBlat=FALSE)

@@ -4,9 +4,14 @@
 \alias{getIntegrationSites}
 \title{Obtain integration sites from BLAT output}
 \usage{
-getIntegrationSites(psl.rd = NULL, startWithin = 3,
-  alignRatioThreshold = 0.7, genomicPercentIdentity = 0.98,
-  correctByqStart = TRUE, oneBased = FALSE)
+getIntegrationSites(
+  psl.rd = NULL,
+  startWithin = 3,
+  alignRatioThreshold = 0.7,
+  genomicPercentIdentity = 0.98,
+  correctByqStart = TRUE,
+  oneBased = FALSE
+)
 }
 \arguments{
 \item{psl.rd}{a GRanges object reflecting psl format where tName is 

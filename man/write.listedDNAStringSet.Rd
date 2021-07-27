@@ -4,9 +4,14 @@
 \alias{write.listedDNAStringSet}
 \title{Write a fasta file per sample in parallel}
 \usage{
-write.listedDNAStringSet(dnaSet, filePath = ".",
-  filePrefix = "processed", prependSamplenames = TRUE,
-  format = "fasta", parallel = FALSE)
+write.listedDNAStringSet(
+  dnaSet,
+  filePath = ".",
+  filePrefix = "processed",
+  prependSamplenames = TRUE,
+  format = "fasta",
+  parallel = FALSE
+)
 }
 \arguments{
 \item{dnaSet}{listed DNAStringSet object containing sequences to be written.}
@@ -46,7 +51,7 @@ function writes a fasta file for each sample as defined in filePath parameter.
 }
 \examples{
  
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 samples <- c('Roth-MLV3p-CD4TMLVWell6-Tsp509I', 

@@ -4,9 +4,16 @@
 \alias{findLinkers}
 \title{Find the 3' linkers and add results to SampleInfo object.}
 \usage{
-findLinkers(sampleInfo, showStats = FALSE, doRC = FALSE,
-  parallel = TRUE, samplenames = NULL, bypassChecks = FALSE,
-  parallel2 = FALSE, ...)
+findLinkers(
+  sampleInfo,
+  showStats = FALSE,
+  doRC = FALSE,
+  parallel = TRUE,
+  samplenames = NULL,
+  bypassChecks = FALSE,
+  parallel2 = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -68,7 +75,7 @@ aligned have primerID in it or not.
 }
 \examples{
  
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 findLinkers(seqProps, showStats=TRUE, doRC=TRUE)

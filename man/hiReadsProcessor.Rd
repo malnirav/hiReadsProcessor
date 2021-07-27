@@ -3,7 +3,6 @@
 \docType{package}
 \name{hiReadsProcessor}
 \alias{hiReadsProcessor}
-\alias{hiReadsProcessor-package}
 \title{Functions to process LM-PCR reads from 454/Illumina data}
 \description{
 hiReadsProcessor contains set of functions which allow users to process 

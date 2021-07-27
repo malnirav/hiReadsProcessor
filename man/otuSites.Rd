@@ -4,8 +4,15 @@
 \alias{otuSites}
 \title{Bin values or make OTUs by assigning a unique ID to them within discrete factors.}
 \usage{
-otuSites(posID = NULL, value = NULL, readID = NULL,
-  grouping = NULL, psl.rd = NULL, maxgap = 5, parallel = TRUE)
+otuSites(
+  posID = NULL,
+  value = NULL,
+  readID = NULL,
+  grouping = NULL,
+  psl.rd = NULL,
+  maxgap = 5,
+  parallel = TRUE
+)
 }
 \arguments{
 \item{posID}{a vector of groupings for the value parameter (i.e. Chr,strand).

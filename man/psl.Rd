@@ -4,7 +4,9 @@
 \name{psl}
 \alias{psl}
 \title{PSL file output}
-\format{a data frame of 1000 rows and 21 columns}
+\format{
+a data frame of 1000 rows and 21 columns
+}
 \description{
 Sample BLAT PSL file output from samples included Integration Sites 
 Sequencing Data \code{\link{seqProps}}

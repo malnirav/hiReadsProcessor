@@ -4,8 +4,12 @@
 \alias{read.blast8}
 \title{Read blast8 file(s) outputted by BLAT}
 \usage{
-read.blast8(files = NULL, asGRanges = FALSE, removeFile = TRUE,
-  parallel = FALSE)
+read.blast8(
+  files = NULL,
+  asGRanges = FALSE,
+  removeFile = TRUE,
+  parallel = FALSE
+)
 }
 \arguments{
 \item{files}{blast8 filename, or vector of filenames, or a pattern of files 

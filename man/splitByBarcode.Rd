@@ -4,8 +4,13 @@
 \alias{splitByBarcode}
 \title{Split DNAStringSet object using first X number of bases defined by a vector.}
 \usage{
-splitByBarcode(barcodesSample, dnaSet, trimFrom = NULL,
-  showStats = FALSE, returnUnmatched = FALSE)
+splitByBarcode(
+  barcodesSample,
+  dnaSet,
+  trimFrom = NULL,
+  showStats = FALSE,
+  returnUnmatched = FALSE
+)
 }
 \arguments{
 \item{barcodesSample}{a character vector of barcodes to sample name associations. 

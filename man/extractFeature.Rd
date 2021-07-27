@@ -4,8 +4,7 @@
 \alias{extractFeature}
 \title{Extract a specific feature/attribute of the sampleInfo object.}
 \usage{
-extractFeature(sampleInfo, sector = NULL, samplename = NULL,
-  feature = NULL)
+extractFeature(sampleInfo, sector = NULL, samplename = NULL, feature = NULL)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object, which samples per sector/quadrant information along with other metadata.}

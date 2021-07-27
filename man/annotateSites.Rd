@@ -4,8 +4,13 @@
 \alias{annotateSites}
 \title{Find the 5' primers and add results to SampleInfo object.}
 \usage{
-annotateSites(sampleInfo, annots = NULL, samplenames = NULL,
-  parallel = TRUE, ...)
+annotateSites(
+  sampleInfo,
+  annots = NULL,
+  samplenames = NULL,
+  parallel = TRUE,
+  ...
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object outputted from 
@@ -40,7 +45,7 @@ portion is recorded back to the object and used subsequently by
 }
 \examples{
  
-\donttest{
+\dontrun{
 load(file.path(system.file("data", package = "hiReadsProcessor"),
 "FLX_seqProps.RData"))
 data(genes)

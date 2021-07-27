@@ -4,8 +4,12 @@
 \alias{pairUpAlignments}
 \title{Pair up alignments in a GRanges object}
 \usage{
-pairUpAlignments(psl.rd = NULL, maxGapLength = 2500,
-  sameStrand = TRUE, parallel = TRUE)
+pairUpAlignments(
+  psl.rd = NULL,
+  maxGapLength = 2500,
+  sameStrand = TRUE,
+  parallel = TRUE
+)
 }
 \arguments{
 \item{psl.rd}{a GRanges object with qNames ending in "atpersand pairname atpersand".}
@@ -33,7 +37,7 @@ which is outputted by \code{\link{extractSeqs}}.
 }
 \examples{
  
-\donttest{
+\dontrun{
 psl.rd <- read.BAMasPSL(bamFile=c("sample1hits.bam","sample2hits.bam"))
 pairUpAlignments(psl.rd)
 }

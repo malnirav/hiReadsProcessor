@@ -25,7 +25,7 @@ This is intended to be used independently with other short read aligners.
 }
 \examples{
  
-\donttest{
+\dontrun{
 read.BAMasPSL(bamFile="processed.*.bam$")
 read.BAMasPSL(bamFile=c("sample1hits.bam","sample2hits.bam"))
 }

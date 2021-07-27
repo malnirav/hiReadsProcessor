@@ -4,8 +4,12 @@
 \alias{getSectorsForSamples}
 \title{Get sectors for samples defined in the sampleInfo object.}
 \usage{
-getSectorsForSamples(sampleInfo, sector = NULL, samplename = NULL,
-  returnDf = FALSE)
+getSectorsForSamples(
+  sampleInfo,
+  sector = NULL,
+  samplename = NULL,
+  returnDf = FALSE
+)
 }
 \arguments{
 \item{sampleInfo}{sample information SimpleList object, which samples per sector/quadrant information along with other metadata.}
